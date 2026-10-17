@@ -135,7 +135,26 @@ interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
 This first playable prototype has no recording, export, MIDI, song library,
-pattern chaining or public deployment. It grew from the archived UH-16
+pattern chaining or a backend. It grew from the archived UH-16
 Pocket Transmitter. UncleHerbert remains the user's separate music identity;
 Loop Club is not presented as an UncleHerbert portfolio. No licence has been
-selected. The repository currently has no remote configured.
+selected. Sites source synchronization uses a short-lived native credential;
+no token is stored in this repository.
+
+## Codex Site
+
+The app is configured for an owner-private Codex Site. Its identity is
+tracked in `.openai/hosting.json`; reuse that project ID for future updates.
+
+```sh
+node scripts/build-site.mjs
+```
+
+This prepares only the seven runtime assets in ignored `dist/`. The original
+reference site, tests, source history and local state are not part of the
+served bundle. The script preserves unexpected files in `dist/` by stopping
+instead of deleting them. Use the Sites skill's source/package helper from
+the integrated main checkout to push and publish that exact source state.
+Prepare commits with the required co-author trailer before the helper runs.
+The Site starts private and requires its owner's sign-in. Saves remain local
+to each browser and origin; hosting does not copy a localhost save to the Site.
