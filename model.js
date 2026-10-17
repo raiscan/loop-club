@@ -1,5 +1,18 @@
 export const STEPS = 16;
 export const SAVE_KEY = 'loop-club.song.v1';
+// Retain the storage key so version-one songs migrate in place.
+export const DRUM_TRACKS = 4;
+export const DRUM_COLORS = ['#c9e77b', '#f29c80', '#8fd3cb', '#b7a8e7'];
+export const DRUM_SOUNDS = {
+  kick: { name: 'Kick', icon: 'kick' }, snare: { name: 'Snare', icon: 'snare' },
+  hat: { name: 'Hat', icon: 'hat' }, clap: { name: 'Clap', icon: 'clap' },
+  tom: { name: 'Tom', icon: 'drum' }, shaker: { name: 'Shaker', icon: 'shaker' },
+  openhat: { name: 'Open hat', icon: 'hat' }, cowbell: { name: 'Cowbell', icon: 'bell' }
+};
+export const SYNTH_SOUNDS = {
+  bass: { name: 'Bass', icon: 'wave' }, pluck: { name: 'Pluck', icon: 'notes' },
+  arcade: { name: 'Arcade', icon: 'robot' }, bell: { name: 'Bell', icon: 'bell' }
+};
 export const NOTES = [
   { name: 'C', frequency: 130.8128, color: '#c9e77b' },
   { name: 'E♭', frequency: 155.5635, color: '#f0c66c' },
@@ -38,8 +51,9 @@ export function createSong(preset = 'breaks') {
   if (!Object.hasOwn(PRESETS, preset)) preset = 'breaks';
   const source = PRESETS[preset];
   return {
-    version: 1, preset, tempo: source.tempo,
-    drums: source.drums.map(row => [...row].map(value => value === '1')),
+    version: 2, preset, tempo: source.tempo,
+    drums: [...source.drums.map(row => [...row].map(value => value === '1')), Array(STEPS).fill(false)],
+    drumSounds: ['kick', 'snare', 'hat', 'clap'], synth: 'bass',
     melody: [...source.melody], sound: { ...source.sound }
   };
 }
@@ -47,18 +61,22 @@ export function createSong(preset = 'breaks') {
 export function restoreSong(raw) {
   try {
     const song = JSON.parse(raw);
-    if (!song || song.version !== 1 || !Object.hasOwn(PRESETS, song.preset) ||
+    if (!song || ![1, 2].includes(song.version) || !Object.hasOwn(PRESETS, song.preset) ||
       !Number.isInteger(song.tempo) || song.tempo < 80 || song.tempo > 180 ||
-      !Array.isArray(song.drums) || song.drums.length !== 3 ||
+      !Array.isArray(song.drums) || song.drums.length !== (song.version === 1 ? 3 : DRUM_TRACKS) ||
       !song.drums.every(row => Array.isArray(row) && row.length === STEPS && row.every(value => typeof value === 'boolean')) ||
       !Array.isArray(song.melody) || song.melody.length !== STEPS ||
       !song.melody.every(note => note === null || index(note, NOTES.length)) ||
       !song.sound || !['brightness', 'length', 'wobble'].every(key =>
         Number.isInteger(song.sound[key]) && song.sound[key] >= 0 && song.sound[key] <= 100)) return null;
+    if (song.version === 2 && (!Array.isArray(song.drumSounds) || song.drumSounds.length !== DRUM_TRACKS ||
+      !song.drumSounds.every(id => Object.hasOwn(DRUM_SOUNDS, id)) || !Object.hasOwn(SYNTH_SOUNDS, song.synth))) return null;
     // Select only known fields; saved data never supplies interface or audio objects.
     return {
-      version: 1, preset: song.preset, tempo: song.tempo,
-      drums: song.drums.map(row => [...row]), melody: [...song.melody],
+      version: 2, preset: song.preset, tempo: song.tempo,
+      drums: song.version === 1 ? [...song.drums.map(row => [...row]), Array(STEPS).fill(false)] : song.drums.map(row => [...row]),
+      drumSounds: song.version === 1 ? ['kick', 'snare', 'hat', 'clap'] : [...song.drumSounds],
+      synth: song.version === 1 ? 'bass' : song.synth, melody: [...song.melody],
       sound: { brightness: song.sound.brightness, length: song.sound.length, wobble: song.sound.wobble }
     };
   } catch { return null; }
@@ -66,7 +84,7 @@ export function restoreSong(raw) {
 
 export function editSong(song, edit) {
   const next = clone(song);
-  if (edit.type === 'drum' && index(edit.row, 3) && index(edit.step, STEPS)) {
+  if (edit.type === 'drum' && index(edit.row, DRUM_TRACKS) && index(edit.step, STEPS)) {
     next.drums[edit.row][edit.step] = !next.drums[edit.row][edit.step];
   } else if (edit.type === 'note' && index(edit.step, STEPS) && index(edit.note, NOTES.length)) {
     next.melody[edit.step] = next.melody[edit.step] === edit.note ? null : edit.note;
@@ -74,6 +92,10 @@ export function editSong(song, edit) {
     next.tempo = clamp(edit.value, 80, 180);
   } else if (edit.type === 'sound' && ['brightness', 'length', 'wobble'].includes(edit.key) && Number.isFinite(edit.value)) {
     next.sound[edit.key] = clamp(edit.value, 0, 100);
+  } else if (edit.type === 'drumSound' && index(edit.row, DRUM_TRACKS) && Object.hasOwn(DRUM_SOUNDS, edit.value)) {
+    next.drumSounds[edit.row] = edit.value;
+  } else if (edit.type === 'synth' && Object.hasOwn(SYNTH_SOUNDS, edit.value)) {
+    next.synth = edit.value;
   }
   return next;
 }

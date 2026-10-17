@@ -2,8 +2,8 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice } from '../audio.js';
-import { createSong, PRESETS, SAVE_KEY } from '../model.js';
+import { AudioEngine, drumVoice, synthVoice } from '../audio.js?v=2';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=2';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -33,10 +33,10 @@ function roughness(data) {
 
 export async function runAudioChecks() {
   const results = [];
-  for (let row = 0; row < 3; row++) {
-    const data = await render((context, output) => drumVoice(context, output, row, 0.02));
-    check(energy(data, 1000, 3000) > 0.002, `drum ${row} renders audible, finite samples`, results);
-    check(energy(data, 22050) === 0, `drum ${row} releases to silence`, results);
+  for (const id of Object.keys(DRUM_SOUNDS)) {
+    const data = await render((context, output) => drumVoice(context, output, id, 0.02));
+    check(data.every(Number.isFinite) && energy(data, 1000, 3000) > 0.002, `${id} renders audible, finite samples`, results);
+    check(energy(data, 22050) === 0, `${id} releases to silence`, results);
   }
   const soft = { brightness: 0, length: 40, wobble: 0 };
   const bright = { ...soft, brightness: 100 };
@@ -48,6 +48,13 @@ export async function runAudioChecks() {
   check(roughness(sharp) > roughness(dull) * 2, 'brightness changes the rendered spectrum', results);
   const wobbly = await render((ctx, out) => synthVoice(ctx, out, 0, 0.01, { ...bright, wobble: 100 }, 164));
   check(wobbly.some((value, i) => Math.abs(value - sharp[i]) > 0.01), 'wobble changes the rendered synth', results);
+  const voices = [];
+  for (const id of Object.keys(SYNTH_SOUNDS)) {
+    const data = await render((ctx, out) => synthVoice(ctx, out, 0, 0.01, { brightness: 80, length: 60, wobble: 25 }, 164, id));
+    check(data.every(Number.isFinite) && energy(data) > 0.001, `${id} synth renders audible, finite samples`, results);
+    check(voices.every(other => data.some((value, i) => Math.abs(value - other[i]) > 0.01)), `${id} synth has a distinct waveform`, results);
+    voices.push(data);
+  }
   for (const preset of Object.keys(PRESETS)) {
     const song = createSong(preset);
     const seconds = 60 / song.tempo * 4 + 1;
@@ -57,8 +64,8 @@ export async function runAudioChecks() {
       compressor.threshold.value = -12; compressor.ratio.value = 6; compressor.knee.value = 12; compressor.connect(gain);
       for (let step = 0; step < 16; step++) {
         const time = 0.04 + step * 60 / song.tempo / 4;
-        song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, index, time); });
-        if (song.melody[step] !== null) synthVoice(ctx, compressor, song.melody[step], time, song.sound, song.tempo);
+        song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, song.drumSounds[index], time); });
+        if (song.melody[step] !== null) synthVoice(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth);
       }
     }, seconds);
     check(data.every(Number.isFinite) && energy(data) > 0.01 && data.every(value => Math.abs(value) < 1), `${preset}: full bar renders without silence, non-finite samples or clipping`, results);
@@ -159,6 +166,14 @@ export async function runInteractionChecks() {
     check(readSong().drums[0][0] === !beforeA && controllerStep.classList.contains('controller-focus'), 'held Xbox A edits exactly once and shows controller focus', results);
     await press(2);
     check(readSong().drums[0][0] === beforeA, 'Xbox X undoes the edit', results);
+    const instrumentButton = $('[data-drum-choice="3"]');
+    instrumentButton.focus();
+    const beforeInstrument = readSong().drumSounds[3];
+    await press(0);
+    check(readSong().drumSounds[3] !== beforeInstrument && document.activeElement === instrumentButton, 'Xbox A changes a drum instrument without losing focus', results);
+    await press(2);
+    check(readSong().drumSounds[3] === beforeInstrument, 'Xbox X restores the previous drum instrument', results);
+    controllerStep.focus();
     await press(15);
     check(document.activeElement.dataset.step === '1' && document.activeElement.dataset.drum === '0', 'D-pad moves to the neighbouring step', results);
     const columns = document.querySelectorAll('#drum-grid [data-drum="0"]').length;
@@ -172,6 +187,11 @@ export async function runInteractionChecks() {
     }
     await press(5);
     check($('#tab-melody').getAttribute('aria-selected') === 'true', 'RB switches to Tunes', results);
+    const beforeSynth = readSong().synth;
+    $('[data-synth-choice="bell"]').focus(); await press(0);
+    check(readSong().synth === 'bell', 'Xbox A selects a synth voice in Tunes', results);
+    await press(2);
+    check(readSong().synth === beforeSynth, 'Xbox X restores the previous synth voice', results);
     await press(5);
     check($('#tab-sound').getAttribute('aria-selected') === 'true', 'RB switches to Sounds', results);
     const oldValue = Number($('#brightness').value); $('#brightness').focus();
@@ -202,8 +222,42 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runAudioChecks(), ...await runInteractionChecks()];
+  const checks = [...await runAudioChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks()];
   return { passed: checks.length, checks };
+}
+
+export async function runInstrumentChecks() {
+  const results = [], original = localStorage.getItem(SAVE_KEY);
+  try {
+    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
+    $('#tab-drums').click(); $('[data-preset=breaks]').click(); $('#reset').click();
+    const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
+    check(document.querySelectorAll('[data-drum-pad]').length === 4, 'four drum lanes are available', results);
+    const extra = $('[data-drum="3"][data-step="0"]'); extra.click();
+    check(readSong().drums[3][0] && extra.getAttribute('aria-pressed') === 'true', 'fourth drum lane can be sequenced', results);
+    const before = readSong(), choices = new Set();
+    for (let i = 0; i < 8; i++) {
+      $('[data-drum-choice="3"]').click();
+      const song = readSong(); choices.add(song.drumSounds[3]);
+      check(same(song.drums, before.drums) && same(song.melody, before.melody), `drum sound change ${i + 1} preserves every pattern`, results);
+    }
+    check(choices.size === 8 && readSong().drumSounds[3] === before.drumSounds[3], 'drum selector cycles all eight sounds and returns to the start', results);
+    $('[data-drum-choice="3"]').click(); $('#undo').click();
+    check(readSong().drumSounds[3] === before.drumSounds[3], 'drum instrument choice is undoable', results);
+    $('#tab-melody').click();
+    for (const id of Object.keys(SYNTH_SOUNDS)) {
+      $(`[data-synth-choice="${id}"]`).click();
+      check(readSong().synth === id && $(`[data-synth-choice="${id}"]`).getAttribute('aria-pressed') === 'true', `${id} choice is saved and reflected in Tunes`, results);
+    }
+    $('#tab-sound').click();
+    check($('[data-synth-choice="bell"]').getAttribute('aria-pressed') === 'true' && !$('#synth-picker').hidden, 'Sounds shares the instrument selected in Tunes', results);
+    $('#undo').click();
+    check(readSong().synth === 'arcade', 'synth instrument choice is undoable', results);
+    await wait(100);
+  } finally {
+    if (original === null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, original);
+  }
+  return results;
 }
 
 export function runLayoutChecks() {
@@ -223,5 +277,32 @@ export function runLayoutChecks() {
   }
   $('#tab-drums').click();
   check(document.documentElement.scrollWidth <= innerWidth, `${innerWidth}px: no horizontal page overflow`, results);
+  return results;
+}
+
+export async function runPlayheadChecks() {
+  const results = [];
+  $('#tab-melody').click();
+  if ($('#play').getAttribute('aria-pressed') !== 'true') $('#play').click();
+  try {
+    let outlined;
+    for (let i = 0; i < 40; i++) {
+      await wait(50);
+      const cells = [...document.querySelectorAll('#melody-grid .step.current')];
+      if (cells.length === 6 && cells.every(cell => getComputedStyle(cell).boxShadow.includes('inset'))) {
+        outlined = cells[0].dataset.step; break;
+      }
+    }
+    check(outlined !== undefined, 'Tunes renders a white playhead outline on the current column', results);
+    let advanced = false;
+    for (let i = 0; i < 40; i++) {
+      await wait(50);
+      const cell = $('#melody-grid .step.current');
+      if (cell && cell.dataset.step !== outlined && getComputedStyle(cell).boxShadow.includes('inset')) { advanced = true; break; }
+    }
+    check(advanced, 'Tunes white playhead moves to the next visible column', results);
+    $('#tab-drums').click();
+    check([...document.querySelectorAll('#drum-grid .step.current')].every(cell => getComputedStyle(cell).boxShadow.includes('inset')), 'Beats retains its outlined playhead after switching tabs', results);
+  } finally { if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click(); }
   return results;
 }

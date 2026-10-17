@@ -63,3 +63,43 @@ Useful primary references:
 - [Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API)
 - [Web Audio best practices and user activation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
 - [Offline audio rendering](https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/startRendering)
+
+## Playhead and instrument expansion — 17 October 2026
+
+Baseline for this follow-up was clean `main` at `be2082f`:
+`node --test` passed all 14 existing checks; syntax checks passed. No remote
+was configured, so fetch/pull and push remained unavailable.
+
+The reported Tunes bug was reproduced with the `current` class present while
+computed `box-shadow` was `none`. The later `.melody-grid .step` rule removed
+the outlined playhead. A specific current-column rule restores it, including
+on active notes. Browser checks verify visible outlines and their movement,
+rather than only the class name.
+
+The expansion provides four drum lanes with eight selectable percussion
+voices and four synth instruments. Instrument edits preserve patterns and
+participate in autosave/undo. Version-one saves migrate to schema version two
+under the existing storage key, preserving all original three drum patterns,
+notes, tempo and synth controls. The added fourth lane starts empty.
+
+Observed development checks:
+
+- `node --test`: 17 passed, 0 failed; the original baseline checks remain
+  passing, with the starter contract updated for an empty fourth lane.
+- Syntax checks on app, audio, model, gamepad and browser-check modules passed.
+- `git diff --check` passed; original-site reference snapshots are unchanged.
+- `runBrowserChecks()` at 800×1280: 88 checks passed, including actual Web
+  Audio renders of all eight percussion voices and four distinct synth
+  waveforms, the moving Tunes outline, selection/undo via simulated Xbox,
+  preserved patterns, the fourth lane, and all earlier integration checks.
+- `runLayoutChecks()` passed at 360px and 800px across all three sections.
+  The expanded controls also passed in the desktop preview.
+- An actual legacy-save/reload test verified schema migration, unchanged
+  drums/notes/tempo/synth settings, an empty fourth lane and available selectors.
+
+A cached old audio module initially accompanied the new controls during QA.
+Versioned CSS/script/module URLs now load this release consistently; the
+browser rerun confirmed that the loaded audio exports match the new code.
+
+Hardware limitations remain as above: physical Android/Xbox testing is not
+claimed. Push and post-push worktree cleanup remain pending a Git remote.

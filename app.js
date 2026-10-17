@@ -1,16 +1,11 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY } from './model.js';
-import { AudioEngine } from './audio.js';
-import { GamepadReader } from './gamepad.js';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS } from './model.js?v=2';
+import { AudioEngine } from './audio.js?v=2';
+import { GamepadReader } from './gamepad.js?v=2';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const sections = ['drums', 'melody', 'sound'];
-const drums = [
-  { name: 'Kick', color: '#c9e77b', icon: 'kick' },
-  { name: 'Snare', color: '#f29c80', icon: 'snare' },
-  { name: 'Hat', color: '#8fd3cb', icon: 'hat' }
-];
 let saved = null, invalidSave = false;
 try {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -89,9 +84,12 @@ function buildGrids() {
   const drumGrid = $('#drum-grid'), melodyGrid = $('#melody-grid');
   drumGrid.replaceChildren(); melodyGrid.replaceChildren();
   numberRow(drumGrid); numberRow(melodyGrid);
-  drums.forEach((drum, row) => {
+  for (let row = 0; row < DRUM_TRACKS; row++) {
+    const drum = DRUM_SOUNDS[history.song.drumSounds[row]];
+    const color = DRUM_COLORS[row];
     const pad = document.createElement('button');
-    pad.className = 'drum-pad'; pad.style.setProperty('--row-color', drum.color);
+    pad.className = 'drum-pad'; pad.style.setProperty('--row-color', color);
+    pad.dataset.drumPad = row;
     pad.innerHTML = `${icon(drum.icon)}<span>${drum.name}</span>`;
     pad.setAttribute('aria-label', `Play ${drum.name}`);
     gridMetadata(pad, row, -1);
@@ -101,7 +99,7 @@ function buildGrids() {
       const step = page * visibleSteps + col;
       const button = document.createElement('button');
       button.className = 'step' + (step % 4 === 0 ? ' beat-start' : '');
-      button.style.setProperty('--row-color', drum.color);
+      button.style.setProperty('--row-color', color);
       button.dataset.step = step; button.dataset.drum = row;
       gridMetadata(button, row, col);
       button.setAttribute('aria-label', `${drum.name}, step ${step + 1}`);
@@ -111,7 +109,7 @@ function buildGrids() {
       });
       drumGrid.append(button);
     }
-  });
+  }
   [...NOTES].reverse().forEach((note, row) => {
     const pitch = NOTES.length - 1 - row;
     const key = document.createElement('button');
@@ -168,6 +166,7 @@ function setSection(next, focusTab = false) {
   });
   sections.forEach(name => { $(`#panel-${name}`).hidden = name !== section; });
   $('#page-picker').hidden = section === 'sound';
+  $('#synth-picker').hidden = section === 'drums';
   const titles = {
     drums: ['Tap a square. Make a beat.', 'Try the big drums, too.'],
     melody: ['Draw a little tune.', 'Every coloured key belongs in your groove.'],
@@ -186,6 +185,18 @@ function updateSong() {
   const song = history.song;
   $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', button.dataset.preset === song.preset));
   $$('[data-drum]').forEach(button => button.setAttribute('aria-pressed', song.drums[button.dataset.drum][button.dataset.step]));
+  $$('[data-drum-pad]').forEach(pad => {
+    const row = Number(pad.dataset.drumPad), drum = DRUM_SOUNDS[song.drumSounds[row]];
+    pad.innerHTML = `${icon(drum.icon)}<span>${drum.name}</span>`;
+    pad.setAttribute('aria-label', `Play ${drum.name}, drum ${row + 1}`);
+  });
+  $$('[data-drum]').forEach(button => button.setAttribute('aria-label', `${DRUM_SOUNDS[song.drumSounds[button.dataset.drum]].name}, drum ${Number(button.dataset.drum) + 1}, step ${Number(button.dataset.step) + 1}`));
+  $$('[data-drum-choice]').forEach(button => {
+    const row = Number(button.dataset.drumChoice), drum = DRUM_SOUNDS[song.drumSounds[row]];
+    button.innerHTML = `${icon(drum.icon)}<span><small>DRUM ${row + 1}</small>${drum.name}</span><span class="switch-icon" aria-hidden="true">↻</span>`;
+    button.setAttribute('aria-label', `Change drum ${row + 1} sound, ${drum.name}`);
+  });
+  $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
   $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step] === Number(button.dataset.note)));
   $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo} BPM`;
   $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
@@ -201,7 +212,11 @@ function drawWave() {
     const t = x / 400;
     const phase = t * 7 * Math.PI;
     const harmonic = brightness / 100;
-    const shape = Math.sin(phase) + harmonic * Math.sin(phase * 2) / 2 + harmonic * Math.sin(phase * 3) / 3;
+    const wave = history.song.synth;
+    const shape = wave === 'bell' ? Math.sin(phase) + Math.sin(phase * 2.76) * 0.3
+      : wave === 'arcade' ? Math.tanh(Math.sin(phase) * (1 + harmonic * 4))
+      : wave === 'pluck' ? Math.sin(phase) - harmonic * Math.sin(phase * 3) / 9
+      : Math.sin(phase) + harmonic * Math.sin(phase * 2) / 2 + harmonic * Math.sin(phase * 3) / 3;
     const movement = 1 - wobble / 100 * 0.65 * (0.5 + 0.5 * Math.sin(t * 15));
     const decay = Math.exp(-t * (3 - length / 100 * 2.5));
     points.push(`${x === 0 ? 'M' : 'L'}${x} ${(75 - shape * 52 * movement * decay).toFixed(2)}`);
@@ -415,6 +430,29 @@ window.addEventListener('resize', () => {
   }
 });
 
+for (let row = 0; row < DRUM_TRACKS; row++) {
+  const button = document.createElement('button');
+  button.dataset.drumChoice = row;
+  button.style.setProperty('--instrument-color', DRUM_COLORS[row]);
+  button.addEventListener('click', () => {
+    history.end();
+    const choices = Object.keys(DRUM_SOUNDS), index = choices.indexOf(history.song.drumSounds[row]);
+    commit(editSong(history.song, { type: 'drumSound', row, value: choices[(index + 1) % choices.length] }));
+    engine.audition('drum', row);
+  });
+  $('#drum-picker').append(button);
+}
+for (const [id, synth] of Object.entries(SYNTH_SOUNDS)) {
+  const button = document.createElement('button');
+  button.dataset.synthChoice = id;
+  button.innerHTML = `${icon(synth.icon)}<span>${synth.name}</span>`;
+  button.setAttribute('aria-label', `${synth.name} synth`);
+  button.addEventListener('click', () => {
+    history.end(); commit(editSong(history.song, { type: 'synth', value: id }));
+    engine.audition('note', 0);
+  });
+  $('#synth-picker').append(button);
+}
 for (let step = 0; step < STEPS; step++) {
   const light = document.createElement('i'); light.className = 'loop-light'; light.dataset.step = step;
   $('#loop-lights').append(light);

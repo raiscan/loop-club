@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="style.css?v=2">
+  <script type="module" src="app.js?v=2"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -29,6 +29,9 @@
     <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7 7h10c4 0 6 13 3 13-2 0-4-4-5-4H9c-1 0-3 4-5 4C1 20 3 7 7 7Z"/><path d="M8 9v5m-2-2.5h4m6-1.5h.01m2 3h.01"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-clap" viewBox="0 0 24 24"><path d="m9 20-5-7c-2-3 0-4 2-2l2 2-3-7c-1-2 1-3 2-1l4 6-2-8c0-2 2-2 3 0l2 8 1-6c0-2 2-2 2 0l1 8c0 4-1 6-4 8ZM2 3l2 1m17 1-2 2"/></symbol>
+    <symbol id="i-shaker" viewBox="0 0 24 24"><path d="m6 4 13 9c4 3-1 10-5 7L3 11c-4-3 0-10 3-7Zm-1 7 5-5m0 9 5-6M20 2v3m-3-4v2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="m8 3-5 17h18L16 3Zm1 0v3h6V3M5 15h14"/></symbol>
   </svg>
   <div class="app-shell">
     <header class="masthead">
@@ -47,7 +50,8 @@
         <div class="workspace-bar"><div class="tabs" role="tablist" aria-label="Make music"><button id="tab-drums" class="tab" role="tab" aria-selected="true" aria-controls="panel-drums" data-tab="drums"><svg class="icon"><use href="#i-drum"/></svg>Beats</button><button id="tab-melody" class="tab" role="tab" aria-selected="false" aria-controls="panel-melody" tabindex="-1" data-tab="melody"><svg class="icon"><use href="#i-notes"/></svg>Tunes</button><button id="tab-sound" class="tab" role="tab" aria-selected="false" aria-controls="panel-sound" tabindex="-1" data-tab="sound"><svg class="icon"><use href="#i-wave"/></svg>Sounds</button></div><button id="undo" class="machine-button" data-nav="tools" disabled><svg class="icon"><use href="#i-undo"/></svg><span>Undo</span></button></div>
         <div class="workspace">
           <div id="pattern-controls" class="pattern-controls"><div><h2 id="workspace-title">Tap a square. Make a beat.</h2><p id="workspace-hint">Try the big drums, too.</p></div><div id="page-picker" class="page-picker" aria-label="Loop steps"></div></div>
-          <div id="panel-drums" class="panel" role="tabpanel" aria-labelledby="tab-drums"><div id="drum-grid" class="sequence-grid"></div></div>
+          <div id="synth-picker" class="instrument-picker" aria-label="Synth instrument" hidden></div>
+          <div id="panel-drums" class="panel" role="tabpanel" aria-labelledby="tab-drums"><div class="instrument-caption">DRUM SOUNDS <span>Tap a sound to switch. Eight to explore.</span></div><div id="drum-picker" class="instrument-picker" aria-label="Drum instruments"></div><div id="drum-grid" class="sequence-grid"></div></div>
           <div id="panel-melody" class="panel" role="tabpanel" aria-labelledby="tab-melody" hidden><div id="melody-grid" class="sequence-grid melody-grid"></div><p class="grid-tip">High notes at the top. Low notes at the bottom. <span>Tap a coloured key to hear it.</span></p></div>
           <div id="panel-sound" class="panel" role="tabpanel" aria-labelledby="tab-sound" hidden>
             <div class="sound-layout"><div class="sound-view"><span class="scope-label"><i></i> YOUR SYNTH SHAPE</span><svg id="waveform" viewBox="0 0 400 150" role="img" aria-label="Illustration of your synth shape"><path class="scope-line" d="M0 75H400"/><path id="wave-path" d=""/></svg><button id="hear-synth" class="hear-button" data-nav="sound"><svg class="icon"><use href="#i-notes"/></svg>Hear my sound</button></div><div class="sound-sliders">
@@ -64,6 +68,6 @@
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>
     </main>
   </div>
-  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><span class="eyebrow">WELCOME TO THE CLUB</span><button id="close-help" aria-label="Close help">×</button></div><h2 id="help-title">A little move.<br>A whole new groove.</h2><p>Choose a starting groove and press <strong>Let’s play</strong>. Tap the squares to change the beat. In <strong>Tunes</strong>, put notes higher or lower. In <strong>Sounds</strong>, shape your synth.</p><p><strong>Touch or mouse</strong><br>Tap or click a square. Drag a slider. Use Undo whenever you like.</p><div class="controller-guide"><h3>Xbox controller · PC</h3><p>Connect it to your PC, then press any button. If sound is blocked, click or tap Play once.</p><dl><dt>D-pad / left stick</dt><dd>Move the highlight; adjust sliders</dd><dt><b class="xbox-a">A</b></dt><dd>Play a pad or change a step</dd><dt><b class="xbox-b">B</b></dt><dd>Back to the section tab / close help</dd><dt><b class="xbox-x">X</b></dt><dd>Undo</dd><dt>LB / RB</dt><dd>Switch Beats, Tunes and Sounds</dd><dt>Menu ☰</dt><dd>Play / stop the loop</dd></dl></div><p class="help-note">Your latest groove is saved in this browser. Undo lasts until you reload. Starting over or choosing another groove can be undone. Closing or leaving the page stops playback.</p><button id="help-done" class="play-button">Let’s make music <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
+  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><span class="eyebrow">WELCOME TO THE CLUB</span><button id="close-help" aria-label="Close help">×</button></div><h2 id="help-title">A little move.<br>A whole new groove.</h2><p>Choose a starting groove and press <strong>Let’s play</strong>. Tap the squares to change the beat. Tap a numbered drum sound to switch instruments. In <strong>Tunes</strong>, put notes higher or lower and choose Bass, Pluck, Arcade or Bell. In <strong>Sounds</strong>, shape your synth.</p><p><strong>Touch or mouse</strong><br>Tap or click a square. Drag a slider. Use Undo whenever you like.</p><div class="controller-guide"><h3>Xbox controller · PC</h3><p>Connect it to your PC, then press any button. If sound is blocked, click or tap Play once.</p><dl><dt>D-pad / left stick</dt><dd>Move the highlight; adjust sliders</dd><dt><b class="xbox-a">A</b></dt><dd>Play a pad or change a step</dd><dt><b class="xbox-b">B</b></dt><dd>Back to the section tab / close help</dd><dt><b class="xbox-x">X</b></dt><dd>Undo</dd><dt>LB / RB</dt><dd>Switch Beats, Tunes and Sounds</dd><dt>Menu ☰</dt><dd>Play / stop the loop</dd></dl></div><p class="help-note">Your latest groove is saved in this browser. Undo lasts until you reload. Starting over or choosing another groove can be undone. Closing or leaving the page stops playback.</p><button id="help-done" class="play-button">Let’s make music <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
 </body>
 </html>

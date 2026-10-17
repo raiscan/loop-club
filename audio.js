@@ -1,4 +1,4 @@
-import { NOTES } from './model.js';
+import { NOTES } from './model.js?v=2';
 
 const noiseBuffers = new WeakMap();
 
@@ -54,25 +54,53 @@ function voice(sources, nodes, time, duration) {
   return handle;
 }
 
-export function drumVoice(context, destination, row, time) {
-  if (row === 0) {
+export function drumVoice(context, destination, instrument, time) {
+  const sound = typeof instrument === 'number' ? ['kick', 'snare', 'hat', 'clap'][instrument] : instrument;
+  if (sound === 'kick' || sound === 'tom') {
+    const tom = sound === 'tom';
     const osc = context.createOscillator();
-    const gain = envelope(context, destination, time, 0.24, 0.8);
-    osc.frequency.setValueAtTime(155, time);
-    osc.frequency.exponentialRampToValueAtTime(45, time + 0.12);
+    const duration = tom ? 0.32 : 0.24;
+    const gain = envelope(context, destination, time, duration, tom ? 0.5 : 0.8);
+    osc.frequency.setValueAtTime(tom ? 250 : 155, time);
+    osc.frequency.exponentialRampToValueAtTime(tom ? 90 : 45, time + (tom ? 0.22 : 0.12));
     osc.connect(gain);
-    return voice([osc], [gain], time, 0.24);
+    return voice([osc], [gain], time, duration);
   }
-  const hat = row === 2;
-  const duration = hat ? 0.065 : 0.16;
+  if (sound === 'cowbell') {
+    const gain = envelope(context, destination, time, 0.19, 0.17);
+    const filter = context.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 900; filter.Q.value = 0.8;
+    filter.connect(gain);
+    const sources = [540, 800].map(frequency => {
+      const osc = context.createOscillator();
+      osc.type = 'square'; osc.frequency.value = frequency; osc.connect(filter);
+      return osc;
+    });
+    return voice(sources, [filter, gain], time, 0.19);
+  }
+  const durations = { snare: 0.16, hat: 0.065, clap: 0.2, shaker: 0.11, openhat: 0.32 };
+  const duration = durations[sound];
+  if (!duration) throw new Error(`Unknown drum sound: ${sound}`);
   const source = context.createBufferSource();
   source.buffer = noiseBuffer(context);
   const filter = context.createBiquadFilter();
-  filter.type = 'highpass'; filter.frequency.value = hat ? 6500 : 1400;
-  const gain = envelope(context, destination, time, duration, hat ? 0.2 : 0.4);
+  filter.type = sound === 'clap' || sound === 'shaker' ? 'bandpass' : 'highpass';
+  filter.frequency.value = { snare: 1400, hat: 6500, clap: 1700, shaker: 5000, openhat: 5600 }[sound];
+  filter.Q.value = 0.8;
+  const level = { snare: 0.4, hat: 0.2, clap: 0.5, shaker: 0.3, openhat: 0.15 }[sound];
+  const gain = envelope(context, destination, time, duration, level);
+  if (sound === 'clap') {
+    gain.gain.cancelScheduledValues(time);
+    gain.gain.setValueAtTime(0.0001, time);
+    for (const offset of [0, 0.018, 0.036]) {
+      gain.gain.exponentialRampToValueAtTime(level, time + offset + 0.001);
+      gain.gain.exponentialRampToValueAtTime(0.025, time + offset + 0.012);
+    }
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+  }
   source.connect(filter); filter.connect(gain);
   const sources = [source], nodes = [filter, gain];
-  if (!hat) {
+  if (sound === 'snare') {
     const body = context.createOscillator();
     body.type = 'triangle';
     body.frequency.setValueAtTime(190, time);
@@ -84,10 +112,10 @@ export function drumVoice(context, destination, row, time) {
   return voice(sources, nodes, time, duration);
 }
 
-export function synthVoice(context, destination, note, time, sound, tempo) {
-  const duration = 0.08 + sound.length / 100 * 0.55;
+export function synthVoice(context, destination, note, time, sound, tempo, instrument = 'bass') {
+  const duration = (0.08 + sound.length / 100 * 0.55) * (instrument === 'bell' ? 1.4 : instrument === 'pluck' ? 0.7 : 1);
   const filter = context.createBiquadFilter();
-  filter.type = 'lowpass'; filter.Q.value = 1.8;
+  filter.type = 'lowpass'; filter.Q.value = instrument === 'bass' ? 1.8 : 0.6;
   const cutoff = 160 + (sound.brightness / 100) ** 2 * 6500;
   // Movement sweeps the filter in tempo, with phase shared across notes.
   const movement = sound.wobble / 100;
@@ -100,11 +128,14 @@ export function synthVoice(context, destination, note, time, sound, tempo) {
   const gain = envelope(context, destination, time, duration, 0.28);
   filter.connect(gain);
   const oscillator = context.createOscillator();
-  oscillator.type = 'sawtooth'; oscillator.frequency.value = NOTES[note].frequency;
+  oscillator.type = { bass: 'sawtooth', pluck: 'triangle', arcade: 'square', bell: 'sine' }[instrument] || 'sawtooth';
+  const frequency = NOTES[note].frequency * (instrument === 'bass' ? 1 : 2);
+  oscillator.frequency.value = frequency;
   oscillator.connect(filter);
   const sub = context.createOscillator();
-  sub.type = 'sine'; sub.frequency.value = NOTES[note].frequency / 2;
-  const subGain = context.createGain(); subGain.gain.value = 0.55;
+  sub.type = 'sine';
+  sub.frequency.value = frequency * (instrument === 'bass' ? 0.5 : instrument === 'bell' ? 2.76 : 2);
+  const subGain = context.createGain(); subGain.gain.value = instrument === 'bass' ? 0.55 : 0.3;
   sub.connect(subGain); subGain.connect(gain);
   return voice([oscillator, sub], [filter, gain, subGain], time, duration);
 }
@@ -177,8 +208,8 @@ export class AudioEngine {
     if (!this.playing) return;
     const song = this.getSong();
     for (const { step, time } of scheduledSteps(this.clock, this.context.currentTime, song.tempo)) {
-      song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, index, time)); });
-      if (song.melody[step] !== null) this.track(synthVoice(this.context, this.bus, song.melody[step], time, song.sound, song.tempo));
+      song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
+      if (song.melody[step] !== null) this.track(synthVoice(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth));
       const timer = setTimeout(() => {
         this.visuals.delete(timer);
         if (this.playing) this.onStep(step);
@@ -215,8 +246,8 @@ export class AudioEngine {
       const now = this.context.currentTime + 0.005;
       const song = this.getSong();
       this.track(kind === 'drum'
-        ? drumVoice(this.context, this.compressor, value, now)
-        : synthVoice(this.context, this.compressor, value, now, song.sound, song.tempo));
+        ? drumVoice(this.context, this.compressor, song.drumSounds[value], now)
+        : synthVoice(this.context, this.compressor, value, now, song.sound, song.tempo, song.synth));
     } catch (error) { this.onError(error.message); }
   }
 }

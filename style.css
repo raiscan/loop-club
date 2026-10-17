@@ -90,6 +90,7 @@ h1 > span { color: #8fa14e; }
 .step-number.current { color: var(--lime); }
 .drum-pad { display: flex; align-items: center; gap: 10px; background: #39443b; border: 1px solid #54604f; border-radius: 10px; padding: 10px; color: var(--row-color); min-height: 55px; font-size: 13px; font-weight: 700; text-align: left; }
 .drum-pad .icon { width: 25px; height: 25px; }
+.drum-pad { flex-direction: column; justify-content: center; gap: 4px; font-size: 11px; }
 .drum-pad:active, .drum-pad.sounding { background: var(--row-color); color: var(--machine); }
 .step { position: relative; min-width: 44px; min-height: 55px; padding: 0; background: var(--step); border: 1px solid #465047; border-radius: 8px; box-shadow: 0 3px 0 #19211c; border-top: 3px solid #485349; }
 .step.beat-start { background: #454f45; border-top-color: #64725b; }
@@ -103,6 +104,16 @@ h1 > span { color: #8fa14e; }
 .note-key.sounding, .note-key:active { background: var(--row-color); color: #222a27; }
 .melody-grid { gap: 6px; }
 .melody-grid .step { min-height: 44px; border-radius: 6px; box-shadow: none; }
+.melody-grid .step.current { box-shadow: inset 0 0 0 2px #f6f9e2; }
+.instrument-caption { display: flex; gap: 12px; flex-wrap: wrap; font: 600 9px system-ui, sans-serif; letter-spacing: 1.4px; color: #c1cdb4; margin: 0 0 12px; }
+.instrument-caption span { font: 11px "Trebuchet MS", system-ui, sans-serif; letter-spacing: 0; color: #9fae96; }
+.instrument-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 22px; }
+.instrument-picker button { min-height: 50px; min-width: 44px; display: flex; align-items: center; gap: 10px; padding: 10px 13px; border: 1px solid #5b6852; border-radius: 10px; background: #344033; color: var(--instrument-color, #c5bbec); text-align: left; font-size: 13px; font-weight: 700; }
+.instrument-picker button:hover { background: #44503d; }
+.instrument-picker small { display: block; font: 600 8px system-ui, sans-serif; letter-spacing: 1px; color: #a6b39b; margin-bottom: 3px; }
+.instrument-picker .icon { width: 21px; height: 21px; }
+.switch-icon { margin-left: auto; font-size: 20px; opacity: .75; }
+.instrument-picker button[aria-pressed=true] { background: var(--violet); border-color: var(--violet); color: #252e27; }
 .grid-tip { font-size: 11px; line-height: 1.7; color: #d5dcca; margin: 17px 0 0; }
 .grid-tip span { color: #9fae96; }
 .beat-ruler { display: flex; align-items: center; gap: 13px; padding: 24px 0 22px; color: #9aa88f; }
@@ -193,6 +204,8 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .save-status { font-size: 11px; }.header-tools { gap: 16px; }.volume-control input { margin-top: 6px; }
 }
 @media (max-width: 620px) {
+  .instrument-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .instrument-picker button { padding: 9px 10px; font-size: 12px; }
   .app-shell { padding: 0 16px 12px; }.brand { font-size: 25px; }.brand-mark { width: 40px; height: 39px; padding: 8px; }
   .save-status { font-size: 10px; max-width: 110px; line-height: 1.4; }.save-status .icon { display: none; }.header-tools { gap: 10px; }
   .intro { gap: 12px; padding: 24px 0; }.eyebrow { font-size: 8px; letter-spacing: 1.6px; }

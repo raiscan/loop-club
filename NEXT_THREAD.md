@@ -16,9 +16,11 @@ children. The current brief and run instructions are in README.md.
 
 ## Current first prototype
 
-Three starter grooves; 3-drum, 16-step grid; six-note melody grid; synth filter,
-note length and wobble; tempo and volume; automatic local saving; grouped undo.
-Responsive step pages retain large targets. All sounds use Web Audio synthesis.
+Three starter grooves; four-lane, 16-step drum grid with eight switchable percussion sounds; six-note melody grid; synth filter,
+note length and wobble; Bass/Pluck/Arcade/Bell voices; tempo and volume; automatic local saving; grouped undo.
+Responsive step pages retain large targets. Version-one saves migrate to four
+lanes without changing the existing music. The Tunes playhead CSS regression
+is covered by browser checks. All sounds use Web Audio synthesis.
 No framework, service, credentials or runtime dependencies.
 
 This is a prototype to try with the child, not a validated learning product.

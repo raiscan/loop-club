@@ -35,17 +35,23 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 - **Jungle jump**, **Robot dance** and **Moon bounce** are starting grooves.
   Choosing one replaces the current groove, and **Undo** brings it back.
-- **Beats:** tap steps to switch drums on or off. The large drum pads play
-  individual sounds. A loop always has 16 steps. Narrower screens show
+- **Beats:** tap steps to switch drums on or off. Four lanes can each use any
+  of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
+  cowbell. Tap a numbered sound selector to cycle instruments; it previews
+  the new sound and keeps the pattern. The large drum pads play individual sounds. A loop always has 16 steps. Narrower screens show
   eight or four at a time, with numbered page buttons; the full loop keeps playing.
 - **Tunes:** tap a coloured square to add or replace a note. Tap it again to
   remove it. The six keys use C minor pentatonic notes and play individually.
+  Choose Bass, Pluck, Arcade or Bell above the grid; the same selection appears
+  in Sounds. The white outlined column follows playback in both grids.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
   those settings; it is not an oscilloscope. Sliders audition a note while stopped.
 - **Speed** changes the tempo from 80–180 BPM; **Volume** controls all audio.
 - The latest groove, tempo and synth settings save automatically in this
-  browser's local storage. It is one current song per browser/origin, not a
+  browser's local storage, including drum and synth instrument choices. Older
+  three-drum saves upgrade automatically, keeping every existing step and
+  adding an empty fourth lane. It is one current song per browser/origin, not a
   library or cloud account. Volume starts at a moderate default each visit.
   If storage is unavailable, the instrument still works and reports that saving
   is unavailable. Invalid/incompatible saves fall back to a fresh groove.
@@ -57,7 +63,8 @@ currently targeted at PC. No tablet/controller pairing is required.
 Connect an Xbox controller to the PC by its usual USB or Bluetooth connection,
 open the app, and press a controller button. It uses the browser's standard
 Gamepad mapping; unrecognised mappings are reported rather than guessed.
-The controller can operate all music controls, preset buttons and help.
+The controller can operate all music controls, instrument selectors, preset buttons and help. A cycles the
+selected drum sound or selects a synth voice; X undoes either change.
 
 | Control | Action |
 | --- | --- |
@@ -94,14 +101,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=2')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=2')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -120,6 +127,10 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `tests/`: Node checks and browser integration checks.
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
+
+Asset URLs carry a release query (`v=2`) so a refreshed page loads matching
+interface and audio modules after an update. Bump it together in the HTML
+and browser module imports when publishing changes.
 
 This first playable prototype has no recording, export, MIDI, song library,
 pattern chaining or public deployment. It grew from the archived UH-16
