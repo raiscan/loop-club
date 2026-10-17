@@ -621,3 +621,51 @@ a painted Chime note, sparkle icon, active brush and the four-bar Cloud size.
 Physical Android and Xbox hardware were not tested.
 The integrated preset-move base `2b9e3e3` also passed its complete 468 browser
 checks before merging the extension (41 Node tests, no baseline failures).
+
+## Tour after Zach's play session; Clear and wide sidebar — 17 October 2026
+
+The Sites source helper fetched and confirmed clean main `9c86d66`. Baseline:
+42 Node tests and 472 browser checks passed. Reproduction showed a beat tap
+left Next disabled and no response narration after 100ms: praise waited for
+the musical demo. Every further action stopped speech and restarted that demo,
+so repeated taps could indefinitely postpone the continuation instruction.
+
+The new tour separates speech from music. The first action starts its short
+response immediately; more taps/slides never stop or repeat that response.
+Next is immediately available. Hear again replays only music. Short demos
+visit four beats twice; song/size/final demos loop their selected length twice.
+First edits audition immediately during playback too. Final playback returns
+to Drums automatically. The sixteen actions teach songs, Clear, drum sounds,
+brushes, repainting, chords, loop sizes and sound shaping. Original music stays
+isolated; Keep it saves practice and its chosen size, with one Undo restoring
+the original. All active prompts omit repeated “that was you” praise.
+
+Thirty-one new MP3s use the approved voice settings. Previous source recordings
+are preserved. Generated clips trim leading silence, and the runtime preloads
+and reuses audio elements. Checks detect immediate response creation, voice
+identity/time surviving rapid taps, two real playhead wraps, no speech restart
+on Hear again, and cancellation. Node checks also validate hashes/transcripts,
+warmed-element reuse and stale callback cancellation. No device TTS or API key
+is required in the deployed browser.
+
+Clear empties every bar's drums, pitches and painted instruments, preserves
+size/speed/sound settings and is one Undo. From 1400px the existing section tabs,
+Loop size and presets move into a sticky themed sidebar. Narrow screens keep
+the previous placement; no duplicate controls are created. Captured scroll
+events keep tutorial highlights aligned when the sidebar itself scrolls.
+Zach starts in Race and Marcie in Pink; each mode persists its own later Look
+choice. Actual reloads verified Zach Race→Dino→Dino and Marcie Pink→Space→Space,
+with the original test preferences restored afterward.
+
+Development Node suite: 44 passed. The initial full redesign browser run passed
+522 checks. Focused tour/controller checks passed 120/39 assertions. Combined
+layout, Clear/sidebar and tour checks passed 209 at 360×800 and 800×360. After
+adding sidebar Loop size, 210 passed at 1920×1080. The Race sidebar screenshot
+was inspected. A later full run with Cloud as the original test song exposed
+an old fixture issue: fixtures restored localStorage without restoring the UI,
+then selected the same preset, producing a no-op instead of synchronizing them.
+Fixtures now select a different preset first; no production Undo change was
+needed. Physical Android, Windows and Xbox hardware were not tested.
+Final development full browser suite at 1920×1080: 523 passed, including sidebar
+Loop size and the corrected fixtures. All 44 Node tests, syntax, build and diff
+checks pass. The archived original site remains unchanged.

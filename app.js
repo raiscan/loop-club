@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=19';
-import { AudioEngine } from './audio.js?v=19';
-import { GamepadReader } from './gamepad.js?v=19';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=19';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=20';
+import { AudioEngine } from './audio.js?v=20';
+import { GamepadReader } from './gamepad.js?v=20';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=20';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -21,8 +21,9 @@ const THEMES = {
   dino: { name: 'Dino', icon: '🦕', colour: '#eef7d9' },
   race: { name: 'Race', icon: '🏎️', colour: '#ecf4ff' }
 };
-let theme = 'sunny';
-try { const stored = localStorage.getItem(THEME_KEY); if (Object.hasOwn(THEMES, stored)) theme = stored; } catch { /* Looks still work without storage. */ }
+const playerThemeKey = player ? `${THEME_KEY}.${player}` : THEME_KEY;
+let theme = player === 'zach' ? 'race' : player === 'marcie' ? 'pink' : 'sunny';
+try { const stored = localStorage.getItem(playerThemeKey); if (Object.hasOwn(THEMES, stored)) theme = stored; } catch { /* Looks still work without storage. */ }
 function applyTheme(id, persist = true) {
   if (!Object.hasOwn(THEMES, id)) return;
   theme = id; document.documentElement.dataset.theme = id;
@@ -30,7 +31,7 @@ function applyTheme(id, persist = true) {
   $('#theme-symbol').textContent = THEMES[id].icon;
   $('#theme-mascot').textContent = THEMES[id].icon;
   $$('[data-theme-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.themeChoice === id));
-  if (persist) { try { localStorage.setItem(THEME_KEY, id); } catch { /* Keep the chosen look for this visit. */ } }
+  if (persist) { try { localStorage.setItem(playerThemeKey, id); } catch { /* Keep the chosen look for this visit. */ } }
 }
 for (const [id, look] of Object.entries(THEMES)) {
   const button = document.createElement('button');
@@ -74,11 +75,11 @@ function saveSong() {
 
 function commit(next) {
   const resized = next.melody.length !== history.song.melody.length;
-  const resume = resized && (engine.playing || engine.pending);
-  if (resized) engine.stop();
+  const resume = resized && (engine.playing || engine.pending), previewKind = lessonPreview;
+  if (resized) { if (lessonPreview) stopLessonPreview(); else engine.stop(); }
   if (!history.commit(next)) return;
   saveSong(); updateSong();
-  if (resume) engine.start();
+  if (resume) { if (previewKind) playLessonPreview(previewKind, true); else engine.start(); }
 }
 
 function undo() {
@@ -155,7 +156,7 @@ function buildGrids() {
       button.setAttribute('aria-label', `${drum.name}, step ${step + 1}`);
       button.addEventListener('click', () => {
         commit(editSong(history.song, { type: 'drum', row, step }));
-        if (!engine.playing && history.song.drums[row][step]) engine.audition('drum', row);
+        if ((!engine.playing || tutorial?.active) && history.song.drums[row][step]) engine.audition('drum', row);
       });
       drumGrid.append(button);
     }
@@ -179,7 +180,7 @@ function buildGrids() {
       button.setAttribute('aria-label', `${note.name}, step ${step + 1}`);
       button.addEventListener('click', () => {
         commit(editSong(history.song, { type: 'note', step, note: pitch }));
-        if (!engine.playing) engine.audition('chord', history.song.melody[step], history.song.noteSounds[step]);
+        if (!engine.playing || tutorial?.active) engine.audition('chord', history.song.melody[step], history.song.noteSounds[step]);
       });
       melodyGrid.append(button);
     }
@@ -309,9 +310,11 @@ function showStep(step) {
 }
 
 function stopLessonPreview() { if (!lessonPreview) return; lessonPreview = null; engine.stop(); }
-function playLessonPreview(kind, continuous = false) {
+function playLessonPreview(kind, restart = false) {
+  if (!restart && lessonPreview === kind && (engine.playing || engine.pending)) return;
   lessonPreview = null; engine.stop(); lessonPreview = kind;
-  engine.start({ steps: 4, cycles: continuous ? Infinity : 1 });
+  const steps = ['song', 'size', 'whole'].includes(kind) ? history.song.melody.length : 4;
+  engine.start({ steps, cycles: 2 });
 }
 
 function showPlayback(state) {
@@ -334,6 +337,7 @@ $('#undo').addEventListener('click', undo);
 $$('[data-loop-bars]').forEach(button => button.addEventListener('click', () => {
   history.end(); commit(editSong(history.song, { type: 'bars', value: Number(button.dataset.loopBars) }));
 }));
+$('#clear').addEventListener('click', () => { history.end(); commit(clearSong(history.song)); message('All clear. Undo brings it back.'); });
 $('#reset').addEventListener('click', () => {
   history.end(); commit(editSong(createSong(history.song.preset), { type: 'bars', value: history.song.bars }));
   message('Back to the start. Undo brings yours back.');
@@ -590,8 +594,8 @@ tutorial = new ZachTutorial({
     engine.stop();
     const made = history.song;
     history = originalHistory || history; originalHistory = null;
-    if (keepSong) { history.commit(editSong(made, { type: 'bars', value: history.song.bars })); saveSong(); }
-    buildGrids(); setSection(section);
+    if (keepSong) { history.commit(made); saveSong(); }
+    buildGrids(); setSection('drums');
   },
   speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
   onStart() {
@@ -601,14 +605,17 @@ tutorial = new ZachTutorial({
     setSection('drums'); changePage(0);
   },
   prepare(step, initial) {
-    if (initial && step.audio === 'drum') { history.commit(blankTutorialSong(history.song)); buildGrids(); }
-    if (initial && step.audio === 'play') { history.commit(finishTutorialSong(history.song)); buildGrids(); }
+    if (initial && step.id === 'drum') { history.commit(editSong(blankTutorialSong(editSong(history.song, { type: 'bars', value: 1 })), { type: 'synth', value: 'bass' })); buildGrids(); }
+
     if (step.section && section !== step.section) setSection(step.section);
     if (step.section && step.section !== 'sound' && page !== 0) changePage(0);
     if (step.note && initial) {
-      const column = step.audio === 'chord' ? Math.max(0, history.song.melody.slice(0, 4).findIndex(notes => notes.length)) : 0;
+      const column = ['chord', 'paint'].includes(step.id) ? Math.max(0, history.song.melody.slice(0, 4).findIndex(notes => notes.length)) : 0;
+      if (['chord', 'paint'].includes(step.id) && !history.song.melody[column].length) {
+        history.commit(editSong(history.song, { type: 'note', step: column, note: 0, instrument: 'bass' })); updateSong();
+      }
       const notes = history.song.melody[column];
-      const pitch = NOTES.findIndex((_, index) => !notes.includes(index));
+      const pitch = step.id === 'paint' ? notes[0] : NOTES.findIndex((_, index) => !notes.includes(index));
       return `[data-note="${pitch < 0 ? NOTES.length - 1 : pitch}"][data-step="${column}"]`;
     }
     return step.target || null;
@@ -616,3 +623,14 @@ tutorial = new ZachTutorial({
 });
 if (invalidSave) message('That saved groove could not be opened. Here’s a fresh one to play with.');
 requestAnimationFrame(pollController);
+
+const wideLayout = matchMedia('(min-width: 1400px)');
+function arrangeControls() {
+  const tabs = document.querySelector('.tabs'), presets = document.querySelector('.groove-picker'), size = document.querySelector('.loop-size');
+  const sidebar = document.querySelector('#music-sidebar');
+  sidebar.hidden = !wideLayout.matches;
+  if (wideLayout.matches) { document.querySelector('#sidebar-tabs').append(tabs); document.querySelector('#sidebar-size').append(size); document.querySelector('#sidebar-songs').append(presets); }
+  else { document.querySelector('.workspace-bar').prepend(tabs); document.querySelector('.workspace').prepend(size); document.querySelector('.machine').after(presets); }
+  buildGrids(); tutorial?.refresh();
+}
+wideLayout.addEventListener('change', arrangeControls); arrangeControls();

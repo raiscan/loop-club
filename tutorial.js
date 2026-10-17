@@ -1,5 +1,5 @@
-import { NOTES, DRUM_COLORS } from './model.js?v=19';
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=19';
+import { NOTES, DRUM_COLORS } from './model.js?v=20';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=20';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -17,14 +17,24 @@ export class TutorialSpeech {
     volume = () => 0.55, duck = () => {} } = {}) {
     this.synth = synth; this.Utterance = Utterance; this.volume = volume; this.duck = duck;
     this.enabled = true; this.generation = 0;
-    this.Audio = Audio; this.recordings = recordings; this.clip = null;
+    this.Audio = Audio; this.recordings = recordings; this.clip = null; this.warmed = new Map();
     this.available = Boolean(Audio || (synth && Utterance));
+  }
+  preload() {
+    if (!this.Audio) return;
+    for (const recording of Object.values(this.recordings)) {
+      if (this.warmed.has(recording.src)) continue;
+      try { const clip = new this.Audio(new URL(recording.src, import.meta.url).href); clip.preload = 'auto'; clip.load(); this.warmed.set(recording.src, clip); } catch { /* On-demand playback remains available. */ }
+    }
   }
   releaseClip() {
     const clip = this.clip; this.clip = null;
     if (!clip) return;
     clip.onplaying = clip.onended = clip.onerror = null;
-    clip.pause(); clip.removeAttribute('src'); clip.load(); clip.remove?.();
+    clip.pause();
+    if ([...this.warmed.values()].includes(clip)) { try { clip.currentTime = 0; } catch {} }
+    else { clip.removeAttribute('src'); clip.load(); }
+    clip.remove?.();
   }
   updateVolume() {
     if (this.clip) this.clip.volume = this.volume();
@@ -52,7 +62,7 @@ export class TutorialSpeech {
       this.sayDevice(text, generation);
     };
     try {
-      clip = new this.Audio(new URL(recording.src, import.meta.url).href);
+      clip = this.warmed.get(recording.src) || new this.Audio(new URL(recording.src, import.meta.url).href);
       this.clip = clip; clip.preload = 'auto'; this.updateVolume();
       clip.onplaying = () => {
         if (!current()) return;
@@ -92,24 +102,193 @@ export class TutorialSpeech {
 }
 
 export const TUTORIAL_STEPS = [
-  { audio: 'hello', title: 'Hi!', copy: 'Tap “Let\'s play”.', spoken: "Hi! Let’s make some music. Tap the Let's play button.", target: '#play', action: 'playing', picture: 'loop' },
-  { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
-  { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat', reward: 'drum' },
-  { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="0"]', section: 'drums', picture: 'beat', reward: 'beat' },
-  { audio: 'tunes', title: 'Let’s make a tune.', copy: 'Tap Tunes.', target: '#tab-melody', section: 'drums', picture: 'notes' },
-  { audio: 'note', title: 'Add a note.', copy: 'Tap this box.', spoken: 'Tap this box. Notes at the top sound high. Notes at the base sound low.', section: 'melody', note: true, picture: 'notes', reward: 'note' },
-  { audio: 'chord', title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord', reward: 'chord' },
-  { audio: 'sounds', title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
-  { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave', reward: 'slide' },
-  { audio: 'play', title: 'Your tune!', copy: 'Tap “Let\'s play”.', spoken: "Now hear your tune. Tap the Let's play button.", target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
-  { audio: 'done', title: 'You made music!', copy: 'Have fun!', done: true, picture: 'loop' }
+  {
+    "id": "hello",
+    "audio": "tour2-hello",
+    "title": "Hi!",
+    "copy": "Tap \u201cLet's play\u201d.",
+    "spoken": "Hi! Let\u2019s make some music. Tap the Let's play button.",
+    "target": "#play",
+    "action": "playing",
+    "picture": "loop"
+  },
+  {
+    "id": "stop",
+    "audio": "tour2-stop",
+    "title": "It loops!",
+    "copy": "Tap Stop.",
+    "spoken": "Hear it come round again? The music loops. Tap Stop.",
+    "target": "#play",
+    "action": "stopped",
+    "picture": "loop"
+  },
+  {
+    "id": "song",
+    "audio": "tour2-song",
+    "title": "Pick a song.",
+    "copy": "Try Moon.",
+    "spoken": "These are songs to try. Tap Moon.",
+    "target": "[data-preset=\"float\"]",
+    "reward": "song",
+    "picture": "loop"
+  },
+  {
+    "id": "clear",
+    "audio": "tour2-clear",
+    "title": "A fresh start.",
+    "copy": "Tap Clear.",
+    "spoken": "Clear takes all the notes away. Tap Clear. Undo can bring them back.",
+    "target": "#clear",
+    "picture": "beat"
+  },
+  {
+    "id": "drum",
+    "audio": "tour2-drum",
+    "title": "Tap this drum.",
+    "copy": "Hear its sound.",
+    "spoken": "Tap this drum. Hear its sound.",
+    "target": "[data-drum-pad=\"0\"]",
+    "section": "drums",
+    "reward": "drum",
+    "picture": "beat"
+  },
+  {
+    "id": "beat",
+    "audio": "tour2-beat",
+    "title": "Make a beat.",
+    "copy": "Tap this box.",
+    "spoken": "A lit box makes a beat. Tap this box.",
+    "target": "[data-drum=\"0\"][data-step=\"0\"]",
+    "section": "drums",
+    "reward": "beat",
+    "picture": "beat"
+  },
+  {
+    "id": "drum-sound",
+    "audio": "tour2-drum-sound",
+    "title": "A new drum.",
+    "copy": "Tap here.",
+    "spoken": "Tap here to change the drum sound. Your beat stays.",
+    "target": "[data-drum-choice=\"0\"]",
+    "section": "drums",
+    "reward": "drumSound",
+    "picture": "beat"
+  },
+  {
+    "id": "tunes",
+    "audio": "tour2-tunes",
+    "title": "Make a tune.",
+    "copy": "Tap Tunes.",
+    "spoken": "Let\u2019s add a tune. Tap Tunes.",
+    "target": "#tab-melody",
+    "section": "drums",
+    "picture": "notes"
+  },
+  {
+    "id": "note",
+    "audio": "tour2-note",
+    "title": "Add a note.",
+    "copy": "Tap this box.",
+    "spoken": "Tap this box. High notes go at the top. Low notes go at the base.",
+    "section": "melody",
+    "note": true,
+    "reward": "note",
+    "picture": "notes"
+  },
+  {
+    "id": "brush",
+    "audio": "tour2-brush",
+    "title": "Pick a brush.",
+    "copy": "Tap Chime.",
+    "spoken": "Each sound is a brush. Tap Chime.",
+    "section": "melody",
+    "target": "[data-synth-choice=\"chime\"]",
+    "picture": "notes"
+  },
+  {
+    "id": "paint",
+    "audio": "tour2-paint",
+    "title": "Paint a sound.",
+    "copy": "Tap this note.",
+    "spoken": "Tap this note to paint it with Chime.",
+    "section": "melody",
+    "note": true,
+    "reward": "paint",
+    "picture": "notes"
+  },
+  {
+    "id": "chord",
+    "audio": "tour2-chord",
+    "title": "Stack notes.",
+    "copy": "Add one more.",
+    "spoken": "Add one more note in this stack. They play at once.",
+    "section": "melody",
+    "note": true,
+    "reward": "chord",
+    "picture": "chord"
+  },
+  {
+    "id": "size",
+    "audio": "tour2-size",
+    "title": "A longer loop.",
+    "copy": "Tap Medium.",
+    "spoken": "Four boxes make a small loop. Tap Medium for eight boxes.",
+    "section": "melody",
+    "target": "[data-loop-bars=\"2\"]",
+    "reward": "size",
+    "picture": "loop"
+  },
+  {
+    "id": "sounds",
+    "audio": "tour2-sounds",
+    "title": "Shape a sound.",
+    "copy": "Tap Sounds.",
+    "spoken": "Now shape the sound. Tap Sounds.",
+    "section": "melody",
+    "target": "#tab-sound",
+    "picture": "wave"
+  },
+  {
+    "id": "slide",
+    "audio": "tour2-slide",
+    "title": "Slide and hear.",
+    "copy": "Try this slider.",
+    "spoken": "Slide this to change the sound. Listen as you move it.",
+    "section": "sound",
+    "target": "#brightness",
+    "action": "input",
+    "reward": "slide",
+    "picture": "wave"
+  },
+  {
+    "id": "play",
+    "audio": "tour2-play",
+    "title": "Hear your music.",
+    "copy": "Tap \u201cLet's play\u201d.",
+    "spoken": "Hear your beat and tune together. Tap the Let's play button.",
+    "section": "sound",
+    "target": "#play",
+    "action": "playing",
+    "reward": "whole",
+    "picture": "loop"
+  },
+  {
+    "id": "done",
+    "audio": "tour2-done",
+    "title": "You made music!",
+    "copy": "Keep it and play.",
+    "spoken": "You made music. Keep it to play some more.",
+    "section": "drums",
+    "done": true,
+    "picture": "loop"
+  }
 ];
 
 const PLAYER_PROMPTS = Object.fromEntries(['zach', 'marcie'].map(id => {
   const name = id === 'zach' ? 'Zach' : 'Marcie';
   return [id, {
-    hello: { audio: `hello-${id}`, title: `Hi ${name}!`, spoken: `Hi ${name}! Let’s make some music. Tap the Let's play button.` },
-    done: { audio: `done-${id}`, copy: `Have fun, ${name}.` }
+    hello: { audio: `tour2-hello-${id}`, title: `Hi ${name}!`, spoken: `Hi ${name}! Let’s make some music. Tap the Let's play button.` },
+    done: { audio: `tour2-done-${id}`, copy: `Have fun, ${name}.`, spoken: `You made music, ${name}. Keep it to play some more.` }
   }];
 }));
 export function tutorialPlayer(search = '') {
@@ -117,18 +296,64 @@ export function tutorialPlayer(search = '') {
   return params.get('zach') === 'yes' ? 'zach' : params.get('marcie') === 'yes' ? 'marcie' : null;
 }
 export function tutorialStepsFor(player) {
-  return TUTORIAL_STEPS.map(step => ({ ...step, ...(PLAYER_PROMPTS[player]?.[step.audio] || {}) }));
+  return TUTORIAL_STEPS.map(step => ({ ...step, ...(PLAYER_PROMPTS[player]?.[step.id] || {}) }));
 }
 
 export const TUTORIAL_REWARDS = {
-  drum: { title: 'Your drum!', copy: 'Tap it again!', spoken: 'Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.' },
-  beat: { title: 'Your beat!', copy: 'Tap more boxes!', spoken: 'Your beat! That was you. Tap more boxes for more beats. When you’re ready to add a tune, tap Next.' },
-  note: { title: 'Your note!', copy: 'Try more notes!', spoken: 'Your note! That was you. Tap more boxes for more notes. When you’re ready to stack notes, tap Next.' },
-  chord: { title: 'Your notes!', copy: 'Stack more notes!', spoken: 'Your notes! That was you. Try more notes in your stacks. When you’re ready to try new sounds, tap Next.' },
-  slide: { title: 'Your sound!', copy: 'Slide and play!', spoken: 'Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.' }
+  "song": {
+    "title": "Hear it loop.",
+    "copy": "Try songs. Next: Clear.",
+    "spoken": "Try more songs if you like. Next is Clear."
+  },
+  "drum": {
+    "title": "A drum sound!",
+    "copy": "Try it. Next: beats.",
+    "spoken": "Tap it again if you like. Next makes a beat."
+  },
+  "beat": {
+    "title": "Your beat!",
+    "copy": "More boxes. Next: drums.",
+    "spoken": "More boxes make more beats. Next tries a new drum."
+  },
+  "drumSound": {
+    "title": "A new sound!",
+    "copy": "Try sounds. Next: Tunes.",
+    "spoken": "Try more drum sounds. Next is Tunes."
+  },
+  "note": {
+    "title": "Your tune!",
+    "copy": "Try notes. Next: a brush.",
+    "spoken": "Try more notes. Next picks a sound brush."
+  },
+  "paint": {
+    "title": "A Chime note!",
+    "copy": "Paint more. Next: stacks.",
+    "spoken": "Paint more notes if you like. Next stacks notes."
+  },
+  "chord": {
+    "title": "A chord!",
+    "copy": "Try stacks. Next: size.",
+    "spoken": "Try more stacks. Next makes the loop longer."
+  },
+  "size": {
+    "title": "More room!",
+    "copy": "Try sizes. Next: Sounds.",
+    "spoken": "Try a small or big loop. Next shapes the sound."
+  },
+  "slide": {
+    "title": "Hear it change.",
+    "copy": "Try slides. Next: music.",
+    "spoken": "Try the sliders. Next hears all your music."
+  },
+  "whole": {
+    "title": "Your music!",
+    "copy": "Hear it loop.",
+    "spoken": "Hear your music loop. Then play some more."
+  }
 };
+
 export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS, ...['zach', 'marcie'].flatMap(player => tutorialStepsFor(player).filter(step => step.audio.endsWith(`-${player}`))),
-  ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `reward-${kind}`, spoken: reward.spoken }))];
+  ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `tour2-reward-${kind}`, spoken: reward.spoken }))];
 
 export function blankTutorialSong(song) {
   const lesson = structuredClone(song);
@@ -141,7 +366,8 @@ export function blankTutorialSong(song) {
 
 export function tutorialPlaybackSong(song, kind) {
   const solo = structuredClone(song);
-  if (kind === 'drum' || kind === 'beat') {
+  if (['song', 'size', 'whole'].includes(kind)) return solo;
+  if (kind === 'drum' || kind === 'beat' || kind === 'drumSound') {
     solo.drums = solo.drums.map((row, index) => index === 0 ? row : row.map(() => false));
     solo.melody = solo.melody.map(() => []);
     solo.noteSounds = solo.noteSounds.map(row => row.map(() => null));
@@ -215,38 +441,27 @@ export class ZachTutorial {
       voice.setAttribute('aria-pressed', String(speech.enabled));
       if (speech.enabled) { if (this.reviewing && this.heard) this.sayReward(); else if (!this.reviewing) this.speak(); } else speech.stop();
     });
-    // Capture the hit before the instrument updates a button's child content.
     document.addEventListener('click', event => {
       if (!this.active || this.card.contains(event.target)) return;
+      const control = event.target.closest('button, input');
       if (this.reviewing) {
-        const control = event.target.closest('button, input');
         if (this.canExplore(control)) {
-          if (control.matches('button')) {
-            this.speech.stop(); const index = this.index;
-            queueMicrotask(() => { if (this.active && this.index === index) this.review(false); });
-          }
+          const index = this.index;
+          queueMicrotask(() => { if (this.active && this.index === index) this.explore(); });
           return;
         }
         event.preventDefault(); event.stopImmediatePropagation(); return;
       }
-      const index = this.index;
-      const hit = this.target?.contains(event.target);
-      if (hit && !this.step.action) queueMicrotask(() => { if (this.active && this.index === index) this.completeAction(); });
+      const index = this.index, hit = this.target?.contains(event.target);
+      if (hit && !this.step.action) queueMicrotask(() => { if (this.active && this.index === index && !this.reviewing) this.completeAction(); });
       else requestAnimationFrame(() => this.refresh());
     }, true);
     document.addEventListener('input', event => {
       if (!this.active) return;
-      if (this.reviewing && this.step.reward === 'slide' && this.canExplore(event.target)) {
-        this.speech.stop(); clearTimeout(this.inputTimer);
-        if (!this.editing) { this.editing = true; this.playPreview('slide', true); }
-        const index = this.index;
-        this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.review(false); }, 650);
-        return;
-      }
+      if (this.reviewing && this.canExplore(event.target)) { this.explore(); return; }
       if (this.reviewing || this.step.action !== 'input' || event.target !== this.target) return;
-      clearTimeout(this.inputTimer);
       const index = this.index;
-      this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.completeAction(); }, 650);
+      queueMicrotask(() => { if (this.active && this.index === index && !this.reviewing) this.completeAction(); });
     }, true);
     document.addEventListener('keydown', event => {
       if (this.active && event.key === 'Escape') { event.preventDefault(); this.stop(); }
@@ -258,13 +473,13 @@ export class ZachTutorial {
         this.focus(controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]);
       }
     });
-    window.addEventListener('scroll', () => this.position(), { passive: true });
+    document.addEventListener('scroll', () => this.position(), { capture: true, passive: true });
     window.addEventListener('resize', () => requestAnimationFrame(() => this.refresh()));
   }
   get step() { return this.steps[this.index]; }
   get preferredControl() { return this.reviewing ? document.querySelector(this.heard ? '#tutorial-next' : '#tutorial-repeat') : this.target; }
   start() {
-    this.stop(false); this.onStart(); this.active = true; this.index = 0;
+    this.stop(false); this.speech.preload?.(); this.onStart(); this.active = true; this.index = 0;
     this.card.hidden = false; document.body.classList.add('tutorial-open');
     this.shade.hidden = false;
     document.querySelector('#tutorial-start').setAttribute('aria-expanded', 'true');
@@ -292,39 +507,46 @@ export class ZachTutorial {
   completeAction() {
     if (this.step.reward) this.review(); else this.advance();
   }
-  review(focusHelper = true) {
-    const heard = this.reviewing && this.heard;
-    clearTimeout(this.inputTimer); this.editing = false;
-    this.stopPreview(); this.speech.stop(); this.reviewing = true; this.heard = heard;
-    this.card.dataset.tutorialPhase = 'hear';
+  review() {
+    if (this.reviewing) { this.explore(); return; }
+    this.reviewing = true; this.heard = true;
+    this.card.dataset.tutorialPhase = 'try';
     document.body.classList.add('tutorial-listening');
-    document.querySelector('#tutorial-title').textContent = TUTORIAL_REWARDS[this.step.reward].title;
-    document.querySelector('#tutorial-copy').textContent = 'Hear it!';
+    const reward = TUTORIAL_REWARDS[this.step.reward];
+    document.querySelector('#tutorial-title').textContent = reward.title;
+    document.querySelector('#tutorial-copy').textContent = reward.copy;
     document.querySelector('#tutorial-repeat').textContent = 'Hear again ↻';
     document.querySelector('#tutorial-repeat').hidden = false;
-    const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = !this.heard;
-    this.refresh(); this.draw(); if (focusHelper) this.focus(document.querySelector('#tutorial-repeat'));
+    const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = false;
+    this.refresh(); this.draw(); this.focus(next);
     this.playPreview(this.step.reward);
+    this.sayReward();
+  }
+  explore() {
+    // Music can restart or update as often as wanted. Speech belongs to the step,
+    // not to individual taps, so no tap-instruction-tap feedback loop is possible.
+    this.playPreview(this.step.reward); this.draw(); this.position();
   }
   previewEnded() {
     if (!this.active || !this.reviewing) return;
-    const firstListen = !this.heard; this.heard = true;
-    document.querySelector('#tutorial-copy').textContent = TUTORIAL_REWARDS[this.step.reward]?.copy || 'That was you!';
-    document.querySelector('#tutorial-next').disabled = false;
-    if (firstListen) this.focus(document.querySelector('#tutorial-next'));
-    this.position(); this.sayReward();
+    if (this.step.reward === 'whole') this.advance();
+    else this.position();
   }
   sayReward() {
     const reward = TUTORIAL_REWARDS[this.step.reward];
-    if (reward) this.speech.say(reward.spoken, false, `reward-${this.step.reward}`);
+    if (reward) this.speech.say(reward.spoken, false, `tour2-reward-${this.step.reward}`);
   }
   canExplore(control) {
     if (!control) return false;
     if (!this.reviewing) return control === this.target;
     const kind = this.step.reward;
+    if (kind === 'song') return control.matches('[data-preset]');
     if (kind === 'drum') return control.matches('[data-drum-pad="0"]');
+    if (kind === 'drumSound') return control.matches('[data-drum-choice="0"], [data-drum-pad="0"]');
     if (kind === 'beat') return control.matches('[data-drum="0"][data-step]') && Number(control.dataset.step) < 4;
-    if (kind === 'note' || kind === 'chord') return control.matches('#melody-grid button[data-note][data-step]') && Number(control.dataset.step) < 4;
+    if (['note', 'paint', 'chord'].includes(kind)) return control.matches('#melody-grid button[data-note][data-step]') && Number(control.dataset.step) < 4;
+    if (kind === 'size') return control.matches('[data-loop-bars]');
+    if (kind === 'whole') return control.matches('#play');
     return kind === 'slide' && control.matches('input[data-sound]');
   }
   advance() {
@@ -333,10 +555,10 @@ export class ZachTutorial {
     document.body.classList.remove('tutorial-listening');
     this.cue(); this.index++; this.show();
   }
-  speak(once = false) { if (this.reviewing) { this.review(); return; } this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
+  speak(once = false) { if (this.reviewing) { this.playPreview(this.step.reward, true); return; } this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
   show() {
     this.clearTarget(); clearTimeout(this.inputTimer);
-    this.card.dataset.tutorialStep = this.index; this.card.dataset.tutorialPhase = 'do';
+    this.card.dataset.tutorialLesson = this.step.id; this.card.dataset.tutorialStep = this.index; this.card.dataset.tutorialPhase = 'do';
     document.querySelector('#tutorial-next').hidden = true;
     document.querySelector('#tutorial-repeat').textContent = 'Say it ↻';
     document.querySelector('#tutorial-repeat').hidden = !this.speech.available;
@@ -346,7 +568,7 @@ export class ZachTutorial {
     document.querySelector('#tutorial-done').hidden = !this.step.done;
     this.selector = this.prepare(this.step, true);
     this.refresh(true); this.draw(); this.speak();
-    if (this.step.audio === 'slide') this.playPreview('slide', true);
+
   }
   draw() {
     if (this.active) document.querySelector('#tutorial-picture').innerHTML = tutorialPicture(this.step.picture, this.getSong(), this.getStep());
@@ -398,9 +620,9 @@ export class ZachTutorial {
     const kind = this.step.reward;
     const nodes = this.reviewing && kind === 'beat'
       ? [...document.querySelectorAll('[data-drum="0"][data-step]')].filter(node => Number(node.dataset.step) < 4)
-      : this.reviewing && ['note', 'chord'].includes(kind)
+      : this.reviewing && ['note', 'paint', 'chord'].includes(kind)
         ? [...document.querySelectorAll('#melody-grid button[data-step]')].filter(node => Number(node.dataset.step) < 4)
-        : this.reviewing && kind === 'slide' ? [...document.querySelectorAll('input[data-sound]')] : [this.target];
+        : this.reviewing && kind === 'size' ? [...document.querySelectorAll('[data-loop-bars]')] : this.reviewing && kind === 'slide' ? [...document.querySelectorAll('input[data-sound]')] : [this.target];
     const rects = nodes.filter(Boolean).map(node => node.getBoundingClientRect());
     const left = Math.min(...rects.map(rect => rect.left)), top = Math.min(...rects.map(rect => rect.top));
     const right = Math.max(...rects.map(rect => rect.right)), bottom = Math.max(...rects.map(rect => rect.bottom));
@@ -408,6 +630,9 @@ export class ZachTutorial {
   }
   setShade(rect) {
     this.shade.querySelector('svg').setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);
-    this.shade.querySelector('path').setAttribute('d', spotlightPath(rect, innerWidth, innerHeight));
+    const songRects = this.reviewing && this.step.reward === 'song'
+      ? [...document.querySelectorAll('[data-preset]')].map(node => node.getBoundingClientRect()) : null;
+    const path = songRects ? spotlightPath(null, innerWidth, innerHeight) + songRects.map(box => spotlightPath(box, innerWidth, innerHeight).replace(spotlightPath(null, innerWidth, innerHeight), '')).join('') : spotlightPath(rect, innerWidth, innerHeight);
+    this.shade.querySelector('path').setAttribute('d', path);
   }
 }

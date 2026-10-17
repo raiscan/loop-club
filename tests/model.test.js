@@ -295,3 +295,15 @@ test('whole-beat presets have authored sizes, mixed brushes and independent phra
   assert.ok(river.melody.some(notes => notes.length > 1));
   assert.notDeepEqual(river.melody.slice(0, 4), river.melody.slice(12));
 });
+
+test('Clear wipes every bar and painted sound while preserving settings; Undo restores it', async () => {
+  const { clearSong } = await import('../model.js');
+  const original = createSong('liquid'), history = new SongHistory(original);
+  const empty = clearSong(original);
+  assert.ok(empty.drums.flat().every(hit => !hit));
+  assert.ok(empty.melody.every(notes => !notes.length));
+  assert.ok(empty.noteSounds.flat().every(sound => sound === null));
+  for (const key of ['bars','tempo','synth','drumSounds','sound']) assert.deepEqual(empty[key],original[key]);
+  assert.deepEqual(restoreSong(JSON.stringify(empty)),empty);
+  history.commit(empty);assert.deepEqual(history.undo(),original);
+});

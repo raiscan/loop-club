@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=19';
-import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=19';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture } from '../tutorial.js?v=19';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=19';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=20';
+import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=20';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=20';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=20';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -109,7 +109,7 @@ export async function runInteractionChecks() {
   };
   try {
     if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
-    $('[data-preset=breaks]').click(); $('#reset').click(); $('#tab-drums').click();
+    $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click(); $('#tab-drums').click();
     const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
     const before = readSong();
     const kick = $('[data-drum="0"][data-step="0"]');
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -253,14 +253,14 @@ export async function runRecordedVoiceChecks() {
   const speech = new TutorialSpeech({ synth: null, Utterance: null, volume: () => 0, duck: value => ducks.push(value) });
   try {
     check(speech.available, 'recorded narration is available with device speech APIs absent', results);
-    speech.say(TUTORIAL_RECORDINGS.drum.text, false, 'drum');
+    speech.say(TUTORIAL_RECORDINGS['tour2-drum'].text, false, 'tour2-drum');
     for (let i = 0; i < 40 && ducks.at(-1) !== true; i++) await wait(50);
     const first = speech.clip;
     check(first && !first.paused && ducks.at(-1), 'HTML audio plays a recording without an installed voice', results);
     const time = first.currentTime; await wait(120);
     check(first.currentTime > time, 'recording playback advances in real media time', results);
     const staleEnd = first.onended;
-    speech.say(TUTORIAL_RECORDINGS.play.text, false, 'play');
+    speech.say(TUTORIAL_RECORDINGS['tour2-play'].text, false, 'tour2-play');
     check(first.paused && !first.getAttribute('src'), 'a new prompt stops and releases the prior clip', results);
     staleEnd(); speech.stop();
     check(speech.clip === null && ducks.at(-1) === false, 'exit cancels recorded audio and restores music level', results);
@@ -269,207 +269,87 @@ export async function runRecordedVoiceChecks() {
 }
 
 export async function runTutorialControllerChecks() {
-  const results = [], original = localStorage.getItem(SAVE_KEY);
-  const card = $('#tutorial-card');
-  const descriptor = Object.getOwnPropertyDescriptor(navigator, 'getGamepads');
-  let pressed = [], connected = true;
-  const pad = () => ({ connected: true, mapping: 'standard', id: 'Xbox tutorial fixture', index: 0, axes: [0, 0, 0, 0],
-    buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0 })) });
-  const press = async button => { pressed = [button]; await wait(70); pressed = []; await wait(90); };
-  try {
-    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => connected ? [pad()] : [] });
-    await wait(60);
-    $('#tutorial-start').click();
-    const voiceState = $('#tutorial-voice').getAttribute('aria-pressed');
-    $('#tutorial-voice').click();
-    check($('#tutorial-voice').getAttribute('aria-pressed') !== voiceState && card.dataset.tutorialStep === '0', 'voice toggle changes speech without skipping a task', results);
-    if ($('#tutorial-voice').getAttribute('aria-pressed') === 'true') $('#tutorial-voice').click();
-    $('#tutorial-repeat').click();
-    check(card.dataset.tutorialStep === '0', 'Say it repeats the prompt without advancing', results);
-    // Put focus back on the target after toggling speech, as a user can do with the D-pad.
-    $('[aria-describedby~="tutorial-title"]').focus();
-    for (let step = 0; step < 8; step++) {
-      if (step === 3) {
-        const target = $('[aria-describedby~="tutorial-title"]');
-        await press(15);
-        check(document.activeElement === target || card.contains(document.activeElement), 'Xbox navigation stays in the bright tutorial controls', results);
-        target.focus(); await press(5);
-        check(card.dataset.tutorialStep === '3' && document.activeElement === target, 'Xbox shoulder buttons keep the current tutorial target', results);
-        await press(2);
-        check(!document.querySelector('[data-drum][aria-pressed="true"]'), 'Xbox Undo cannot bring preset notes into blank practice', results);
-        await press(9);
-        check($('#play').getAttribute('aria-pressed') === 'false' && card.dataset.tutorialStep === '3', 'Xbox Menu cannot bypass the listen-and-try lesson', results);
-      }
-      await press(0);
-      if ([2, 3, 5, 6].includes(step)) {
-        for (let i = 0; i < 90 && $('#tutorial-next').disabled; i++) await wait(40);
-        check(!$('#tutorial-next').disabled && document.activeElement === $('#tutorial-next'), `Xbox lesson ${step}: focus moves to Next after playback`, results);
-        await press(5);
-        check(document.activeElement === $('#tutorial-next'), `Xbox lesson ${step}: shoulder buttons preserve the bright Next control`, results);
-        await press(0);
-      }
-      check(Number($('#tutorial-card').dataset.tutorialStep) === step + 1, `Xbox A advances tutorial action ${step + 1}`, results);
+  const results=[],original=localStorage.getItem(SAVE_KEY),descriptor=Object.getOwnPropertyDescriptor(navigator,'getGamepads');
+  let pressed=[];
+  const pad=()=>({connected:true,mapping:'standard',id:'Xbox tour',index:0,axes:[0,0,0,0],buttons:Array.from({length:17},(_,i)=>({pressed:pressed.includes(i),value:pressed.includes(i)?1:0}))});
+  const press=async b=>{pressed=[b];await wait(75);pressed=[];await wait(100);};
+  try{
+    Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[pad()]});await wait(80);$('#tutorial-start').click();
+    if($('#tutorial-voice').getAttribute('aria-pressed')==='true')$('#tutorial-voice').click();
+    for(const step of TUTORIAL_STEPS.filter(step=>!step.done)){
+      check($('#tutorial-card').dataset.tutorialLesson===step.id,`Xbox reaches ${step.id}`,results);
+      $('[aria-describedby~="tutorial-title"]').focus();await press(step.action==='input'?15:0);
+      if(step.reward){check(!$('#tutorial-next').disabled&&document.activeElement===$('#tutorial-next'),`${step.id}: Xbox Next is ready immediately`,results);await press(5);check(document.activeElement===$('#tutorial-next'),`${step.id}: shoulders stay in tour`,results);await press(0);}
     }
-    await press(15); await wait(750);
-    for (let i = 0; i < 90 && $('#tutorial-next').disabled; i++) await wait(40);
-    await press(0);
-    check($('#tutorial-card').dataset.tutorialStep === '9', 'Xbox D-pad changes the highlighted tutorial slider', results);
-    await press(0);
-    check($('#tutorial-card').dataset.tutorialStep === '10', 'Xbox A finishes the final Play action', results);
-    await press(1);
-    check($('#tutorial-card').hidden && $('#tutorial-ring').hidden, 'Xbox B leaves the guide', results);
-    const oldTheme = document.documentElement.dataset.theme, oldThemeSaved = localStorage.getItem('loop-club.theme.v1');
-    $('#theme-open').focus(); await press(0);
-    check($('#theme-dialog').open && $('#theme-dialog').contains(document.activeElement), 'Xbox A opens Look and focuses the selected theme', results);
-    $('[data-theme-choice="sunny"]').focus(); await press(15);
-    check(document.activeElement === $('[data-theme-choice="pink"]'), 'Xbox D-pad moves between pictured looks', results);
-    await press(0);
-    check(document.documentElement.dataset.theme === 'pink' && $('#theme-dialog').open, 'Xbox A can try a new theme inside the picker', results);
-    await press(1);
-    check(!$('#theme-dialog').open && document.activeElement === $('#theme-open'), 'Xbox B closes Look and returns to its button', results);
-    $('#theme-open').click(); $(`[data-theme-choice="${oldTheme}"]`).click(); $('#theme-done').click(); await wait(40);
-    if (oldThemeSaved === null) localStorage.removeItem('loop-club.theme.v1'); else localStorage.setItem('loop-club.theme.v1', oldThemeSaved);
-    $('#tutorial-start').click();
-    window.dispatchEvent(new Event('blur'));
-    check($('#tutorial-card').hidden && $('#tutorial-ring').hidden && $('#play').getAttribute('aria-pressed') === 'false', 'leaving the page cancels the guide and audio', results);
-  } finally {
-    if (!$('#tutorial-card').hidden) $('#tutorial-exit').click();
-    connected = false; await wait(60);
-    if (descriptor) Object.defineProperty(navigator, 'getGamepads', descriptor); else delete navigator.getGamepads;
-    if (original === null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, original);
-  }
+    check($('#tutorial-card').dataset.tutorialLesson==='done'&&$('#tab-drums').getAttribute('aria-selected')==='true','Xbox finishes on Drums',results);
+    $('#tutorial-done').focus();await press(0);check($('#tutorial-card').hidden,'Xbox keeps music and closes tour',results);$('#undo').click();
+    $('#tutorial-start').click();await press(1);check($('#tutorial-card').hidden,'Xbox B leaves tour',results);
+  }finally{if(!$('#tutorial-card').hidden)$('#tutorial-exit').click();if(descriptor)Object.defineProperty(navigator,'getGamepads',descriptor);else delete navigator.getGamepads;if(original===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,original);await wait(80);}
   return results;
 }
 
 export async function runTutorialChecks() {
-  const results = [], original = localStorage.getItem(SAVE_KEY);
-  const card = $('#tutorial-card');
-  const waitForStep = async index => {
-    for (let i = 0; i < 60; i++) {
-      if (Number(card.dataset.tutorialStep) === index) return;
-      await wait(40);
-    }
-    throw new Error(`Tutorial did not reach step ${index}`);
-  };
-  try {
-    if (!card.hidden) $('#tutorial-exit').click();
-    $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click();
-    const before = readSong();
-    $('#tutorial-start').click();
-    if ($('#tutorial-voice').getAttribute('aria-pressed') === 'true') $('#tutorial-voice').click();
-    check(!card.hidden && same(readSong(), before), 'tutorial opens without replacing the saved groove', results);
-    for (let index = 0; index < 10; index++) {
-      await waitForStep(index); await wait(60);
-      const target = $('[aria-describedby~="tutorial-title"]');
-      check(target && document.activeElement === target, `${innerWidth}px tutorial ${index}: focus follows the real control`, results);
-      const rect = target.getBoundingClientRect(), ring = $('#tutorial-ring').getBoundingClientRect(), prompt = card.getBoundingClientRect();
-      check(!$('#tutorial-ring').hidden && Math.abs(ring.left - rect.left + 7) < 1 && Math.abs(ring.top - rect.top + 7) < 1,
-        `${innerWidth}px tutorial ${index}: the ring follows the target`, results);
-      const overlap = rect.left < prompt.right && rect.right > prompt.left && rect.top < prompt.bottom && rect.bottom > prompt.top;
-      check(!overlap && rect.top >= 0 && rect.bottom <= innerHeight && prompt.top >= 0 && prompt.bottom <= innerHeight,
-        `${innerWidth}px tutorial ${index}: prompt and target remain visible without overlap`, results);
-      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-      check(!$('#tutorial-shade').hidden && (hit === target || target.contains(hit)) && document.elementFromPoint(2, 2) === $('#tutorial-shade path'),
-        `${innerWidth}px tutorial ${index}: screen is dimmed and the target opening remains clickable`, results);
-      check(parseFloat(getComputedStyle($('#tutorial-title')).fontSize) >= 28 && parseFloat(getComputedStyle($('#tutorial-copy')).fontSize) >= 23 && getComputedStyle(card).fontFamily.includes('sans-serif'),
-        `${innerWidth}px tutorial ${index}: large sans-serif words`, results);
-      check(Boolean($('#tutorial-picture svg')) && [...card.querySelectorAll('button')].filter(node => !node.hidden).every(node => node.getBoundingClientRect().height >= 44),
-        `${innerWidth}px tutorial ${index}: a visual and large buttons are available`, results);
-      if (index === 2 && $('#tutorial-voice').getAttribute('aria-pressed') !== 'true') $('#tutorial-voice').click();
-      if (index === 2 || index === 3) check(!document.querySelector('[data-drum][aria-pressed="true"]') && !document.querySelector('[data-note][aria-pressed="true"]'), 'drum practice starts with blank tracks', results);
-      if (index === 5) check(!document.querySelector('[data-note][aria-pressed="true"]'), 'tune practice starts with no existing notes', results);
-      if (index === 8) {
-        check($('#play').getAttribute('aria-pressed') === 'true' && Boolean($('.step.current')), 'the sound lesson plays the learned notes while the slider moves', results);
-        const picture = $('#tutorial-picture').innerHTML;
-        target.value = Number(target.value) > 50 ? 20 : 80;
-        target.dispatchEvent(new Event('input', { bubbles: true }));
-        check($('#tutorial-picture').innerHTML !== picture, 'sound diagram responds to the real slider', results);
-      } else target.click();
-      if ([2, 3, 5, 6, 8].includes(index)) {
-        for (let i = 0; i < 30 && card.dataset.tutorialPhase !== 'hear'; i++) await wait(40);
-        check(card.dataset.tutorialPhase === 'hear' && Number(card.dataset.tutorialStep) === index,
-          `lesson ${index}: the action pauses for musical playback`, results);
-        check($('#tutorial-next').disabled, `lesson ${index}: listen before Next becomes available`, results);
-        const reviewRing = $('#tutorial-ring').getBoundingClientRect(), helper = card.getBoundingClientRect();
-        const covered = reviewRing.left < helper.right && reviewRing.right > helper.left && reviewRing.top < helper.bottom && reviewRing.bottom > helper.top;
-        check(!covered && reviewRing.top >= 0 && reviewRing.bottom <= innerHeight && helper.top >= 0 && helper.bottom <= innerHeight, `lesson ${index}: the playback highlight and helper both fit ${JSON.stringify({ring:reviewRing.toJSON(),helper:helper.toJSON(),width:innerWidth,height:innerHeight})}`, results);
-        if (index === 3) {
-          const cells = [...document.querySelectorAll('[data-drum="0"][data-step]')].filter(cell => Number(cell.dataset.step) < 4);
-          check(cells.every(cell => { const r = cell.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === cell; }), 'the whole four-step drum phrase is selectively lit during playback', results);
+  const results=[],original=localStorage.getItem(SAVE_KEY),card=$('#tutorial-card');
+  try{
+    if(!card.hidden)$('#tutorial-exit').click();$('[data-preset=club]').click();$('[data-preset=breaks]').click();const before=readSong();$('#tutorial-start').click();
+    if($('#tutorial-voice').getAttribute('aria-pressed')!=='true')$('#tutorial-voice').click();
+    check(!card.hidden&&same(readSong(),before),'tour uses separate practice song',results);
+    for(const step of TUTORIAL_STEPS.filter(step=>!step.done)){
+      await wait(45);check(card.dataset.tutorialLesson===step.id,`tour reaches ${step.id}`,results);
+      const target=$('[aria-describedby~="tutorial-title"]'),r=target.getBoundingClientRect(),p=card.getBoundingClientRect();
+      check(document.activeElement===target,`${step.id}: real control has focus`,results);
+      check(!(r.left<p.right&&r.right>p.left&&r.top<p.bottom&&r.bottom>p.top)&&r.top>=0&&r.bottom<=innerHeight&&p.top>=0&&p.bottom<=innerHeight,`${step.id}: helper and target fit at ${innerWidth}x${innerHeight}`,results);
+      check(!$('#tutorial-shade').hidden&&!!$('#tutorial-picture svg'),`${step.id}: dimming and visual are present`,results);
+      if(step.id==='drum')check(!document.querySelector('[data-drum][aria-pressed=true]')&&!document.querySelector('[data-note][aria-pressed=true]'),'practice starts blank',results);
+      if(step.id==='paint')check(target.dataset.instrument==='bass','paint starts with another instrument',results);
+      if(step.action==='input'){target.value=80;target.dispatchEvent(new Event('input',{bubbles:true}));}else target.click();await wait(55);
+      if(step.reward){
+        check(card.dataset.tutorialPhase==='try'&&!$('#tutorial-next').disabled,`${step.id}: Next is ready immediately`,results);
+        check($('#play').getAttribute('aria-pressed')==='true',`${step.id}: musical demo starts immediately`,results);
+        const response=$('audio[data-tutorial-narration]');check(response?.getAttribute('src')?.includes(`tour2-reward-${step.reward}`),`${step.id}: response starts before demo ends`,results);
+        if(step.id==='beat'){
+          const time=response.currentTime;for(const beat of [1,2,3]){$(`[data-drum="0"][data-step="${beat}"]`).click();await wait(25);}
+          check($('audio[data-tutorial-narration]')===response&&response.currentTime>=time,'rapid taps neither cancel nor restart response voice',results);
+          const visited=[];let last=-1;for(let i=0;i<88&&$('#play').getAttribute('aria-pressed')==='true';i++){const now=Number($('.loop-light.current')?.dataset.step??-1);if(now>=0&&now!==last){visited.push(now);last=now;}await wait(55);}
+          check(visited.filter(step=>step===0).length>=2&&$('#play').getAttribute('aria-pressed')==='false','short demo loops twice and then stops',results);
+          const audio=$('audio[data-tutorial-narration]');$('#tutorial-repeat').click();await wait(80);check($('#play').getAttribute('aria-pressed')==='true'&&$('audio[data-tutorial-narration]')===audio,'Hear again replays music without restarting speech',results);
+          check(card.dataset.tutorialLesson==='beat'&&!$('#tutorial-next').disabled,'more play never pushes the tour on',results);
         }
-        if (index === 6) check(document.querySelectorAll('#melody-grid [data-step="0"][aria-pressed="true"]').length === 2, 'the tour builds a real chord in one column', results);
-        let observedStep = null, moved = false;
-        for (let i = 0; i < 90 && $('#tutorial-next').disabled; i++) {
-          const current = $('.step.current');
-          if (current) {
-            if (observedStep !== null && current.dataset.step !== observedStep) moved = true;
-            observedStep = current.dataset.step;
-          }
-          await wait(40);
-        }
-        check(!$('#tutorial-next').disabled && moved, `lesson ${index}: audible phrase has a moving playhead before Next`, results);
-        check(same(readSong(), before), `lesson ${index}: practice does not overwrite the saved song`, results);
-        if (index === 3) {
-          $('#tutorial-repeat').click();
-          check(!$('#tutorial-next').disabled && card.dataset.tutorialPhase === 'hear' && card.dataset.tutorialStep === '3', 'Hear again replays the beat while Next remains available', results);
-          for (let i = 0; i < 90 && $('#tutorial-next').disabled; i++) await wait(40);
-          check(!$('#tutorial-next').disabled, 'Next returns after hearing the same beat again', results);
-        }
-        if (index === 2) {
-          for (let i = 0; i < 20 && !$('audio[data-tutorial-narration]')?.currentSrc.includes('reward-drum'); i++) await wait(30);
-          const praise = $('audio[data-tutorial-narration]');
-          check(praise && !praise.paused && praise.currentSrc.includes('reward-drum'), 'the drum reward speaks its praise and Tap Next after playback', results);
-          if ($('#tutorial-voice').getAttribute('aria-pressed') === 'true') $('#tutorial-voice').click();
-          $('[data-drum-pad="0"]').click(); await wait(80);
-          check(!$('#tutorial-next').disabled && card.dataset.tutorialStep === '2' && $('#play').getAttribute('aria-pressed') === 'true', 'the highlighted drum can be tapped again without leaving the lesson or locking Next', results);
-          check(!$('audio[data-tutorial-narration]'), 'trying the drum again stops the reminder so the music can be heard', results);
-        }
-        if (index === 3) {
-          $('[data-drum="0"][data-step="1"]').click(); await wait(80);
-          check($('[data-drum="0"][data-step="1"]').getAttribute('aria-pressed') === 'true' && !$('#tutorial-next').disabled, 'Zach can keep changing the highlighted beat before choosing Next', results);
-        }
-        if (index === 5) {
-          $('[data-note="5"][data-step="1"]').click(); await wait(80);
-          check($('[data-note="5"][data-step="1"]').getAttribute('aria-pressed') === 'true' && !$('#tutorial-next').disabled, 'Zach can try a different note and step before choosing Next', results);
-        }
-        if (index === 8) {
-          const length = $('#length'); length.value = 80; length.dispatchEvent(new Event('input', { bubbles: true })); await wait(100);
-          check(!$('#tutorial-next').disabled && $('#play').getAttribute('aria-pressed') === 'true', 'all sound sliders remain playable after the first try without locking Next', results);
-        }
-        $('#tutorial-next').click();
+        if(step.id==='paint')check(target.dataset.instrument==='chime'&&target.querySelector('use')?.getAttribute('href')==='#i-sparkle','Chime repaints note with sparkle',results);
+        if(step.id==='size'){check($('[data-loop-bars="2"]').getAttribute('aria-pressed')==='true','tour teaches eight-box loop',results);$('[data-loop-bars="4"]').click();$('[data-loop-bars="1"]').click();await wait(60);check(!$('#tutorial-next').disabled,'sizes stay open to play',results);}
+        check(same(readSong(),before),`${step.id}: saved music stays untouched`,results);
+        if(step.id==='play'){for(let i=0;i<95&&card.dataset.tutorialLesson!=='done';i++)await wait(55);check(card.dataset.tutorialLesson==='done'&&$('#tab-drums').getAttribute('aria-selected')==='true','final playback ends on Drums',results);}else $('#tutorial-next').click();
       }
-      await waitForStep(index + 1);
     }
-    check(!$('#tutorial-done').hidden && $('#tutorial-ring').hidden, 'tutorial ends with a clear Done button', results);
-    $('#tutorial-done').click();
-    check(readSong().melody[0].length === 2 && readSong().drums[0].every((hit,step) => step % 4 !== 0 || hit), 'Keep it saves the learned phrase as a full loop', results);
-    $('#undo').click();
-    check(same(readSong(), before), 'one Undo restores the original song after keeping a lesson', results);
-    check(card.hidden && $('#tutorial-shade').hidden && !$('[aria-describedby~="tutorial-title"]'), 'Done clears the prompt, dimming and target description', results);
-    $('#tutorial-start').click();
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
-    check(card.contains(document.activeElement), 'Tab moves from the bright target into the helper', results);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    check(card.hidden && $('#tutorial-ring').hidden && $('#tutorial-shade').hidden, 'Escape leaves the tutorial and removes the ring and dimming', results);
-    $('#tutorial-start').click(); $('#play').click(); await wait(60); $('#play').click();
-    $('[aria-describedby~="tutorial-title"]').click(); await wait(60);
-    check(card.dataset.tutorialPhase === 'hear', 'cancel scenario reaches an active musical reward', results);
-    $('#tutorial-exit').click(); await wait(100);
-    check(same(readSong(), before) && card.hidden && !$('.step.current') && $('#play').getAttribute('aria-pressed') === 'false', 'Bye restores the saved song and stops reward playback', results);
-    const expectedHits = before.drums.reduce((sum, row) => sum + row.slice(0, document.querySelectorAll('[data-drum="0"]').length).filter(Boolean).length, 0);
-    check(document.querySelectorAll('[data-drum][aria-pressed="true"]').length === expectedHits, 'the original drum pattern is restored visibly after leaving practice', results);
-  } finally {
-    if (!card.hidden) $('#tutorial-exit').click();
-    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
-    if (original === null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, original);
-  }
+    check(!$('#tutorial-done').hidden&&$('#tutorial-ring').hidden,'tour ends with Keep it and no stale ring',results);
+    $('#tutorial-done').click();check(card.hidden&&$('#tutorial-shade').hidden,'Keep it removes tutorial chrome',results);
+    check(readSong().melody.some(notes=>notes.length>1)&&readSong().noteSounds.flat().includes('chime'),'Keep it saves chord and painted sounds',results);
+    $('#undo').click();check(same(readSong(),before),'Undo restores previous song and size',results);
+    $('#tutorial-start').click();document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));check(card.hidden&&same(readSong(),before),'Escape preserves saved music',results);
+  }finally{if(!card.hidden)$('#tutorial-exit').click();if($('#play').getAttribute('aria-pressed')==='true')$('#play').click();if(original===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,original);}
+  return results;
+}
+
+export async function runClearAndSidebarChecks(){
+  const results=[],original=localStorage.getItem(SAVE_KEY);
+  try{
+    $('[data-preset=breaks]').click();$('[data-preset=liquid]').click();const before=readSong();$('#clear').click();const empty=readSong();
+    check(empty.drums.flat().every(hit=>!hit)&&empty.melody.every(notes=>!notes.length)&&empty.noteSounds.flat().every(id=>id===null),'Clear wipes every bar and painted note',results);
+    check(empty.bars===before.bars&&empty.tempo===before.tempo&&same(empty.sound,before.sound),'Clear keeps size speed and settings',results);
+    $('#undo').click();check(same(readSong(),before),'Clear is one complete Undo',results);
+    const wide=innerWidth>=1400,sidebar=$('#music-sidebar');check(sidebar.hidden!==wide,'sidebar follows wide breakpoint',results);
+    check(document.querySelectorAll('.tabs').length===1&&document.querySelectorAll('.groove-picker').length===1&&document.querySelectorAll('.loop-size').length===1,'one set of tabs size and songs after resize',results);
+    check(wide?sidebar.contains($('.loop-size')):$('.workspace').contains($('.loop-size')),'loop size moves with the sidebar and returns to the grid on smaller screens',results);
+    check(wide?sidebar.contains($('.tabs'))&&sidebar.contains($('.groove-picker')):$('.workspace-bar').contains($('.tabs'))&&$('.machine').nextElementSibling===$('.groove-picker'),'tabs and songs move only on wide screens',results);
+    for(const section of ['drums','melody','sound']){$(`#tab-${section}`).click();check(!$(`#panel-${section}`).hidden,`${section}: relocated tab works`,results);}
+  }finally{if(original===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,original);$('#tab-drums').click();}
   return results;
 }
 
 export function runPresetChecks() {
   const results = [], original = localStorage.getItem(SAVE_KEY);
   try {
-    $('#tab-drums').click(); $('[data-preset=breaks]').click(); $('#reset').click();
+    $('#tab-drums').click(); $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click();
     const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
     $('[data-drum="0"][data-step="0"]').click();
     check(document.querySelectorAll('[data-preset]').length === Object.keys(PRESETS).length, 'every example has a starting-groove card', results);
@@ -533,7 +413,7 @@ export async function runInstrumentChecks() {
   const results = [], original = localStorage.getItem(SAVE_KEY);
   try {
     if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
-    $('#tab-drums').click(); $('[data-preset=breaks]').click(); $('#reset').click();
+    $('#tab-drums').click(); $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click();
     const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
     check(document.querySelectorAll('[data-drum-pad]').length === 4, 'four drum lanes are available', results);
     const extra = $('[data-drum="3"][data-step="0"]'); extra.click();

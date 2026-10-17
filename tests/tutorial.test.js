@@ -124,7 +124,7 @@ test('tutorial pictures show the actual beat, chord notes and sound settings', (
   assert.equal((chord.match(/class="tutorial-pill on[^"\n]*"/g) || []).length, song.melody.slice(0, 4).reduce((sum, notes) => sum + notes.length, 0));
   const bright = tutorialPicture('wave', { ...song, sound: { ...song.sound, brightness: 100 } });
   assert.notEqual(bright, tutorialPicture('wave', song));
-  assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 2);
+  assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 3);
   assert.ok(TUTORIAL_STEPS.at(-1).done);
 });
 
@@ -184,9 +184,19 @@ test('player names are opt-in and named greetings never leak into the default to
     if (name) {
       assert.match(steps[0].title,new RegExp(name));
       assert.match(steps.at(-1).copy,new RegExp(name));
-      assert.equal(steps[0].audio, `hello-${mode}`);
-      assert.equal(steps.at(-1).audio, `done-${mode}`);
+      assert.equal(steps[0].audio, `tour2-hello-${mode}`);
+      assert.equal(steps.at(-1).audio, `tour2-done-${mode}`);
     } else assert.doesNotMatch(text,/Zach|Marcie/);
     assert.equal(steps.length,TUTORIAL_STEPS.length);
   }
+});
+
+test('warmed recordings are reused without a network reload and stale speech stays cancelled', () => {
+  const speech = new TutorialSpeech({ synth: null, Utterance: null, Audio: Clip,
+    recordings: { hint: { text: 'Try it', src: './hint.mp3' } } });
+  speech.preload(); const warmed = speech.warmed.get('./hint.mp3');
+  speech.say('Try it', false, 'hint'); assert.equal(speech.clip,warmed);
+  const stale = warmed.onplaying; speech.stop();
+  assert.ok(warmed.src.endsWith('hint.mp3')); stale();
+  speech.say('Try it',false,'hint'); assert.equal(speech.clip,warmed);speech.stop();
 });

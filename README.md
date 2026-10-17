@@ -41,31 +41,32 @@ currently targeted at PC. No tablet/controller pairing is required.
   drum pads, chunky yellow play buttons, Arial, short labels and large pictures. Visible words
   and numbers stay at least 18px, with larger action labels. Song cards use
   one-word names; genre names and synth terms are in grown-up help.
-- **Help** opens the hands-on tutorial. Ten short tasks use large Arial /
-  sans-serif text and a gold ring around the next real control. Each lesson
-  includes a diagram of the beat, loop, notes, chord stack or sound shape.
-  Diagrams reflect the actual song and playhead. The screen dims around the highlighted control and helper;
-  tap the bright control to try it. Each musical action then plays back on its
-  own with a selective moving highlight. **Hear again** repeats it; **Next**
-  becomes available after listening and stays available during repeat tries.
-  The highlighted drum can be tapped again, beats and notes can be edited
-  freely within the highlighted phrase, and all three sound sliders stay
-  playable. The sound lesson loops the new notes while the sliders change them.
-- A soft chime marks each action. Sixteen bundled MP3 prompts use one friendly
-  soft Scottish female AI voice, generated once through OpenRouter. Five
-  reward lines praise the played result, suggest what to try again, and name
-  the next activity before “Tap Next”; experimenting
-  interrupts the reminder so the music can be heard. Windows 11,
-  Android and other devices play the same files without installing a voice.
-  Device speech is a fallback if a clip fails to load or play. **Say it** reads
-  one prompt, even with automatic speech off; **Voice on/off** toggles narration.
-  Volume controls the recordings and chimes; music drops while the guide speaks.
-  Visitors need no API key and make no runtime calls to OpenRouter.
-- **Bye**, Escape or Xbox B closes the tutorial. It also closes when the page
-  loses focus or becomes hidden. Drum and tune practice start with blank
-  tracks at 120 BPM. Practice uses a separate song and leaves the saved song
-  alone. **Keep it** saves the finished four-step phrase across the whole loop;
-  one Undo brings the original song back. Leaving practice restores it.
+- **Help** opens a short tour with sixteen actions and a final Keep it screen.
+  It covers playback, songs, Clear, drums, drum sounds, Tunes, brushes, painting,
+  chords, loop sizes and sound shaping. Large sans-serif words and live diagrams
+  accompany spotlights on the actual controls. Practice starts blank at 120 BPM.
+- Musical actions respond immediately and loop the demonstrated section twice.
+  A brief spoken response runs once on the first action. Further taps and slides
+  update or replay the music without stopping or restarting speech. **Next** is
+  ready immediately, so each feature stays open to play until the child moves on.
+  **Hear again** repeats music; it never repeats an instruction. Final playback
+  includes drums and tunes, loops twice, then returns to Drums.
+- Thirty-one bundled MP3 prompts use the approved soft Scottish female voice.
+  The browser preloads them for faster responses. New prompts avoid repeated
+  “that was you” praise and briefly name what can be tried and what comes next.
+  Windows 11 and Android play the same files without installing a device voice.
+  Device speech remains a fallback. **Say it** repeats the current instruction;
+  **Voice on/off** toggles narration. Volume controls all sounds, and music ducks
+  while the guide speaks. Visitors need no key or runtime OpenRouter access.
+- **Bye**, Escape or Xbox B closes practice and restores the original music.
+  Leaving the page also stops it. **Keep it** saves the practice song, including
+  its chosen size and painted instruments. One Undo brings the original back.
+- **Clear** empties all drum and tune boxes across the whole loop, preserving
+  instruments, size, speed and sound settings. One Undo restores all the music.
+  Start over reloads the selected example instead.
+- From 1400px wide, section tabs, Loop size and songs share a sticky left sidebar.
+  Smaller screens keep section tabs on the machine and songs beneath it. There
+  is one set of controls, moved between layouts to preserve focus and state.
 
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
@@ -89,7 +90,7 @@ currently targeted at PC. No tablet/controller pairing is required.
   boxes and narrower screens four; the loop map below the grid highlights the part being edited. Tap another
   part of that map to reveal it without shrinking targets. D-pad navigation crosses pages. The moving lights show the whole loop.
   The tour uses a four-beat practice song; leaving restores the original size,
-  and Keep it repeats the learned phrase across that size.
+  and Keep it saves the size chosen in practice.
 - **Tunes:** choose Bass, Pluck, Game, Bell or Chime as a brush, then tap a coloured
   square to paint that sound. Its icon appears in the square (Game uses a robot).
   A different brush replaces that square's sound; the same brush clears it.
@@ -167,14 +168,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=19')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=20')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=19')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=20')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -252,6 +253,7 @@ to the browser using same-origin static files.
 Player modes are chosen only by URL: no player parameter uses unnamed greetings;
 `?zach=yes` personalises Help, hello and goodbye for Zach; `?marcie=yes` does the
 same for Marcie. Append with `&` when the URL already has a query. If both are
-present, Zach takes precedence. These modes do not change the saved music or
-look. Generic, Zach and Marcie greetings each have matching bundled Scottish
+present, Zach takes precedence. These modes leave the saved music alone. Zach starts in Race and Marcie in
+Pink until a different Look is chosen. Each mode remembers its own Look on that
+browser; the unnamed mode retains its existing preference. Generic, Zach and Marcie greetings each have matching bundled Scottish
 recordings; the remaining prompts are shared.

@@ -122,6 +122,192 @@
       "seconds": 3.56,
       "sha256": "5f9e1fa59076adb156b600e47271b2547a7f61e92fdb2bd4b57a939922395726",
       "generation_id": "gen-tts-1792247097-eSpVnMjmImcjGLyIofEH"
+    },
+    "tour2-hello": {
+      "text": "Hi! Let’s make some music. Tap the Let's play button.",
+      "seconds": 4.782667,
+      "sha256": "962d061e0d05a3a70906dc105ecf3bb083c370a97aebb644c3e4a2cebd32bfa6",
+      "generation_id": "gen-tts-1792251276-ZexYuEre9Kg0rJoTveio"
+    },
+    "tour2-stop": {
+      "text": "Hear it come round again? The music loops. Tap Stop.",
+      "seconds": 4.888792,
+      "sha256": "9866841832ca2b0a8a2ec66bd2cc600ba6f2d27d441bdaef0c85739d6dfb2e28",
+      "generation_id": "gen-tts-1792251276-Bl2MM7bbzUXIbOnWqqQt"
+    },
+    "tour2-song": {
+      "text": "These are songs to try. Tap Moon.",
+      "seconds": 3.63525,
+      "sha256": "0d2022059f383872d3707842ed72f8b87fb720415e98a1199bf9e72ecd099856",
+      "generation_id": "gen-tts-1792251277-JL8Y5IpO7WVV4D0pqu8i"
+    },
+    "tour2-drum": {
+      "text": "Tap this drum. Hear its sound.",
+      "seconds": 2.714333,
+      "sha256": "dcc98912b68111d7decbf0d916a51b2b77d888841557e4a06e233914344bc45d",
+      "generation_id": "gen-tts-1792251282-VFK64RNgWiVwZ6ZzSSo9"
+    },
+    "tour2-beat": {
+      "text": "A lit box makes a beat. Tap this box.",
+      "seconds": 3.714958,
+      "sha256": "2cac4b40e81b68d10286f2d2dba23adcc31d9db71021531a3d64e2779b281ca0",
+      "generation_id": "gen-tts-1792251282-IXqvHvvI3WtXgVUlLpXG"
+    },
+    "tour2-clear": {
+      "text": "Clear takes all the notes away. Tap Clear. Undo can bring them back.",
+      "seconds": 6.230792,
+      "sha256": "571fb42488199b4586b2ce60dd073363ae1eba8b6981c43e51b62716041c6c90",
+      "generation_id": "gen-tts-1792251281-gkfKHz2iw7joRQ4nqr4n"
+    },
+    "tour2-drum-sound": {
+      "text": "Tap here to change the drum sound. Your beat stays.",
+      "seconds": 3.917208,
+      "sha256": "c4ebcdc6af4e5df2e8b97275daa90c2d640ad197a4c8410ab3b1189551d12e42",
+      "generation_id": "gen-tts-1792251287-9JzY2dbwC05NSZcXySXH"
+    },
+    "tour2-tunes": {
+      "text": "Let’s add a tune. Tap Tunes.",
+      "seconds": 3.45875,
+      "sha256": "d5cd8637dab22b1b3226b6a078e7230a8135d2638fbaa1193db15fa102879010",
+      "generation_id": "gen-tts-1792251288-VH6ECkXdNN1PQzM0QFO9"
+    },
+    "tour2-note": {
+      "text": "Tap this box. High notes go at the top. Low notes go at the base.",
+      "seconds": 5.619333,
+      "sha256": "eb2b72adbe9e2c309ccc6a10b49b7817df97fe1e25548ee36e77fe562149a67d",
+      "generation_id": "gen-tts-1792251287-BdrM5AgCTwl1V6n4fhh0"
+    },
+    "tour2-chord": {
+      "text": "Add one more note in this stack. They play at once.",
+      "seconds": 3.935667,
+      "sha256": "58b77b853ec3040747c69aab0a63d1f602c67360912b949126d9c1b26c9e647f",
+      "generation_id": "gen-tts-1792251293-kMPoojxOgeDxE3dchKhE"
+    },
+    "tour2-brush": {
+      "text": "Each sound is a brush. Tap Chime.",
+      "seconds": 4.825958,
+      "sha256": "4f884cb57597bc680e735fb830b0d4fc5a22d5506f2240064cba3cb380486dac",
+      "generation_id": "gen-tts-1792251294-7mwwEA4NXgJ0tYL7fEp9"
+    },
+    "tour2-paint": {
+      "text": "Tap this note to paint it with Chime.",
+      "seconds": 3.002333,
+      "sha256": "7b7c2f6a5645be26058c9cbe97ef665e94621c40633641d8b088ce9975b3e1ec",
+      "generation_id": "gen-tts-1792251294-mryUwdapAQoYj5b9uyZl"
+    },
+    "tour2-sounds": {
+      "text": "Now shape the sound. Tap Sounds.",
+      "seconds": 3.6465,
+      "sha256": "e36d662da231bb08ec6f8c21291fc2768ddeecca1f5a543f9ef4d98f78548c5a",
+      "generation_id": "gen-tts-1792251300-K9vgOFiqxjoNKtPyDvYY"
+    },
+    "tour2-slide": {
+      "text": "Slide this to change the sound. Listen as you move it.",
+      "seconds": 3.889958,
+      "sha256": "9a04d8e1668adab8f33b8a48c5aa25fb321ea02a25b0df8d099c32848bb83722",
+      "generation_id": "gen-tts-1792251301-LvzdRu5c3NuaVWq0X4cC"
+    },
+    "tour2-size": {
+      "text": "Four boxes make a small loop. Tap Medium for eight boxes.",
+      "seconds": 6.2485,
+      "sha256": "267f7b9cdc933e7b882a7e1027c88639c00b3f1a7a578bbfbe8a760d81cb5e19",
+      "generation_id": "gen-tts-1792251300-doxy6E9dCGSBOz4oFDOo"
+    },
+    "tour2-done": {
+      "text": "You made music. Keep it to play some more.",
+      "seconds": 3.492833,
+      "sha256": "d5a6b69e0a6f1ac968a250dee6b30932f5243b3ce277c6480901390e322266e8",
+      "generation_id": "gen-tts-1792251307-rLdivVkctTUvtKeFusDS"
+    },
+    "tour2-hello-zach": {
+      "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.1055,
+      "sha256": "99b26b3527762fbf9647195fd8821dcc1d08aba490f22ab61b5d97e88e75136c",
+      "generation_id": "gen-tts-1792251306-QJGY3DzZikYU81qfNI0T"
+    },
+    "tour2-play": {
+      "text": "Hear your beat and tune together. Tap the Let's play button.",
+      "seconds": 5.344,
+      "sha256": "f2cd0ac8c9a2fc522cd2b2cf0aa947004112f52fb6a868c1e714d92a9717e9a6",
+      "generation_id": "gen-tts-1792251307-8AUgsmudwWKvuoX22ba2"
+    },
+    "tour2-done-marcie": {
+      "text": "You made music, Marcie. Keep it to play some more.",
+      "seconds": 3.948417,
+      "sha256": "940d4937e8effc23a848b84331108e40232ff54d6d8aa90c87529e475722fd4b",
+      "generation_id": "gen-tts-1792251673-SuzGE3Vslx2iLZyfC06t"
+    },
+    "tour2-done-zach": {
+      "text": "You made music, Zach. Keep it to play some more.",
+      "seconds": 4.201958,
+      "sha256": "781e8f78bc9d4a705a5c8eda31e11689593e368468dcd51748b7adb86cafc4ea",
+      "generation_id": "gen-tts-1792251673-zOqqHnBCrJsqPYTxI1uo"
+    },
+    "tour2-hello-marcie": {
+      "text": "Hi Marcie! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.561208,
+      "sha256": "67b67ab62f1448560d7022190946d5e74f8397c33d9ef86f5efdf609c886cab2",
+      "generation_id": "gen-tts-1792251313-8rJRaZn8KKPerRxuVxMB"
+    },
+    "tour2-reward-drum": {
+      "text": "Tap it again if you like. Next makes a beat.",
+      "seconds": 3.809917,
+      "sha256": "6b547e1b6c340302ce40340f8d222701b10e0d0b5a41f2aad8a4cad7fb8de399",
+      "generation_id": "gen-tts-1792251318-mtTbKjOM5XExhOSvO19i"
+    },
+    "tour2-reward-song": {
+      "text": "Try more songs if you like. Next is Clear.",
+      "seconds": 4.177958,
+      "sha256": "271b27ffcc32034fa38e1b51f4b9242388cb2005e493d9d48b761bd80e837871",
+      "generation_id": "gen-tts-1792251319-gRASZUpcIgmRBuKhFZUY"
+    },
+    "tour2-reward-beat": {
+      "text": "More boxes make more beats. Next tries a new drum.",
+      "seconds": 5.210292,
+      "sha256": "04899bbd45fb1ff2f99601c1e814674b1e13efa8e681ddb358a7ae4484153a80",
+      "generation_id": "gen-tts-1792251318-FjbxBj4jabILCLGJGlfo"
+    },
+    "tour2-reward-drumSound": {
+      "text": "Try more drum sounds. Next is Tunes.",
+      "seconds": 3.667083,
+      "sha256": "60ea8584b956ac2d235c3a3956a8b326d70dbf778935e634de7b1fe2ed94cfe8",
+      "generation_id": "gen-tts-1792251325-PxUwFuFNeCfZ6xdICTxl"
+    },
+    "tour2-reward-paint": {
+      "text": "Paint more notes if you like. Next stacks notes.",
+      "seconds": 4.108542,
+      "sha256": "14e001bc4f715f615fd2787f165d1f7302bc229b2e76dca48fcfa460788ae356",
+      "generation_id": "gen-tts-1792251325-7COpQVtn6BPLGF9cEAXs"
+    },
+    "tour2-reward-note": {
+      "text": "Try more notes. Next picks a sound brush.",
+      "seconds": 4.071667,
+      "sha256": "a37c14d7874f3c9da98d301eca1e95914d9e7c05372421f466149e94c8c77897",
+      "generation_id": "gen-tts-1792251325-g0QqxlWGRWYfWiwVmHgt"
+    },
+    "tour2-reward-slide": {
+      "text": "Try the sliders. Next hears all your music.",
+      "seconds": 4.284625,
+      "sha256": "ba9429c2a7b31cf8211272d8381123ff3661dabe9962249b1500c3611ec9fec6",
+      "generation_id": "gen-tts-1792251329-IXEuGV2uWQpGAOlNmOut"
+    },
+    "tour2-reward-chord": {
+      "text": "Try more stacks. Next makes the loop longer.",
+      "seconds": 4.179167,
+      "sha256": "2dcd3f075e8d7773be2fd2423a79d93e0d93cb5b649461cab4faad406e80ea8c",
+      "generation_id": "gen-tts-1792251330-dp6Pyj98sR0elGKQuVIc"
+    },
+    "tour2-reward-size": {
+      "text": "Try a small or big loop. Next shapes the sound.",
+      "seconds": 4.996417,
+      "sha256": "8473e09d726464675f91d0b119e464a1d3ba1aaad30cee5e4abb25e2c4e0159a",
+      "generation_id": "gen-tts-1792251329-YKinF8EdOSFihq2UjynF"
+    },
+    "tour2-reward-whole": {
+      "text": "Hear your music loop. Then play some more.",
+      "seconds": 2.963583,
+      "sha256": "19222855bff02d1a35d0c4eb62b8cd7657704add054b4a468a831446702bc147",
+      "generation_id": "gen-tts-1792251333-EllJGlmvojiVhOgLM19W"
     }
   }
 }

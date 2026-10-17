@@ -143,6 +143,14 @@ export function restoreSong(raw) {
   } catch { return null; }
 }
 
+export function clearSong(song) {
+  const empty = clone(song);
+  empty.drums = empty.drums.map(row => row.map(() => false));
+  empty.melody = empty.melody.map(() => []);
+  empty.noteSounds = empty.noteSounds.map(row => row.map(() => null));
+  return empty;
+}
+
 export function editSong(song, edit) {
   const next = clone(song);
   const steps = song.bars * STEPS;
