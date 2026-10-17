@@ -245,3 +245,45 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .transport-actions { width: 100%; }
   .transport-actions .play-button { flex: 1; }
 }
+
+/* One short, spoken prompt with an open view of the real instrument. */
+.tutorial-start, .tutorial-card { font-family: Arial, Helvetica, system-ui, sans-serif; }
+.tutorial-start { min-height: 50px; border: 2px solid var(--ink); background: var(--lime); border-radius: 12px; padding: 10px 16px; font-size: 22px; font-weight: 700; white-space: nowrap; }
+.tutorial-start span { margin-left: 8px; font-size: 17px; }
+.tutorial-card { position: fixed; z-index: 40; right: 20px; bottom: 20px; width: min(480px, calc(100% - 40px)); padding: 18px 24px 22px; color: #202a26; background: #fffef5; border: 3px solid #27302e; border-radius: 22px; box-shadow: 0 6px 0 #27302e, 0 12px 35px #0003; }
+.tutorial-card.tutorial-top { top: 12px; bottom: auto; }
+.tutorial-card.tutorial-left { left: 12px; right: auto; }
+.tutorial-topline { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.tutorial-topline > span { font-size: 20px; font-weight: 700; color: #576447; }
+.tutorial-card button { min-height: 48px; padding: 8px 14px; border: 2px solid #b8bead; border-radius: 12px; font-size: 21px; font-weight: 700; background: #f2f3e7; }
+.tutorial-topline button { background: transparent; border-color: transparent; }
+.tutorial-card h2 { font-family: inherit; font-size: 36px; line-height: 1.12; letter-spacing: 0; margin: 8px 0 10px; }
+.tutorial-card p { font-size: 28px; line-height: 1.25; margin: 0 0 20px; }
+.tutorial-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.tutorial-picture { margin: 0 0 16px; }
+.tutorial-picture svg { display: block; width: 100%; height: 60px; overflow: visible; }
+.tutorial-picture text { font: 20px Arial, Helvetica, sans-serif; fill: #405033; }
+.tutorial-picture figcaption { font-size: 20px; font-weight: 700; text-align: center; margin-top: 4px; }
+.tutorial-actions #tutorial-done { background: var(--lime); border-color: #94ad58; margin-left: auto; }
+#tutorial-ring { position: fixed; z-index: 35; pointer-events: none; border: 5px solid #f4cf54; outline: 3px solid #233029; border-radius: 15px; box-shadow: 0 0 0 6px #fffdf3, 0 4px 22px #0006; }
+.tutorial-open .message { display: none; }
+@media (max-width: 800px) {
+  .header-tools { gap: 12px; }
+  .header-tools .save-status { display: none; }
+}
+@media (max-width: 620px) {
+  .masthead { flex-wrap: wrap; gap: 16px; }
+  .tutorial-start { font-size: 21px; padding: 9px 12px; }
+  .tutorial-card { right: 12px; bottom: 12px; width: calc(100% - 24px); padding: 10px 18px 16px; }
+  .tutorial-card h2 { font-size: 30px; }
+  .tutorial-card p { font-size: 24px; margin-bottom: 14px; }
+  .tutorial-card button { font-size: 20px; padding: 8px 11px; }
+}
+@media (max-height: 500px) {
+  .tutorial-card { width: min(380px, calc(100% - 24px)); padding: 6px 14px 10px; }
+  .tutorial-card h2 { font-size: 28px; margin: 2px 0 5px; }
+  .tutorial-card p { font-size: 23px; margin-bottom: 8px; }
+  .tutorial-picture { margin-bottom: 6px; }
+  .tutorial-picture svg { height: 36px; }
+  .tutorial-picture figcaption { font-size: 18px; }
+}

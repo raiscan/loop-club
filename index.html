@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=7">
-  <script type="module" src="app.js?v=7"></script>
+  <link rel="stylesheet" href="style.css?v=8">
+  <script type="module" src="app.js?v=8"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -36,7 +36,7 @@
   <div class="app-shell">
     <header class="masthead">
       <a class="brand" href="./" aria-label="Loop Club home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>loop club<span class="brand-dot">.</span></span></a>
-      <div class="header-tools"><span id="save-status" class="save-status" role="status"><svg class="icon"><use href="#i-check"/></svg><span>Saved on this device</span></span><button id="help" class="help-button" aria-label="How to play">?</button></div>
+      <div class="header-tools"><button id="tutorial-start" class="tutorial-start" aria-expanded="false" aria-controls="tutorial-card">Help Zach <span aria-hidden="true">▶</span></button><span id="save-status" class="save-status" role="status"><svg class="icon"><use href="#i-check"/></svg><span>Saved on this device</span></span><button id="help" class="help-button" aria-label="How to play">?</button></div>
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">SMALL HANDS. BIG IDEAS.</p><h1 id="page-title">Find your groove<span>.</span></h1><p class="intro-copy">Pick a beat. Press play. Make it yours.</p></div></section>
@@ -64,6 +64,13 @@
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>
     </main>
   </div>
+  <div id="tutorial-ring" aria-hidden="true" hidden></div>
+  <section id="tutorial-card" class="tutorial-card" aria-label="Help Zach" hidden>
+    <div class="tutorial-topline"><span id="tutorial-count" aria-label="Step"></span><button id="tutorial-exit" aria-label="Leave the tutorial">Bye ×</button></div>
+    <div aria-live="polite" aria-atomic="true"><h2 id="tutorial-title"></h2><p id="tutorial-copy"></p></div>
+    <figure id="tutorial-picture" class="tutorial-picture"></figure>
+    <div class="tutorial-actions"><button id="tutorial-repeat">Say it ↻</button><button id="tutorial-voice" aria-pressed="true">Voice on</button><button id="tutorial-done" hidden>Done ✓</button></div>
+  </section>
   <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><span class="eyebrow">WELCOME TO THE CLUB</span><button id="close-help" aria-label="Close help">×</button></div><h2 id="help-title">A little move.<br>A whole new groove.</h2><p>Choose a starting groove and press <strong>Let’s play</strong>. Tap the squares to change the beat. Tap a numbered drum sound to switch instruments. In <strong>Tunes</strong>, put notes higher or lower, stack them in one column for chords, and choose Bass, Pluck, Arcade or Bell. In <strong>Sounds</strong>, shape your synth.</p><p><strong>Touch or mouse</strong><br>Tap or click a square. Drag a slider. Use Undo whenever you like.</p><div class="controller-guide"><h3>Xbox controller · PC</h3><p>Connect it to your PC, then press any button. If sound is blocked, click or tap Play once.</p><dl><dt>D-pad / left stick</dt><dd>Move the highlight; adjust sliders</dd><dt><b class="xbox-a">A</b></dt><dd>Play a pad or change a step</dd><dt><b class="xbox-b">B</b></dt><dd>Back to the section tab / close help</dd><dt><b class="xbox-x">X</b></dt><dd>Undo</dd><dt>LB / RB</dt><dd>Switch Beats, Tunes and Sounds</dd><dt>Menu ☰</dt><dd>Play / stop the loop</dd></dl></div><p class="help-note">Your latest groove is saved in this browser. Undo lasts until you reload. Starting over or choosing another groove can be undone. Closing or leaving the page stops playback.</p><button id="help-done" class="play-button">Let’s make music <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
 </body>
 </html>

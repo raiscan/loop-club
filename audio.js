@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=7';
+import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=8';
 
 const noiseBuffers = new WeakMap();
 
@@ -156,13 +156,22 @@ export function synthChord(context, destination, notes, time, sound, tempo, inst
   return chord;
 }
 
+export function tutorialCue(context, destination, time) {
+  const gain = envelope(context, destination, time, 0.24, 0.12);
+  const tone = context.createOscillator(); tone.type = 'sine';
+  tone.frequency.setValueAtTime(523.25, time);
+  tone.frequency.setValueAtTime(783.99, time + 0.09);
+  tone.connect(gain);
+  return voice([tone], [gain], time, 0.24);
+}
+
 export class AudioEngine {
   constructor(getSong, onStep, onState, onError) {
     this.getSong = getSong; this.onStep = onStep; this.onState = onState; this.onError = onError;
     this.context = null; this.playing = false; this.pending = false;
     this.generation = 0; this.timer = null; this.visuals = new Set(); this.voices = new Set();
     this.previewChord = null;
-    this.volume = 0.55;
+    this.volume = 0.55; this.ducked = false;
   }
 
   ensureGraph() {
@@ -171,7 +180,7 @@ export class AudioEngine {
     if (!Constructor) throw new Error('This browser cannot play the synth. Try a recent Chrome browser.');
     this.context = new Constructor();
     this.master = this.context.createGain();
-    this.master.gain.value = this.volume * 0.65;
+    this.master.gain.value = this.volume * 0.65 * (this.ducked ? 0.25 : 1);
     this.compressor = this.context.createDynamicsCompressor();
     this.compressor.threshold.value = -12;
     this.compressor.ratio.value = 6;
@@ -256,7 +265,20 @@ export class AudioEngine {
 
   setVolume(value) {
     this.volume = Math.max(0, Math.min(1, value));
-    if (this.master) this.master.gain.setTargetAtTime(this.volume * 0.65, this.context.currentTime, 0.02);
+    if (this.master) this.master.gain.setTargetAtTime(this.volume * 0.65 * (this.ducked ? 0.25 : 1), this.context.currentTime, 0.02);
+  }
+
+  setDucked(value) {
+    this.ducked = value; this.setVolume(this.volume);
+  }
+
+  async feedback() {
+    const generation = this.generation;
+    try {
+      await this.ready();
+      if (generation !== this.generation || globalThis.document?.hidden) return;
+      this.track(tutorialCue(this.context, this.compressor, this.context.currentTime + 0.005));
+    } catch { /* Visual guidance still works when audio is blocked. */ }
   }
 
   async audition(kind, value) {

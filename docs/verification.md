@@ -187,3 +187,40 @@ Asset queries advance to `v=7`. Hosting remains public.
   the fixture now starts from a deliberate edit. A later run stalled without
   a user audio gesture after reload; clicking Play before the run resolved it.
 - Physical Android and Xbox hardware were not retested for this preset update.
+
+
+## Zach’s guided tutorial — 2026-10-17
+
+A prominent Help Zach button opens ten short hands-on lessons. Prompts use
+Arial / sans-serif at 28–36px for headings and 23–28px for the short task.
+A gold ring follows the next real control. The fixed prompt moves to keep
+that control clear; a landscape positioning failure was reproduced and fixed.
+Live diagrams show all 16 loop steps, lit beats/rests, high/low notes, chord
+stacks and brightness. Edits remain in the normal song and Undo history.
+The tutorial never replaces the song on opening.
+
+Each successful action plays a short, finite chime through the existing
+volume/compression path. Device speech prefers a known female British voice,
+then British English, then another available voice. Say it reads one prompt;
+automatic narration can be turned off. Music is ducked during speech and
+restored on completion, errors, mute, exit or cancellation. A 12-second guard
+prevents stuck speech from leaving music ducked. No OpenRouter key was needed
+or accessed, and no paid service or credential is shipped.
+
+Observed checks:
+- Updated main baseline: 22 Node tests passed with no failures.
+- Development: 26 Node tests passed, including speech ordering, mute, fallback,
+  stale callback cancellation, picture contents and independent song data.
+- Browser suite: 207 checks passed at 800×1280, including actual OfflineAudioContext
+  chime/loop rendering, all ten tutorial actions, live pictures, target/ring
+  alignment, large type, focus, Done/Escape, synthetic Xbox A/D-pad/B and blur
+  cancellation.
+- Full tour: 56 focused checks passed at 1280×800, 800×1280, 360×800 and 800×360.
+  Every prompt and target stayed visible without overlap. Page layout checks
+  passed at desktop, tablet and narrow widths.
+- The server browser reported an empty speech voice catalogue. Spoken voice
+  selection/lifecycle were checked with test voices; actual accent, gender
+  and friendliness still depend on the target device and were not auditioned.
+- Physical Android/Xbox hardware was not available. The original site archive
+  remains untouched. Runtime assets use v=8 and the static bundle now has eight
+  assets, including tutorial.js.

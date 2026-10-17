@@ -1,6 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=7';
-import { AudioEngine } from './audio.js?v=7';
-import { GamepadReader } from './gamepad.js?v=7';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=8';
+import { AudioEngine } from './audio.js?v=8';
+import { GamepadReader } from './gamepad.js?v=8';
+import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=8';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -17,6 +18,7 @@ let section = 'drums', page = 0, visibleSteps = stepCount();
 let currentStep = -1, controllerMode = false, connectedPad = null;
 let messageTimer, previewTimer, groupTimer;
 const reader = new GamepadReader();
+let tutorial = null;
 const engine = new AudioEngine(() => history.song, showStep, showPlayback, message);
 
 function message(text) {
@@ -203,6 +205,7 @@ function updateSong() {
   $$('input[type=range]').forEach(updateRange);
   $('#undo').disabled = !history.canUndo;
   drawWave();
+  tutorial?.draw();
 }
 
 function drawWave() {
@@ -227,6 +230,7 @@ function drawWave() {
 function showStep(step) {
   currentStep = step;
   $$('[data-step]').forEach(element => element.classList.toggle('current', Number(element.dataset.step) === step));
+  tutorial?.draw();
 }
 
 function showPlayback(state) {
@@ -235,6 +239,7 @@ function showPlayback(state) {
   $('#play').innerHTML = `${icon(active || starting ? 'stop' : 'play')}<span>${starting ? 'Starting…' : active ? 'Stop' : "Let's play"}</span>`;
   $('#play-state').classList.toggle('playing', active);
   $('#play-state span').textContent = starting ? 'WAKING UP…' : active ? 'MAKING MUSIC' : 'READY TO PLAY';
+  tutorial?.playback(state);
 }
 
 function togglePlay() {
@@ -296,6 +301,7 @@ $('#hear-synth').addEventListener('click', () => engine.audition('note', 0));
 const dialog = $('#help-dialog');
 let helpReturn;
 function openHelp() {
+  if (tutorial?.active) tutorial.stop(false);
   helpReturn = document.activeElement;
   dialog.showModal();
   if (controllerMode) focusControl($('#close-help'));
@@ -376,6 +382,7 @@ function moveFocus(direction) {
 
 function controllerAction(action) {
   controllerMode = true;
+  if (tutorial?.active && action === 'back') { tutorial.stop(); return; }
   const available = controls();
   if (!available.includes(document.activeElement)) focusControl(dialog.open ? $('#close-help') : $('#play'));
   else focusControl(document.activeElement);
@@ -419,6 +426,7 @@ function pollController(now) {
 }
 
 function leavePage() {
+  tutorial?.stop(false);
   clearTimeout(previewTimer); history.end(); engine.stop(); reader.read(null, 0);
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) leavePage(); });
@@ -466,5 +474,26 @@ for (let step = 0; step < STEPS; step++) {
   $('#loop-lights').append(light);
 }
 buildGrids(); saveSong();
+tutorial = new ZachTutorial({
+  getSong: () => history.song,
+  getStep: () => currentStep,
+  focus: focusControl,
+  cue: () => engine.feedback(),
+  speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
+  onStart() {
+    if (dialog.open) dialog.close();
+    clearTimeout(previewTimer); engine.stop(); history.end(); setSection('drums'); changePage(0);
+  },
+  prepare(step, initial) {
+    if (step.section && section !== step.section) setSection(step.section);
+    if (step.section && step.section !== 'sound' && page !== 0) changePage(0);
+    if (step.note && initial) {
+      const notes = history.song.melody[0];
+      const pitch = NOTES.findIndex((_, index) => !notes.includes(index));
+      return `[data-note="${pitch < 0 ? NOTES.length - 1 : pitch}"][data-step="0"]`;
+    }
+    return step.target || null;
+  }
+});
 if (invalidSave) message('That saved groove could not be opened. Here’s a fresh one to play with.');
 requestAnimationFrame(pollController);

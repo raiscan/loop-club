@@ -33,6 +33,20 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 ## Play
 
+- **Help Zach** opens the hands-on tutorial. Ten short tasks use large Arial /
+  sans-serif text and a gold ring around the next real control. Each lesson
+  includes a diagram of the beat, loop, notes, chord stack or sound shape.
+  Diagrams reflect the actual song and playhead. Press the highlighted control
+  to move on; the slider lesson waits until the movement settles.
+- A soft chime marks each action. Spoken prompts prefer a known British female
+  device voice, then British English, then another available voice. Voice quality
+  and availability depend on the device. **Say it** reads one prompt, even with automatic speech off; **Voice on/off**
+  toggles automatic narration; the app's Volume setting controls voice and chimes. Music
+  drops while a prompt is spoken. No API key or paid voice service is used.
+- **Bye**, Escape or Xbox B closes the tutorial. It also closes when the page
+  loses focus or becomes hidden. Tutorial edits use normal saving and Undo;
+  opening the tour never replaces the current groove.
+
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
   and **Cloud chords**. The new loops explore different instruments and chords.
@@ -105,14 +119,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=7')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=8')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=7')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=8')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -126,13 +140,14 @@ See [the verification record](docs/verification.md) for this prototype's results
 
 - `model.js`: starter patterns, validated saved songs, edits and undo.
 - `audio.js`: Web Audio voices, compressor/master output and look-ahead clock.
+- `tutorial.js`: guided tasks, live diagrams and device speech.
 - `gamepad.js`: standard controller button edges, repeat and stick dead zone.
 - `app.js`, `index.html`, `style.css`, `icon.svg`: interface and input wiring.
 - `tests/`: Node checks and browser integration checks.
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=7`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=8`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
@@ -152,7 +167,7 @@ tracked in `.openai/hosting.json`; reuse that project ID for future updates.
 node scripts/build-site.mjs
 ```
 
-This prepares only the seven runtime assets in ignored `dist/`. The original
+This prepares only the eight runtime assets in ignored `dist/`. The original
 reference site, tests, source history and local state are not part of the
 served bundle. The script preserves unexpected files in `dist/` by stopping
 instead of deleting them. Use the Sites skill's source/package helper from

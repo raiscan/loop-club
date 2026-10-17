@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = join(root, 'dist');
-const assets = ['index.html', 'style.css', 'app.js', 'model.js', 'audio.js', 'gamepad.js', 'icon.svg'];
+const assets = ['index.html', 'style.css', 'app.js', 'model.js', 'audio.js', 'gamepad.js', 'tutorial.js', 'icon.svg'];
 
 // Keep the published bundle limited to the instrument, without repo or test data.
 for (const name of assets) readFileSync(join(root, name));
