@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=15';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=16';
 
 const noiseBuffers = new WeakMap();
 
@@ -142,12 +142,12 @@ export function synthVoice(context, destination, note, time, sound, tempo, instr
   return voice([oscillator, sub], [filter, gain, subGain], time, duration);
 }
 
-export function synthChord(context, destination, notes, time, sound, tempo, instrument = 'bass') {
+export function synthChord(context, destination, notes, time, sound, tempo, instrument = 'bass', instruments = null) {
   if (!notes.length) return null;
   const mix = context.createGain();
   mix.gain.value = 1 / Math.sqrt(notes.length);
   mix.connect(destination);
-  const voices = notes.map(note => synthVoice(context, mix, note, time, sound, tempo, instrument));
+  const voices = notes.map(note => synthVoice(context, mix, note, time, sound, tempo, instruments?.[note] || instrument));
   let remaining = voices.length;
   const chord = { stop(at) { voices.forEach(handle => handle.stop(at)); }, onended: null };
   voices.forEach(handle => {
@@ -244,7 +244,7 @@ export class AudioEngine {
       if (this.stepsLeft <= 0) break;
       this.stepsLeft--;
       song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
-      if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth));
+      if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth, song.noteSounds?.[step]));
       const timer = setTimeout(() => {
         this.visuals.delete(timer);
         if (this.playing) this.onStep(step);
@@ -292,7 +292,7 @@ export class AudioEngine {
     } catch { /* Visual guidance still works when audio is blocked. */ }
   }
 
-  async audition(kind, value) {
+  async audition(kind, value, instruments = null) {
     const generation = this.generation;
     try {
       await this.ready();
@@ -302,7 +302,7 @@ export class AudioEngine {
       if (kind === 'chord') this.previewChord?.stop(now);
       const handle = kind === 'drum'
         ? drumVoice(this.context, this.compressor, song.drumSounds[value], now)
-        : synthChord(this.context, this.compressor, kind === 'chord' ? value : [value], now, song.sound, song.tempo, song.synth);
+        : synthChord(this.context, this.compressor, kind === 'chord' ? value : [value], now, song.sound, song.tempo, song.synth, kind === 'chord' ? instruments : null);
       if (handle) this.track(handle);
       if (kind === 'chord') this.previewChord = handle;
     } catch (error) { this.onError(error.message); }

@@ -87,20 +87,27 @@ currently targeted at PC. No tablet/controller pairing is required.
   part of that map to reveal it without shrinking targets. D-pad navigation crosses pages. The moving lights show the whole loop.
   The tour uses a four-beat practice song; leaving restores the original size,
   and Keep it repeats the learned phrase across that size.
-- **Tunes:** tap a coloured square to add a note. Stack several notes in the same
-  column to play a chord; tap a note again to remove only that note.
+- **Tunes:** choose Bass, Pluck, Game or Bell as a brush, then tap a coloured
+  square to paint that sound. Its icon appears in the square (Game uses a robot).
+  A different brush replaces that square's sound; the same brush clears it.
+  Each square holds one instrument. Stack notes in the same column for a chord,
+  mixing instruments across pitches if you like. Changing brushes keeps the
+  sounds already painted.
   While stopped, editing a column previews the whole resulting chord. The six keys use C minor pentatonic notes and play individually.
-  Choose Bass, Pluck, Game or Bell above the grid; the same selection appears
-  in Sounds. The white outlined column follows playback in both grids.
+  The same brush selection appears in Sounds and is used by the six keys.
+  The white outlined column follows playback in both grids.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
-  those settings; it is not an oscilloscope. Sliders audition a note while stopped.
+  those settings; it is not an oscilloscope. These settings shape all painted
+  instruments. Sliders audition the active brush while stopped.
 - **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio from a large standalone speaker slider between
   the loop map and playback controls. Press the speaker to mute all audio; press
   again to restore the last nonzero level. Raising the slider also unmutes.
 - The latest groove, tempo and synth settings save automatically in this
-  browser's local storage, including drum and synth instrument choices. Older
-  saves upgrade automatically, keeping every existing note and step.
+  browser's local storage, including each painted note's instrument and the
+  active brush. Version-5 saves store one instrument per occupied square.
+  Older saves upgrade automatically, keeping every existing note and step
+  with its previous synth sound.
   Earlier 16-step saves become Large four-bar loops so every hit and note is retained.
   Playback now gives each box a full beat, so those old sequences play more slowly
   at the same BPM than the former sixteenth-note grid. New examples condense each
@@ -155,14 +162,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=15')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=16')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=15')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=16')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -184,7 +191,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=15`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=16`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 

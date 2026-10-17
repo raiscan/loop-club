@@ -159,10 +159,12 @@ test('keeping a tutorial song repeats the learned phrase across the full loop', 
   const { finishTutorialSong, blankTutorialSong } = await import('../tutorial.js');
   const lesson = blankTutorialSong(editSong(createSong(), { type: 'bars', value: 4 }));
   lesson.drums[0][0] = true; lesson.melody[0] = [0, 1];
+  lesson.noteSounds[0][0]='arcade';lesson.noteSounds[0][1]='bell';
   const result = finishTutorialSong(lesson);
   for (const step of [0, 4, 8, 12]) {
     assert.equal(result.drums[0][step], true);
     assert.deepEqual(result.melody[step], [0, 1]);
+    assert.equal(result.noteSounds[step][0],'arcade');assert.equal(result.noteSounds[step][1],'bell');
   }
   result.melody[4].push(3);
   assert.deepEqual(lesson.melody[0], [0, 1]);

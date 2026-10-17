@@ -620,3 +620,7 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .volume-section #mute { display: grid; place-items: center; flex: 0 0 56px; width: 56px; min-height: 64px; padding: 6px; background: var(--control); color: var(--ink); border: 2px solid var(--border); border-radius: 14px; }
 .volume-section #mute:hover { background: var(--hover); }
 .volume-section #mute[aria-pressed=true] { background: var(--action); color: var(--action-ink); border-color: var(--action-border); }
+
+.melody-grid .step { display: grid; place-items: center; padding: 3px; }
+.melody-grid .step[aria-pressed=true]::after { display: none; }
+.melody-grid .step .icon { width: 30px; height: 30px; color: var(--pad-ink); pointer-events: none; stroke-width: 2.3; }

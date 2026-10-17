@@ -530,3 +530,28 @@ Full development browser suite: 415 passed. Focused mute, map/volume and theme
 layout/reading checks: 98 passed at each of 360×800, 800×360 and 1280×800.
 The speaker target measures approximately 56×64 CSS pixels and the slider
 retains its large hit area. No physical Android/Xbox test is claimed.
+
+## Tunes instrument brushes — 17 October 2026
+
+The Sites source helper fetched and checked clean main at `ce5effa`.
+Baseline: 39 Node tests and 415 browser checks passed, with no failures.
+Development: 41 Node tests and 428 browser checks passed. Syntax, static build
+and diff checks passed; the archived original site remains unchanged.
+
+Tunes now paints the active instrument into each pitch/beat cell. The same
+brush clears it and a different brush replaces it, leaving neighbouring notes
+unchanged. Each occupied cell holds one instrument; different pitches in a
+chord can use different instruments. Icons identify the sounds. Version-5
+saves validate the per-note matrix against the occupied pitches; legacy saves
+inherit their former synth sound. Undo, loop resizing, tutorial isolation and
+Keep it retain these assignments.
+
+Browser checks cover mouse, synthetic touch, simulated Xbox brush selection,
+paint/replace/clear, icons, Undo and resizing. Offline Web Audio rendering
+matches a mixed Bass/Game/Bell chord to the normalized sum of its individual
+voices; preview and scheduled playback both create the expected oscillator
+types. An actual reload preserved Game and Bell notes, their icons and the
+active brush. All 93 theme/layout/reading and brush assertions passed at each
+of 360×800, 800×360, 800×1280 and 1280×800. The Space-theme screenshot was
+inspected with mixed note icons. No physical Android or Windows/Xbox device
+test is claimed.

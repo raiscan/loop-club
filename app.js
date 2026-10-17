@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=15';
-import { AudioEngine } from './audio.js?v=15';
-import { GamepadReader } from './gamepad.js?v=15';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=15';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=16';
+import { AudioEngine } from './audio.js?v=16';
+import { GamepadReader } from './gamepad.js?v=16';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=16';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -179,7 +179,7 @@ function buildGrids() {
       button.setAttribute('aria-label', `${note.name}, step ${step + 1}`);
       button.addEventListener('click', () => {
         commit(editSong(history.song, { type: 'note', step, note: pitch }));
-        if (!engine.playing) engine.audition('chord', history.song.melody[step]);
+        if (!engine.playing) engine.audition('chord', history.song.melody[step], history.song.noteSounds[step]);
       });
       melodyGrid.append(button);
     }
@@ -228,7 +228,7 @@ function setSection(next, focusTab = false) {
   $('#synth-picker').hidden = section === 'drums';
   const titles = {
     drums: ['Tap a box.', 'Make a beat!'],
-    melody: ['Tap a note.', 'Make a tune!'],
+    melody: ['Paint a tune.', 'Pick a sound. Tap a box.'],
     sound: ['Try a sound.', 'Slide and listen.']
   };
   $('#workspace-title').textContent = titles[section][0];
@@ -258,7 +258,13 @@ function updateSong() {
     button.setAttribute('aria-label', `Change drum ${row + 1} sound, ${drum.name}`);
   });
   $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
-  $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step].includes(Number(button.dataset.note))));
+  $$('[data-note]').forEach(button => {
+    const step = Number(button.dataset.step), pitch = Number(button.dataset.note), instrument = song.noteSounds[step][pitch];
+    button.setAttribute('aria-pressed', Boolean(instrument));
+    button.innerHTML = instrument ? icon(SYNTH_SOUNDS[instrument].icon) : '';
+    if (instrument) button.dataset.instrument = instrument; else delete button.dataset.instrument;
+    button.setAttribute('aria-label', `${NOTES[pitch].name}, bar ${Math.floor(step / STEPS) + 1}, beat ${step % STEPS + 1}${instrument ? `, ${SYNTH_SOUNDS[instrument].name}. Tap to repaint or clear` : ', empty. Tap to paint'}`);
+  });
   $$('.loop-light').forEach(light => {
     const step = Number(light.dataset.step);
     [...light.children].forEach((dot, row) => dot.classList.toggle('on', row < DRUM_TRACKS ? song.drums[row][step] : song.melody[step].length > 0));
@@ -566,7 +572,7 @@ for (const [id, synth] of Object.entries(SYNTH_SOUNDS)) {
   const button = document.createElement('button');
   button.dataset.synthChoice = id;
   button.innerHTML = `${icon(synth.icon)}<span>${synth.name}</span>`;
-  button.setAttribute('aria-label', `${synth.name} synth`);
+  button.setAttribute('aria-label', `${synth.name} brush`);
   button.addEventListener('click', () => {
     history.end(); commit(editSong(history.song, { type: 'synth', value: id }));
     engine.audition('note', 0);

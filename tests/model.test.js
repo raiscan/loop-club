@@ -72,7 +72,7 @@ test('old three-drum saves migrate without changing the music or synth settings'
     sound: { brightness: 27, length: 61, wobble: 49 }
   };
   const migrated = restoreSong(JSON.stringify(old));
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.equal(migrated.bars, 4);
   assert.deepEqual(migrated.drums.slice(0, 3), old.drums);
   assert.deepEqual(migrated.drums[3], Array(16).fill(false));
@@ -105,7 +105,7 @@ test('version-two saves retain selected instruments and migrate rests and single
     drumSounds: ['tom', 'clap', 'openhat', 'cowbell'],
     melody: [0, 1, 2, 3, 4, 5, null, null, 3, null, 2, null, 0, null, null, null] };
   const migrated = restoreSong(JSON.stringify(legacy));
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.equal(migrated.synth, 'bell');
   assert.equal(migrated.tempo, 300);
   assert.deepEqual(migrated.drums, legacy.drums);
@@ -118,6 +118,7 @@ test('chord saves validate each pitch, reject duplicates, and allow all six note
   const song = createSong();
   for (const notes of [[], [0, 1, 2, 3, 4, 5]]) {
     song.melody[0] = notes;
+    song.noteSounds[0] = Array.from({length:6},(_,pitch)=>notes.includes(pitch)?song.synth:null);
     assert.deepEqual(restoreSong(JSON.stringify(song)).melody[0], notes);
   }
   for (const invalid of [[0, 0], [6], [-1], ['0'], null, 3, [0, 1, 2, 3, 4, 5, 6]]) {
@@ -226,7 +227,52 @@ test('all loop sizes round-trip; old 16-step chord saves retain every note in fo
   const legacy = editSong(createSong('liquid'), {type:'bars',value:4}); delete legacy.bars; legacy.version = 3;
   const migrated = restoreSong(JSON.stringify(legacy));
   assert.equal(migrated.bars, 4);
-  assert.equal(migrated.version, 4);
+  assert.equal(migrated.version, 5);
   assert.deepEqual(migrated.melody, legacy.melody);
   assert.deepEqual(migrated.drums, legacy.drums);
+});
+
+test('instrument brushes paint, replace and erase one pitch without changing other notes', () => {
+  const original = createSong();
+  const game = editSong(original, { type: 'synth', value: 'arcade' });
+  assert.deepEqual(game.noteSounds, original.noteSounds);
+  const painted = editSong(game, { type: 'note', step: 0, note: 3 });
+  assert.equal(painted.noteSounds[0][3], 'arcade');
+  assert.equal(painted.noteSounds[0][0], 'bass');
+  assert.deepEqual(painted.melody[0], [0,3]);
+  const bell = editSong(painted, { type: 'synth', value: 'bell' });
+  const replaced = editSong(bell, { type: 'note', step: 0, note: 3 });
+  assert.equal(replaced.noteSounds[0][3], 'bell');
+  assert.equal(replaced.noteSounds[0][0], 'bass');
+  assert.deepEqual(replaced.melody[0], [0,3]);
+  assert.equal(painted.noteSounds[0][3], 'arcade');
+  const history = new SongHistory(painted);history.commit(replaced);
+  assert.equal(history.undo().noteSounds[0][3], 'arcade');
+  const erased = editSong(replaced, { type: 'note', step: 0, note: 3 });
+  assert.deepEqual(erased.melody[0], [0]);
+  assert.equal(erased.noteSounds[0][3], null);
+  assert.deepEqual(editSong(replaced, { type:'note',step:0,note:3,instrument:'missing' }),replaced);
+  const large = editSong(replaced, { type:'bars',value:4 });
+  assert.deepEqual(large.noteSounds[4],replaced.noteSounds[0]);
+  large.noteSounds[4][0]='pluck';
+  assert.equal(large.noteSounds[0][0],'bass');
+});
+
+test('painted instruments save strictly and older songs retain the instrument of every note', () => {
+  const song = editSong(editSong(createSong(),{type:'synth',value:'bell'}),{type:'note',step:0,note:3});
+  assert.deepEqual(restoreSong(JSON.stringify(song)),song);
+  for (const invalid of [null,[],[['bass']],song.noteSounds.map(row=>row.map(()=>null))]) {
+    assert.equal(restoreSong(JSON.stringify({...song,noteSounds:invalid})),null);
+  }
+  const unknown=structuredClone(song);unknown.noteSounds[0][3]='__proto__';
+  assert.equal(restoreSong(JSON.stringify(unknown)),null);
+  unknown.noteSounds[0][3]=['bell'];
+  assert.equal(restoreSong(JSON.stringify(unknown)),null);
+  const legacy={...createSong('pixel'),version:4};delete legacy.noteSounds;
+  const migrated=restoreSong(JSON.stringify(legacy));
+  assert.equal(migrated.version,5);
+  assert.deepEqual(migrated.melody,legacy.melody);
+  for(let step=0;step<legacy.melody.length;step++) for(let pitch=0;pitch<6;pitch++) {
+    assert.equal(migrated.noteSounds[step][pitch],legacy.melody[step].includes(pitch)?'arcade':null);
+  }
 });

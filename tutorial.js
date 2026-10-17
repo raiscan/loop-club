@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=15';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=16';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -134,6 +134,7 @@ export function blankTutorialSong(song) {
   lesson.tempo = 120;
   lesson.drums = lesson.drums.map(row => row.map(() => false));
   lesson.melody = lesson.melody.map(() => []);
+  lesson.noteSounds = lesson.noteSounds.map(row => row.map(() => null));
   return lesson;
 }
 
@@ -142,6 +143,7 @@ export function tutorialPlaybackSong(song, kind) {
   if (kind === 'drum' || kind === 'beat') {
     solo.drums = solo.drums.map((row, index) => index === 0 ? row : row.map(() => false));
     solo.melody = solo.melody.map(() => []);
+    solo.noteSounds = solo.noteSounds.map(row => row.map(() => null));
     if (kind === 'drum') solo.drums[0][0] = true;
   } else solo.drums = solo.drums.map(row => row.map(() => false));
   return solo;
@@ -151,6 +153,7 @@ export function finishTutorialSong(song) {
   const result = structuredClone(song);
   result.drums = result.drums.map(row => row.map((_, step) => row[step % 4]));
   result.melody = result.melody.map((_, step) => [...song.melody[step % 4]]);
+  result.noteSounds = result.noteSounds.map((_, step) => [...song.noteSounds[step % 4]]);
   return result;
 }
 

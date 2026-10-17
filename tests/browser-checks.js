@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=15';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=15';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=15';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=15';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=16';
+import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=16';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=16';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=16';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -772,9 +772,7 @@ export async function runLoopSizeChecks() {
     const saved = localStorage.getItem(SAVE_KEY); $('#tutorial-start').click(); $('#tutorial-exit').click();
     check(localStorage.getItem(SAVE_KEY) === saved && $('[data-loop-bars="2"]').getAttribute('aria-pressed') === 'true', 'leaving the tutorial restores the longer song and loop size', results);
     for (const bars of [1,2,4]) {
-      const song = createSong(); song.tempo = 300; song.bars = bars;
-      song.drums = song.drums.map(row=>Array.from({length:bars*4},(_,i)=>row[i%4]));
-      song.melody = Array.from({length:bars*4},(_,i)=>[...song.melody[i%4]]);
+      const song = editSong(createSong(), {type:'bars',value:bars}); song.tempo = 300;
       const visited = [], errors = [];
       const engine = new AudioEngine(()=>song,step=>{if(step>=0)visited.push(step);},()=>{},error=>errors.push(error)); engine.setVolume(0);
       try {
@@ -850,6 +848,62 @@ export async function runMuteChecks() {
   } finally {
     pad=null;AudioParam.prototype.setTargetAtTime=schedule;if(descriptor)Object.defineProperty(navigator,'getGamepads',descriptor);else delete navigator.getGamepads;
     set(original);
+  }
+  return results;
+}
+
+export async function runBrushChecks() {
+  const results=[], stored=localStorage.getItem(SAVE_KEY);
+  const descriptor=Object.getOwnPropertyDescriptor(navigator,'getGamepads');let pad=null;
+  const tap=async()=>{
+    pad={connected:true,mapping:'standard',id:'Xbox brush fixture',index:0,axes:[0,0,0,0],buttons:Array.from({length:17},(_,i)=>({pressed:i===0,value:i===0?1:0}))};
+    await wait(70);pad=null;await wait(70);
+  };
+  try {
+    if($('#play').getAttribute('aria-pressed')==='true')$('#play').click();
+    $('[data-loop-bars="1"]').click();$('[data-preset="club"]').click();$('[data-preset="breaks"]').click();$('#reset').click();$('#tab-melody').click();
+    const original=readSong(), cell=$('[data-note="3"][data-step="0"]');
+    $('[data-synth-choice="arcade"]').click();
+    check(same(readSong().noteSounds,original.noteSounds),'choosing a brush leaves painted instruments unchanged',results);
+    cell.click();
+    check(readSong().noteSounds[0][3]==='arcade'&&readSong().noteSounds[0][0]==='bass'&&cell.dataset.instrument==='arcade'&&cell.querySelector('use').getAttribute('href')==='#i-robot','Game paints a robot at G1 beside the existing bass note',results);
+    $('[data-synth-choice="bell"]').click();cell.click();
+    check(same(readSong().melody[0],[0,3])&&readSong().noteSounds[0][3]==='bell'&&cell.querySelectorAll('svg').length===1&&cell.querySelector('use').getAttribute('href')==='#i-bell','a different brush replaces one box with one instrument',results);
+    $('#undo').click();check(readSong().noteSounds[0][3]==='arcade'&&cell.dataset.instrument==='arcade','Undo restores the previous painted sound and icon',results);
+    $('[data-synth-choice="arcade"]').click();cell.click();
+    check(!readSong().melody[0].includes(3)&&readSong().noteSounds[0][3]===null&&!cell.children.length,'the same brush clears its own painted box',results);
+    $('[data-synth-choice="pluck"]').click();
+    cell.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch',pointerId:5}));cell.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch',pointerId:5}));cell.click();
+    check(readSong().noteSounds[0][3]==='pluck'&&cell.querySelector('use').getAttribute('href')==='#i-notes','touch painting puts the selected instrument icon in the box',results);
+    Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pad?[pad]:[]});
+    $('[data-synth-choice="bell"]').focus();await tap();cell.focus();await tap();
+    check(readSong().noteSounds[0][3]==='bell'&&readSong().noteSounds[0][0]==='bass','Xbox selects a brush and paints a box without replacing its chord neighbour',results);
+    const painted=readSong();$('[data-loop-bars="4"]').click();
+    check(readSong().noteSounds[4][3]==='bell','growing a loop copies painted instruments with the notes',results);
+    $('[data-loop-bars="1"]').click();
+    check(same(readSong().noteSounds,painted.noteSounds),'shrinking preserves instruments in retained bars',results);
+    const settings={brightness:80,length:65,wobble:0}, notes=[0,3,5], instruments=['bass',null,null,'arcade',null,'bell'];
+    const mixed=await render((ctx,out)=>synthChord(ctx,out,notes,.04,settings,164,'bass',instruments));
+    const solos=[];for(const pitch of notes)solos.push(await render((ctx,out)=>synthVoice(ctx,out,pitch,.04,settings,164,instruments[pitch])));
+    const expected=mixed.map((_,i)=>solos.reduce((sum,samples)=>sum+samples[i],0)/Math.sqrt(notes.length));
+    check(mixed.every((value,i)=>Math.abs(value-expected[i])<.00001),'a mixed-instrument chord renders the exact normalized sum of its three painted voices',results);
+    const homogeneous=await render((ctx,out)=>synthChord(ctx,out,notes,.04,settings,164,'bass'));
+    check(mixed.some((value,i)=>Math.abs(value-homogeneous[i])>.01),'mixed painting audibly changes the waveform from a single-instrument chord',results);
+    const song=editSong(editSong(createSong(),{type:'synth',value:'arcade'}),{type:'note',step:0,note:3});
+    const types=[], engine=new AudioEngine(()=>song,()=>{},()=>{},error=>{throw new Error(error)});
+    engine.ensureGraph();const oscillator=engine.context.createOscillator.bind(engine.context);
+    engine.context.createOscillator=()=>{const node=oscillator();types.push(node);return node;};engine.setVolume(0);
+    try {
+      await engine.audition('chord',song.melody[0],song.noteSounds[0]);await wait(30);
+      check(types.some(node=>node.type==='sawtooth')&&types.some(node=>node.type==='square'),'stopped chord preview uses both painted instrument types',results);
+      engine.stop();types.length=0;await engine.start();await wait(90);
+      check(types.some(node=>node.type==='sawtooth')&&types.some(node=>node.type==='square'),'scheduled loop playback uses both painted instrument types',results);
+    } finally {engine.stop();await engine.context.close();}
+  } finally {
+    pad=null;if(descriptor)Object.defineProperty(navigator,'getGamepads',descriptor);else delete navigator.getGamepads;
+    if($('#play').getAttribute('aria-pressed')==='true')$('#play').click();
+    $('[data-loop-bars="1"]').click();$('[data-preset="club"]').click();$('[data-preset="breaks"]').click();$('#reset').click();$('#tab-drums').click();
+    if(stored===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,stored);
   }
   return results;
 }
