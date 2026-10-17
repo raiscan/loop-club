@@ -103,3 +103,18 @@ browser rerun confirmed that the loaded audio exports match the new code.
 
 Hardware limitations remain as above: physical Android/Xbox testing is not
 claimed. Push and post-push worktree cleanup remain pending a Git remote.
+
+## Playback button placement — 17 October 2026
+
+Moved the existing Play/Stop button from the introduction into a shared
+transport group immediately before Start over. The group stays together when
+other controls wrap on small screens. Playback handlers and IDs are unchanged.
+Release asset queries advance to `v=3` to avoid stale layout assets.
+
+Baseline `main` at `e633215` passed all 17 Node tests. The development tree
+passes the same 17, all JavaScript syntax checks and `git diff --check`.
+The existing browser suite passed 86 checks in the full 16-step desktop layout;
+its two page-crossing checks apply only to narrower paged layouts. Layout checks
+passed in all sections at desktop, 800px and 360px. Direct geometry checks
+confirmed one Play/Stop button, sharing a parent with Start over, immediately
+preceding it and staying on the same row at all tested widths.

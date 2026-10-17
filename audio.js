@@ -1,4 +1,4 @@
-import { NOTES } from './model.js?v=2';
+import { NOTES } from './model.js?v=3';
 
 const noiseBuffers = new WeakMap();
 

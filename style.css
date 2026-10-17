@@ -235,3 +235,13 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .page-picker { margin-left: 0; width: 100%; }.page-picker button { flex: 1; min-width: 0; }.pattern-controls { gap: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Keep playback and reset together, including when the transport wraps. */
+.transport-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
+.transport-actions .play-button { color: var(--ink); min-height: 48px; min-width: 140px; padding: 12px 16px; border-radius: 11px; font-size: 16px; }
+.transport-actions .play-button .icon { width: 20px; height: 20px; }
+.transport-actions .reset-button { margin-left: 0; }
+@media (max-width: 620px) {
+  .transport-actions { width: 100%; }
+  .transport-actions .play-button { flex: 1; }
+}
