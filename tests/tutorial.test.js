@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chooseTutorialVoice, TutorialSpeech, tutorialPicture, TUTORIAL_STEPS, TUTORIAL_NARRATIONS, spotlightPath } from '../tutorial.js';
-import { createSong } from '../model.js';
+import { createSong, editSong } from '../model.js';
 import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -117,11 +117,11 @@ test('speech failures and missing device APIs leave visual guidance usable', () 
 
 test('tutorial pictures show the actual beat, chord notes and sound settings', () => {
   const song = createSong('cloud');
-  const loop = tutorialPicture('loop', song, 15);
-  assert.equal((loop.match(/<rect /g) || []).length, 16);
+  const loop = tutorialPicture('loop', song, 3);
+  assert.equal((loop.match(/<rect /g) || []).length, 4);
   assert.match(loop, /stroke-width="3"/);
   const chord = tutorialPicture('chord', song);
-  assert.equal((chord.match(/fill="#91b943"/g) || []).length, 3);
+  assert.equal((chord.match(/fill="#91b943"/g) || []).length, song.melody.reduce((sum, notes) => sum + notes.length, 0));
   const bright = tutorialPicture('wave', { ...song, sound: { ...song.sound, brightness: 100 } });
   assert.notEqual(bright, tutorialPicture('wave', song));
   assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 2);
@@ -157,7 +157,7 @@ test('musical lesson playback isolates the edited instrument and preserves chord
 
 test('keeping a tutorial song repeats the learned phrase across the full loop', async () => {
   const { finishTutorialSong, blankTutorialSong } = await import('../tutorial.js');
-  const lesson = blankTutorialSong(createSong());
+  const lesson = blankTutorialSong(editSong(createSong(), { type: 'bars', value: 4 }));
   lesson.drums[0][0] = true; lesson.melody[0] = [0, 1];
   const result = finishTutorialSong(lesson);
   for (const step of [0, 4, 8, 12]) {

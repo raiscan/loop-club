@@ -420,3 +420,50 @@ Final development verification:
 
 Verification uses a browser and a simulated Xbox boundary. Physical Win11,
 Android and controller hardware were not available.
+
+## Four-beat loops and exploratory narration — 17 October 2026
+
+Baseline main `1c78813` was clean. The Sites source helper fetched and checked
+that the local main was current. Baseline `node --test tests/*.test.js` passed
+35 tests; runtime syntax checks and all 354 browser checks passed, with no
+baseline failures.
+
+User clarification sets four boxes per bar, one box per quarter-note beat in
+4/4. Small/Medium/Large contain 4/8/16 beats. Grid columns and loop lights match
+the song size; Small has four widened columns and no unused boxes. Paging is
+only used when needed to keep targets at least 44px. Growth copies the current
+phrase, shrinking retains initial bars, and Undo restores removed notes.
+Preset/reset retain size; a playing resize restarts cleanly. Older 16-step
+saves retain all notes as four bars; playback now gives each box a full beat
+rather than a sixteenth, so their timing changes at the same BPM. Fresh example
+patterns are condensed to four beat boxes. The tutorial practices one bar and
+restores or fills the original loop size on exit/Keep it.
+
+All five reward recordings now retain the opening praise, name a repeatable
+action and describe the next activity before inviting Next. Matching large
+visual prompts suggest another try. Approved Scottish voice settings remain
+unchanged. Automated audio transcription matched all five scripts and reported
+no unclear words, noise or truncation; that is an automated check rather than
+a physical-device listening assessment.
+
+Development `node --test tests/*.test.js`: 38 tests pass. Timing checks now
+assert quarter-note intervals at 30 and 300 BPM and wrapping at 4/8/16 beats.
+All runtime/build/generator/browser-check syntax checks, static build and
+`git diff --check` pass. The archived original-site reference is unchanged.
+The updated full browser suite passes 374 checks at 800×1280, covering actual
+Web Audio traversal of each size, resizing/undo during playback, independent
+late-bar drums/chords, no leftover Small boxes, widening, persistence writes,
+simulated Xbox size selection/page crossing and original tutorial interactions.
+
+Responsive layout/reading/theme checks pass all 240 checks per viewport
+at 360×800, 800×360 and 1280×800 (all three sizes across five themes). The guide
+passes 110 focused checks at 360×800 and 800×360. A reproduced landscape overlap
+came from highlighting four newly widened beat columns next to a 320px helper.
+Short landscape tutorial grids now reserve a side-by-side area for the helper;
+the same failing interaction passes with large targets and no overlap.
+The focused guide also passes 110 checks at 1280×800, including keeping a
+learned phrase in an existing four-bar song. Actual reloads restore Medium's
+8 columns and Small's 4 columns/4 lights with paging hidden; an old version-3
+16-step save reloads as version 4/Large with 16 columns. Playback stays stopped.
+Hardware limits remain: browser and simulated pad checks, no physical Android
+or Windows/Xbox device test.

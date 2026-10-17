@@ -70,34 +70,34 @@
       "generation_id": "gen-tts-1792242263-63E7l14rNvTHf6u8jIF8"
     },
     "reward-drum": {
-      "text": "Your drum! That was you. Tap Next.",
-      "seconds": 4.12,
-      "sha256": "5981e60fe3e21e420899eefc18024031e1f02223d64b1ff504ecd15700ab92ef",
-      "generation_id": "gen-tts-1792244886-oeUhN4IXKCWMzUmPUdFA"
+      "text": "Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.",
+      "seconds": 8.4,
+      "sha256": "ae1d1005eeb4299769792c93c64b428137d7dc4db868d6352e25182b7026895d",
+      "generation_id": "gen-tts-1792246127-GvxThDQxZDNbAdpBYflm"
     },
     "reward-beat": {
-      "text": "Your beat! That was you. Tap Next.",
-      "seconds": 4.6,
-      "sha256": "95102c7e15154aff0e9e5538870d0dab72693a76e03adefc74492455012d7436",
-      "generation_id": "gen-tts-1792244890-2JykQzI69u6gzxqu9RUs"
+      "text": "Your beat! That was you. Tap more boxes for more beats. When you’re ready to add a tune, tap Next.",
+      "seconds": 8.68,
+      "sha256": "d23d7ccdd1ddd4971d6056910db4980d3b8e959be9b7ce31e15ea20dfb16370e",
+      "generation_id": "gen-tts-1792246131-qrXOcKqhubMqPAgh0Usf"
     },
     "reward-note": {
-      "text": "Your note! That was you. Tap Next.",
-      "seconds": 4.52,
-      "sha256": "42ad50c41c2abf96c7bbbd759ae9007a68a454e30ad7fe4798cede84604f5459",
-      "generation_id": "gen-tts-1792244892-bBMqAX2Q0FjnnVNyVpn4"
+      "text": "Your note! That was you. Tap more boxes for more notes. When you’re ready to stack notes, tap Next.",
+      "seconds": 9.16,
+      "sha256": "e20c533679d7f8b9d490a62b20ebdbddee1924a56fa19ac817b570c436c94f20",
+      "generation_id": "gen-tts-1792246135-XWgNyqWdLZbd63PJpqMa"
     },
     "reward-chord": {
-      "text": "Your notes! That was you. Tap Next.",
-      "seconds": 4.48,
-      "sha256": "bcdcbea9e32a561c3856f6c940ae62a035ae842558ff608903525799b1b5038f",
-      "generation_id": "gen-tts-1792244895-7w0qff5CCNF6DsT6RVnr"
+      "text": "Your notes! That was you. Try more notes in your stacks. When you’re ready to try new sounds, tap Next.",
+      "seconds": 9.04,
+      "sha256": "b109311265dd37ab93a5c0f51a0e5020f14140a2abba00e77f4ab34e7beb958d",
+      "generation_id": "gen-tts-1792246140-w4kbFXO63i0ZsLOql6ww"
     },
     "reward-slide": {
-      "text": "Your sound! That was you. Tap Next.",
-      "seconds": 4.04,
-      "sha256": "6ac0f24f7211542fcb013d75700a3ef4bae13849981de36e0722679041936a87",
-      "generation_id": "gen-tts-1792244897-XyM78xquWGZIZs9TiSCl"
+      "text": "Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.",
+      "seconds": 10.16,
+      "sha256": "3876d8366db5de01ca70f6862da3b77bc5199a7712c37041bc23b939ac45345c",
+      "generation_id": "gen-tts-1792246144-FdAYlVrIcKhsEE4F1tUb"
     }
   }
 }

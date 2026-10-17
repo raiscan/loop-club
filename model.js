@@ -1,4 +1,5 @@
-export const STEPS = 16;
+export const STEPS = 4;
+export const LOOP_BARS = [1, 2, 4];
 export const TEMPO_MIN = 30;
 export const TEMPO_MAX = 300;
 export const SAVE_KEY = 'loop-club.song.v1';
@@ -95,22 +96,27 @@ export function createSong(preset = 'breaks') {
   if (!Object.hasOwn(PRESETS, preset)) preset = 'breaks';
   const source = PRESETS[preset];
   return {
-    version: 3, preset, tempo: source.tempo,
+    version: 4, bars: 1, preset, tempo: source.tempo,
     drums: Array.from({ length: DRUM_TRACKS }, (_, row) => source.drums[row]
-      ? [...source.drums[row]].map(value => value === '1') : Array(STEPS).fill(false)),
+      ? Array.from({ length: STEPS }, (_, beat) => source.drums[row].slice(beat * 4, beat * 4 + 4).includes('1')) : Array(STEPS).fill(false)),
     drumSounds: [...(source.drumSounds || ['kick', 'snare', 'hat', 'clap'])], synth: source.synth || 'bass',
-    melody: source.melody.map(note => note === null ? [] : Array.isArray(note) ? [...note] : [note]), sound: { ...source.sound }
+    melody: Array.from({ length: STEPS }, (_, beat) => {
+      const note = source.melody.slice(beat * 4, beat * 4 + 4).find(note => note !== null);
+      return note === undefined ? [] : Array.isArray(note) ? [...note] : [note];
+    }), sound: { ...source.sound }
   };
 }
 
 export function restoreSong(raw) {
   try {
     const song = JSON.parse(raw);
-    if (!song || ![1, 2, 3].includes(song.version) || !Object.hasOwn(PRESETS, song.preset) ||
+    const bars = song?.version === 4 ? song.bars : 4;
+    const steps = bars * STEPS;
+    if (!song || ![1, 2, 3, 4].includes(song.version) || !LOOP_BARS.includes(bars) || !Object.hasOwn(PRESETS, song.preset) ||
       !Number.isInteger(song.tempo) || song.tempo < TEMPO_MIN || song.tempo > TEMPO_MAX ||
       !Array.isArray(song.drums) || song.drums.length !== (song.version === 1 ? 3 : DRUM_TRACKS) ||
-      !song.drums.every(row => Array.isArray(row) && row.length === STEPS && row.every(value => typeof value === 'boolean')) ||
-      !Array.isArray(song.melody) || song.melody.length !== STEPS ||
+      !song.drums.every(row => Array.isArray(row) && row.length === steps && row.every(value => typeof value === 'boolean')) ||
+      !Array.isArray(song.melody) || song.melody.length !== steps ||
       !song.melody.every(notes => song.version < 3 ? notes === null || index(notes, NOTES.length)
         : Array.isArray(notes) && notes.length <= NOTES.length && notes.every(note => index(note, NOTES.length)) && new Set(notes).size === notes.length) ||
       !song.sound || !['brightness', 'length', 'wobble'].every(key =>
@@ -119,8 +125,8 @@ export function restoreSong(raw) {
       !song.drumSounds.every(id => Object.hasOwn(DRUM_SOUNDS, id)) || !Object.hasOwn(SYNTH_SOUNDS, song.synth))) return null;
     // Select only known fields; saved data never supplies interface or audio objects.
     return {
-      version: 3, preset: song.preset, tempo: song.tempo,
-      drums: song.version === 1 ? [...song.drums.map(row => [...row]), Array(STEPS).fill(false)] : song.drums.map(row => [...row]),
+      version: 4, bars, preset: song.preset, tempo: song.tempo,
+      drums: song.version === 1 ? [...song.drums.map(row => [...row]), Array(16).fill(false)] : song.drums.map(row => [...row]),
       drumSounds: song.version === 1 ? ['kick', 'snare', 'hat', 'clap'] : [...song.drumSounds],
       synth: song.version === 1 ? 'bass' : song.synth,
       melody: song.melody.map(notes => song.version < 3 ? notes === null ? [] : [notes] : [...notes].sort((a, b) => a - b)),
@@ -131,9 +137,15 @@ export function restoreSong(raw) {
 
 export function editSong(song, edit) {
   const next = clone(song);
-  if (edit.type === 'drum' && index(edit.row, DRUM_TRACKS) && index(edit.step, STEPS)) {
+  const steps = song.bars * STEPS;
+  if (edit.type === 'bars' && LOOP_BARS.includes(edit.value)) {
+    const length = edit.value * STEPS;
+    next.bars = edit.value;
+    next.drums = song.drums.map(row => Array.from({ length }, (_, step) => row[step % steps]));
+    next.melody = Array.from({ length }, (_, step) => [...song.melody[step % steps]]);
+  } else if (edit.type === 'drum' && index(edit.row, DRUM_TRACKS) && index(edit.step, steps)) {
     next.drums[edit.row][edit.step] = !next.drums[edit.row][edit.step];
-  } else if (edit.type === 'note' && index(edit.step, STEPS) && index(edit.note, NOTES.length)) {
+  } else if (edit.type === 'note' && index(edit.step, steps) && index(edit.note, NOTES.length)) {
     const notes = next.melody[edit.step];
     next.melody[edit.step] = notes.includes(edit.note) ? notes.filter(note => note !== edit.note) : [...notes, edit.note].sort((a, b) => a - b);
   } else if (edit.type === 'tempo' && Number.isFinite(edit.value)) {

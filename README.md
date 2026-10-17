@@ -53,7 +53,8 @@ currently targeted at PC. No tablet/controller pairing is required.
   playable. The sound lesson loops the new notes while the sliders change them.
 - A soft chime marks each action. Sixteen bundled MP3 prompts use one friendly
   soft Scottish female AI voice, generated once through OpenRouter. Five
-  reward lines praise the played result and say “Tap Next”; experimenting
+  reward lines praise the played result, suggest what to try again, and name
+  the next activity before “Tap Next”; experimenting
   interrupts the reminder so the music can be heard. Windows 11,
   Android and other devices play the same files without installing a voice.
   Device speech is a fallback if a clip fails to load or play. **Say it** reads
@@ -73,8 +74,18 @@ currently targeted at PC. No tablet/controller pairing is required.
 - **Drums:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
   cowbell. Tap a numbered sound selector to cycle instruments; it previews
-  the new sound and keeps the pattern. The large drum pads play individual sounds. A loop always has 16 steps. Narrower screens show
-  eight or four at a time, with numbered page buttons; the full loop keeps playing.
+  the new sound and keeps the pattern. The large drum pads play individual sounds.
+- **Loop size:** Small is 1 bar (4 beat boxes), Medium is 2 bars (8 boxes),
+  and Large is 4 bars (16 boxes). Every box is one quarter-note beat: four
+  beats per bar in 4/4. Small shows only four boxes, widened to fill the grid.
+  Growing repeats the current pattern into extra bars, with independently
+  editable drums and chords. Shrinking keeps the first bars; Undo restores
+  removed music and size. Presets and Start over keep the selected size.
+  Resizing during playback restarts at the beginning. Tablets show up to eight
+  boxes and narrower screens four; bar buttons reveal the rest without shrinking
+  targets. D-pad navigation crosses pages. The moving lights show the whole loop.
+  The tour uses a four-beat practice song; leaving restores the original size,
+  and Keep it repeats the learned phrase across that size.
 - **Tunes:** tap a coloured square to add a note. Stack several notes in the same
   column to play a chord; tap a note again to remove only that note.
   While stopped, editing a column previews the whole resulting chord. The six keys use C minor pentatonic notes and play individually.
@@ -87,7 +98,10 @@ currently targeted at PC. No tablet/controller pairing is required.
 - The latest groove, tempo and synth settings save automatically in this
   browser's local storage, including drum and synth instrument choices. Older
   saves upgrade automatically, keeping every existing note and step.
-  Single notes become one-note chords; three-drum saves also gain an empty
+  Earlier 16-step saves become Large four-bar loops so every hit and note is retained.
+  Playback now gives each box a full beat, so those old sequences play more slowly
+  at the same BPM than the former sixteenth-note grid. New examples condense each
+  group of four old steps into one beat. Single notes become one-note chords; three-drum saves also gain an empty
   fourth lane. It is one current song per browser/origin, not a
   library or cloud account. Volume starts at a moderate default each visit.
   If storage is unavailable, the instrument still works and reports that saving
@@ -138,14 +152,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=12')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=13')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=12')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=13')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -167,7 +181,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=12`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=13`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 

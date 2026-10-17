@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=12';
-import { AudioEngine } from './audio.js?v=12';
-import { GamepadReader } from './gamepad.js?v=12';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=12';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=13';
+import { AudioEngine } from './audio.js?v=13';
+import { GamepadReader } from './gamepad.js?v=13';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=13';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -44,6 +44,7 @@ try {
 } catch { /* Saving remains optional; the instrument can still play. */ }
 let history = new SongHistory(saved || createSong());
 let section = 'drums', page = 0, visibleSteps = stepCount();
+let renderedSteps = 0;
 let currentStep = -1, controllerMode = false, connectedPad = null;
 let messageTimer, previewTimer, groupTimer;
 const reader = new GamepadReader();
@@ -68,19 +69,27 @@ function saveSong() {
 }
 
 function commit(next) {
+  const resized = next.melody.length !== history.song.melody.length;
+  const resume = resized && (engine.playing || engine.pending);
+  if (resized) engine.stop();
   if (!history.commit(next)) return;
   saveSong(); updateSong();
+  if (resume) engine.start();
 }
 
 function undo() {
   if (!history.canUndo) return;
+  const previousSteps = history.song.melody.length;
+  const wasPlaying = engine.playing || engine.pending;
   history.undo(); saveSong(); updateSong();
+  if (previousSteps !== history.song.melody.length) { engine.stop(); if (wasPlaying) engine.start(); }
   message('Try again!');
   if (document.activeElement === $('#undo') && $('#undo').disabled) focusControl($(`#tab-${section}`));
 }
 
 function stepCount() {
-  return matchMedia('(max-width: 559px)').matches ? 4 : matchMedia('(max-width: 1249px)').matches ? 8 : 16;
+  const capacity = matchMedia('(max-width: 559px)').matches ? 4 : matchMedia('(max-width: 1249px)').matches ? 8 : 16;
+  return Math.min(capacity, history.song.melody.length);
 }
 
 function focusControl(element) {
@@ -98,7 +107,7 @@ function numberRow(root) {
     const label = document.createElement('span');
     label.className = 'step-number' + (i % 4 === 0 ? ' beat-start' : '');
     label.dataset.step = i;
-    label.textContent = i + 1;
+    label.textContent = i % STEPS + 1;
     root.append(label);
   }
 }
@@ -113,6 +122,11 @@ function flash(element) {
 }
 
 function buildGrids() {
+  renderedSteps = history.song.melody.length;
+  const firstStep = page * visibleSteps;
+  visibleSteps = stepCount();
+  page = Math.floor(Math.min(firstStep, renderedSteps - 1) / visibleSteps);
+  $$('.sequence-grid').forEach(grid => grid.style.setProperty('--visible-steps', visibleSteps));
   const drumGrid = $('#drum-grid'), melodyGrid = $('#melody-grid');
   drumGrid.replaceChildren(); melodyGrid.replaceChildren();
   numberRow(drumGrid); numberRow(melodyGrid);
@@ -167,24 +181,30 @@ function buildGrids() {
     }
   });
   const picker = $('#page-picker'); picker.replaceChildren();
-  for (let p = 0; p < STEPS / visibleSteps; p++) {
+  picker.hidden = section === 'sound' || renderedSteps <= visibleSteps;
+  for (let p = 0; p < renderedSteps / visibleSteps; p++) {
+    const firstBar = p * visibleSteps / STEPS + 1, lastBar = (p + 1) * visibleSteps / STEPS;
     const button = document.createElement('button');
-    button.textContent = `${p * visibleSteps + 1}–${(p + 1) * visibleSteps}`;
-    button.setAttribute('aria-label', `Steps ${button.textContent}`);
+    button.textContent = firstBar === lastBar ? `Bar ${firstBar}` : `Bars ${firstBar}–${lastBar}`;
+    button.setAttribute('aria-label', button.textContent);
     button.setAttribute('aria-pressed', p === page);
     button.dataset.page = p;
     button.addEventListener('click', () => {
-      const keepFocus = document.activeElement === button;
-      changePage(p);
-      if (keepFocus) focusControl($(`[data-page="${p}"]`));
+      changePage(p); focusControl($(`[data-page="${p}"]`));
     });
     picker.append(button);
+  }
+  $('#loop-lights').replaceChildren();
+  $('#loop-lights').style.gridTemplateColumns = `repeat(${renderedSteps}, 1fr)`;
+  for (let step = 0; step < renderedSteps; step++) {
+    const light = document.createElement('i'); light.className = 'loop-light'; light.dataset.step = step;
+    $('#loop-lights').append(light);
   }
   updateSong(); showStep(currentStep);
 }
 
 function changePage(nextPage) {
-  page = Math.max(0, Math.min(STEPS / visibleSteps - 1, nextPage));
+  page = Math.max(0, Math.min(history.song.melody.length / visibleSteps - 1, nextPage));
   buildGrids();
 }
 
@@ -197,7 +217,7 @@ function setSection(next, focusTab = false) {
     button.tabIndex = selected ? 0 : -1;
   });
   sections.forEach(name => { $(`#panel-${name}`).hidden = name !== section; });
-  $('#page-picker').hidden = section === 'sound';
+  $('#page-picker').hidden = section === 'sound' || history.song.melody.length <= visibleSteps;
   $('#synth-picker').hidden = section === 'drums';
   const titles = {
     drums: ['Tap a box.', 'Make a beat!'],
@@ -215,6 +235,8 @@ function updateRange(input) {
 
 function updateSong() {
   const song = history.song;
+  if (renderedSteps !== song.melody.length || visibleSteps !== stepCount()) { buildGrids(); return; }
+  $$('[data-loop-bars]').forEach(button => button.setAttribute('aria-pressed', Number(button.dataset.loopBars) === song.bars));
   $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', button.dataset.preset === song.preset));
   $$('[data-drum]').forEach(button => button.setAttribute('aria-pressed', song.drums[button.dataset.drum][button.dataset.step]));
   $$('[data-drum-pad]').forEach(pad => {
@@ -222,7 +244,7 @@ function updateSong() {
     pad.innerHTML = `${icon(drum.icon)}<span>${drum.name}</span>`;
     pad.setAttribute('aria-label', `Play ${drum.name}, drum ${row + 1}`);
   });
-  $$('[data-drum]').forEach(button => button.setAttribute('aria-label', `${DRUM_SOUNDS[song.drumSounds[button.dataset.drum]].name}, drum ${Number(button.dataset.drum) + 1}, step ${Number(button.dataset.step) + 1}`));
+  $$('[data-drum]').forEach(button => button.setAttribute('aria-label', `${DRUM_SOUNDS[song.drumSounds[button.dataset.drum]].name}, drum ${Number(button.dataset.drum) + 1}, bar ${Math.floor(Number(button.dataset.step) / STEPS) + 1}, step ${Number(button.dataset.step) % STEPS + 1}`));
   $$('[data-drum-choice]').forEach(button => {
     const row = Number(button.dataset.drumChoice), drum = DRUM_SOUNDS[song.drumSounds[row]];
     button.innerHTML = `${icon(drum.icon)}<span><small>${row + 1}</small>${drum.name}</span><span class="switch-icon" aria-hidden="true">↻</span>`;
@@ -260,6 +282,11 @@ function drawWave() {
 function showStep(step) {
   currentStep = step;
   $$('[data-step]').forEach(element => element.classList.toggle('current', Number(element.dataset.step) === step));
+  $$('[data-page]').forEach(button => {
+    const playing = step >= 0 && Number(button.dataset.page) === Math.floor(step / visibleSteps);
+    button.classList.toggle('playing', playing);
+    button.setAttribute('aria-label', `${button.textContent}${playing ? ', playing' : ''}`);
+  });
   tutorial?.draw();
   if (lessonPreview === 'drum' && step === 0) flash($('[data-drum-pad="0"]'));
 }
@@ -267,7 +294,7 @@ function showStep(step) {
 function stopLessonPreview() { if (!lessonPreview) return; lessonPreview = null; engine.stop(); }
 function playLessonPreview(kind, continuous = false) {
   lessonPreview = null; engine.stop(); lessonPreview = kind;
-  engine.start({ steps: 4, cycles: continuous ? Infinity : 4 });
+  engine.start({ steps: 4, cycles: continuous ? Infinity : 1 });
 }
 
 function showPlayback(state) {
@@ -287,8 +314,11 @@ function togglePlay() {
 
 $('#play').addEventListener('click', togglePlay);
 $('#undo').addEventListener('click', undo);
+$$('[data-loop-bars]').forEach(button => button.addEventListener('click', () => {
+  history.end(); commit(editSong(history.song, { type: 'bars', value: Number(button.dataset.loopBars) }));
+}));
 $('#reset').addEventListener('click', () => {
-  history.end(); commit(createSong(history.song.preset));
+  history.end(); commit(editSong(createSong(history.song.preset), { type: 'bars', value: history.song.bars }));
   message('Back to the start. Undo brings yours back.');
 });
 $('#song-details').textContent = Object.entries(PRESETS).map(([id, preset]) => `${songNames[id]}: ${preset.name} (${preset.genre.toLowerCase()})`).join('; ') + '.';
@@ -299,7 +329,7 @@ for (const [id, preset] of Object.entries(PRESETS)) {
   button.setAttribute('aria-pressed', 'false');
   button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><strong>${songNames[id]}</strong><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
   button.addEventListener('click', () => {
-    history.end(); commit(createSong(id));
+    history.end(); commit(editSong(createSong(id), { type: 'bars', value: history.song.bars }));
   });
   $('.groove-picker').append(button);
 }
@@ -404,7 +434,7 @@ function moveFocus(direction) {
     const nextRow = horizontal ? row : row + sign, nextCol = horizontal ? col + sign : col;
     const adjacent = root.querySelector(`[data-grid-row="${nextRow}"][data-grid-col="${nextCol}"]`);
     if (adjacent) { focusControl(adjacent); return; }
-    if (horizontal && nextCol >= visibleSteps && page < STEPS / visibleSteps - 1) {
+    if (horizontal && nextCol >= visibleSteps && page < history.song.melody.length / visibleSteps - 1) {
       changePage(page + 1);
       focusControl(root.querySelector(`[data-grid-row="${row}"][data-grid-col="0"]`)); return;
     }
@@ -520,10 +550,6 @@ for (const [id, synth] of Object.entries(SYNTH_SOUNDS)) {
   });
   $('#synth-picker').append(button);
 }
-for (let step = 0; step < STEPS; step++) {
-  const light = document.createElement('i'); light.className = 'loop-light'; light.dataset.step = step;
-  $('#loop-lights').append(light);
-}
 buildGrids(); saveSong();
 tutorial = new ZachTutorial({
   getSong: () => history.song,
@@ -535,14 +561,14 @@ tutorial = new ZachTutorial({
     engine.stop();
     const made = history.song;
     history = originalHistory || history; originalHistory = null;
-    if (keepSong) { history.commit(made); saveSong(); }
+    if (keepSong) { history.commit(editSong(made, { type: 'bars', value: history.song.bars })); saveSong(); }
     buildGrids(); setSection(section);
   },
   speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
   onStart() {
     if (activeDialog()) activeDialog().close();
     clearTimeout(previewTimer); engine.stop(); history.end();
-    originalHistory = history; history = new SongHistory(history.song);
+    originalHistory = history; history = new SongHistory(editSong(history.song, { type: 'bars', value: 1 }));
     setSection('drums'); changePage(0);
   },
   prepare(step, initial) {

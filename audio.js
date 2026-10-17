@@ -1,15 +1,17 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=12';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=13';
 
 const noiseBuffers = new WeakMap();
 
-export function scheduledSteps(clock, now, tempo, steps = 16) {
+export function scheduledSteps(clock, now, tempo, steps = STEPS) {
+  const length = steps === 4 || LOOP_BARS.includes(steps / STEPS) ? steps : STEPS;
+  clock.step %= length;
   const bpm = Number.isFinite(tempo) ? Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, tempo)) : 120;
   if (clock.nextTime < now - 0.1) clock.nextTime = now + 0.025;
   const events = [];
   while (clock.nextTime < now + 0.09 && events.length < 4) {
     events.push({ step: clock.step, time: clock.nextTime });
-    clock.nextTime += 60 / bpm / 4;
-    clock.step = (clock.step + 1) % (steps === 4 ? 4 : 16);
+    clock.nextTime += 60 / bpm;
+    clock.step = (clock.step + 1) % length;
   }
   return events;
 }
@@ -206,7 +208,7 @@ export class AudioEngine {
     if (this.context.state !== 'running') throw new Error('Tap Play to turn on sound.');
   }
 
-  async start({ steps = 16, cycles = Infinity } = {}) {
+  async start({ steps = this.getSong().melody.length, cycles = Infinity } = {}) {
     if (this.playing || this.pending) return;
     const generation = ++this.generation;
     this.pending = true; this.onState('starting');
@@ -214,7 +216,7 @@ export class AudioEngine {
       await this.ready();
       if (generation !== this.generation || globalThis.document?.hidden) return;
       this.pending = false; this.playing = true;
-      this.loopSteps = steps === 4 ? 4 : 16;
+      this.loopSteps = steps === 4 || LOOP_BARS.includes(steps / STEPS) ? steps : STEPS;
       this.stepsLeft = Number.isInteger(cycles) && cycles > 0 ? this.loopSteps * Math.min(cycles, 16) : Infinity;
       this.bus.gain.cancelScheduledValues(this.context.currentTime);
       this.bus.gain.setValueAtTime(1, this.context.currentTime);
@@ -250,7 +252,7 @@ export class AudioEngine {
       this.visuals.add(timer);
       if (this.stepsLeft === 0) {
         const end = setTimeout(() => { this.visuals.delete(end); this.stop(); },
-          Math.max(0, (time + 60 / song.tempo / 4 - this.context.currentTime) * 1000));
+          Math.max(0, (time + 60 / song.tempo - this.context.currentTime) * 1000));
         this.visuals.add(end);
       }
     }

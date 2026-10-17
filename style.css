@@ -177,7 +177,7 @@ dd { margin: 0; color: #65705d; }
 .xbox-b { background: #a53c31; }.xbox-x { background: #326c9a; }
 .help-note { font-size: 11px !important; }
 dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top: 20px; }
-@media (min-width: 1250px) { .page-picker { display: none; } }
+
 @media (max-width: 1249px) {
   .app-shell { max-width: 1080px; }
   .sequence-grid { --visible-steps: 8; grid-template-columns: 85px repeat(var(--visible-steps), minmax(0,1fr)); gap: 10px 8px; }
@@ -563,3 +563,24 @@ html[data-theme=space] .step.current[aria-pressed=true] { box-shadow: inset 0 0 
 button:focus-visible, a:focus-visible, input:focus-visible, .controller-focus { outline-color: var(--ink) !important; }
 dialog::backdrop { background: #17213799; }
 html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
+
+/* Keep each bar roomy: longer songs add bars, not smaller step targets. */
+.loop-size { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.loop-size h2 { font-size: 22px; margin: 0; }
+.loop-size-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: min(100%, 420px); }
+.loop-size-choices button, .page-picker button { border: 2px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 18px; font-weight: 700; min-height: 52px; padding: 8px; }
+.loop-size-choices button { display: grid; gap: 3px; }
+.loop-size-choices button span:last-child { font-weight: 500; }
+.loop-size-choices button[aria-pressed=true], .page-picker button[aria-pressed=true] { background: var(--action); color: var(--action-ink); border-color: var(--action-border); }
+.page-picker { flex-wrap: wrap; }
+.page-picker button { position: relative; padding-bottom: 15px; }
+.page-picker button::after { content: ''; position: absolute; left: 25%; right: 25%; bottom: 5px; height: 5px; border-radius: 4px; background: transparent; }
+.page-picker button.playing::after { background: currentColor; box-shadow: 0 0 0 2px var(--accent); }
+@media (max-width: 699px) {
+  .loop-size { align-items: stretch; flex-direction: column; gap: 10px; }
+  .loop-size-choices { width: 100%; }
+}
+/* In short landscape windows, leave room beside the guide for four large beats. */
+@media (min-width: 700px) and (max-height: 500px) {
+  .tutorial-open .sequence-grid { width: calc(100vw - 410px); margin-left: auto; }
+}

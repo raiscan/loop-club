@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=12';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=12';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=12';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=12';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=13';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=13';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=13';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=13';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -66,8 +66,8 @@ export async function runAudioChecks() {
       const gain = ctx.createGain(); gain.gain.value = 0.55 * 0.65; gain.connect(out);
       const compressor = ctx.createDynamicsCompressor();
       compressor.threshold.value = -12; compressor.ratio.value = 6; compressor.knee.value = 12; compressor.connect(gain);
-      for (let step = 0; step < 16; step++) {
-        const time = 0.04 + step * 60 / song.tempo / 4;
+      for (let step = 0; step < song.melody.length; step++) {
+        const time = 0.04 + step * 60 / song.tempo;
         song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, song.drumSounds[index], time); });
         if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth);
       }
@@ -154,7 +154,7 @@ export async function runInteractionChecks() {
     $('#play').click(); await wait(350);
     check($('#play-state').classList.contains('playing') && document.querySelectorAll('.loop-light.current').length === 1, 'play starts audio and the moving loop light', results);
     const playingStep = $('.loop-light.current').dataset.step;
-    await wait(150);
+    await wait(420);
     check($('.loop-light.current').dataset.step !== playingStep, 'playhead advances with the loop', results);
     $('#play').click(); await wait(60);
     check($('#play').getAttribute('aria-pressed') === 'false' && document.querySelectorAll('.current').length === 0, 'stop clears the playhead', results);
@@ -181,7 +181,7 @@ export async function runInteractionChecks() {
     await press(15);
     check(document.activeElement.dataset.step === '1' && document.activeElement.dataset.drum === '0', 'D-pad moves to the neighbouring step', results);
     const columns = document.querySelectorAll('#drum-grid [data-drum="0"]').length;
-    if (columns < 16) {
+    if (columns < readSong().melody.length) {
       $(`[data-drum="0"][data-step="${columns - 1}"]`).focus();
       await press(15);
       check(document.activeElement.dataset.step === String(columns), 'D-pad crosses into the next page of steps', results);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runThemeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -442,7 +442,7 @@ export async function runTutorialChecks() {
     }
     check(!$('#tutorial-done').hidden && $('#tutorial-ring').hidden, 'tutorial ends with a clear Done button', results);
     $('#tutorial-done').click();
-    check(readSong().melody[0].length === 2 && [0, 4, 8, 12].every(step => readSong().drums[0][step]), 'Keep it saves the learned phrase as a full loop', results);
+    check(readSong().melody[0].length === 2 && readSong().drums[0].every((hit,step) => step % 4 !== 0 || hit), 'Keep it saves the learned phrase as a full loop', results);
     $('#undo').click();
     check(same(readSong(), before), 'one Undo restores the original song after keeping a lesson', results);
     check(card.hidden && $('#tutorial-shade').hidden && !$('[aria-describedby~="tutorial-title"]'), 'Done clears the prompt, dimming and target description', results);
@@ -639,7 +639,7 @@ export async function runLessonAudioChecks() {
   const engine = new AudioEngine(() => tutorialPlaybackSong(song, 'beat'), step => steps.push(step), state => states.push(state), error => errors.push(error));
   try {
     await engine.start({ steps: 4, cycles: 2 });
-    for (let i = 0; i < 40 && engine.playing; i++) await wait(50);
+    for (let i = 0; i < 85 && engine.playing; i++) await wait(50);
     check(errors.length === 0 && states.includes('playing') && states.at(-1) === 'stopped', 'musical reward starts real Web Audio and ends automatically', results);
     check(same(steps.filter(step => step >= 0), [0, 1, 2, 3, 0, 1, 2, 3]), 'reward playback visits only its four highlighted steps for the requested cycles', results);
     check(!engine.playing && engine.visuals.size === 0 && engine.voices.size === 0, 'a completed reward leaves no scheduled sound or highlight', results);
@@ -704,6 +704,80 @@ export async function runThemeLayoutChecks() {
     if (!$('#theme-dialog').open) $('#theme-open').click();
     $(`[data-theme-choice="${original || 'sunny'}"]`).click(); $('#theme-done').click(); await wait(40);
     if (stored === null) localStorage.removeItem('loop-club.theme.v1'); else localStorage.setItem('loop-club.theme.v1', stored);
+  }
+  return results;
+}
+
+export async function runLoopSizeChecks() {
+  const results = [], original = localStorage.getItem(SAVE_KEY);
+  const descriptor = Object.getOwnPropertyDescriptor(navigator, 'getGamepads');
+  let pad = null;
+  const press = async button => {
+    pad = { connected: true, mapping: 'standard', id: 'Xbox loop fixture', index: 0, axes: [0,0,0,0], buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: i === button, value: i === button ? 1 : 0 })) };
+    await wait(60); pad = { ...pad, buttons: pad.buttons.map(() => ({ pressed: false, value: 0 })) }; await wait(60);
+  };
+  const columns = () => document.querySelectorAll('#drum-grid .step').length / 4;
+  try {
+    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
+    $('[data-loop-bars="1"]').click(); $('[data-preset="club"]').click(); $('#reset').click(); $('#tab-drums').click();
+    const small = readSong();
+    check(small.melody.length === 4 && columns() === 4, 'Small shows exactly four beat boxes per row', results);
+    const smallWidth = $('#drum-grid .step').getBoundingClientRect().width;
+    for (const bars of [2,4]) {
+      $(`[data-loop-bars="${bars}"]`).click();
+      check(readSong().bars === bars && readSong().melody.length === bars * 4, `${bars} bars: loop contains four beats per bar`, results);
+      check(same(readSong().melody.slice(4,8), small.melody), `${bars} bars: new bars begin with the original pattern`, results);
+    }
+    const largeColumns = columns();
+    check(largeColumns >= 4 && largeColumns <= 16 && $('#drum-grid .step').getBoundingClientRect().width <= smallWidth, 'larger loops use more columns where there is room; Small pads fill the available width', results);
+    $(`[data-page="${Math.floor(12 / largeColumns)}"]`)?.click();
+    check($('#drum-grid [data-step="12"]'), 'bar four opens editable beats 13 onward', results);
+    const before = readSong();
+    $('[data-drum="0"][data-step="12"]').click();
+    check(readSong().drums[0][12] !== before.drums[0][12] && readSong().drums[0][0] === before.drums[0][0], 'editing the last bar leaves the first bar alone', results);
+    $('#tab-melody').click(); $('[data-note="5"][data-step="12"]').click();
+    check(!same(readSong().melody[12],before.melody[12]) && same(readSong().melody[0],before.melody[0]), 'chords in the last bar edit independently and save', results);
+    const large = readSong(); $('[data-loop-bars="1"]').click();
+    check(readSong().bars === 1 && $('#page-picker').hidden && $('#melody-grid [data-step="0"]'), 'shrinking from a late bar returns to the one-bar grid', results);
+    check(columns() === 4 && [...document.querySelectorAll('.sequence-grid [data-step], #loop-lights [data-step]')].every(cell => Number(cell.dataset.step) < 4), 'Small renders only four beats with no leftover boxes or lights', results);
+    $('#undo').click(); check(same(readSong(),large) && $('[data-loop-bars="4"]').getAttribute('aria-pressed') === 'true', 'Undo restores removed bars, chords and the size choice', results);
+    $('[data-preset="pixel"]').click(); $('#reset').click();
+    check(readSong().bars === 4 && readSong().melody.length === 16, 'new songs and Start over keep the selected loop size', results);
+    $('#tab-drums').click(); $('[data-page="0"]')?.click();
+    const tempo = $('#tempo'); tempo.value = 300; tempo.dispatchEvent(new Event('input',{bubbles:true}));
+    $('#play').click(); await wait(950);
+    check(Number($('.loop-light.current')?.dataset.step) >= 4 && $('#drum-grid [data-step="0"]'), 'playback reaches the next bar while leaving the chosen editing page stable', results);
+    $('[data-loop-bars="2"]').click(); await wait(120);
+    check($('#play').getAttribute('aria-pressed') === 'true' && readSong().bars === 2, 'resizing during playback restarts safely at the new length', results);
+    $('#undo').click(); await wait(120);
+    check($('#play').getAttribute('aria-pressed') === 'true' && readSong().bars === 4, 'Undoing a playing resize resumes the restored loop', results);
+    $('#play').click();
+    Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pad?[pad]:[]});
+    $('[data-loop-bars="2"]').focus(); await press(0);
+    check(readSong().bars === 2, 'Xbox A selects a loop size', results);
+    $('[data-page="0"]')?.click();
+    $('#drum-grid [data-drum="0"][data-step="3"]').focus(); await press(15);
+    check(document.activeElement.dataset.step === '4', 'D-pad crosses from the last beat of bar one into bar two', results);
+    pad = null; await wait(60);
+    const saved = localStorage.getItem(SAVE_KEY); $('#tutorial-start').click(); $('#tutorial-exit').click();
+    check(localStorage.getItem(SAVE_KEY) === saved && $('[data-loop-bars="2"]').getAttribute('aria-pressed') === 'true', 'leaving the tutorial restores the longer song and loop size', results);
+    for (const bars of [1,2,4]) {
+      const song = createSong(); song.tempo = 300; song.bars = bars;
+      song.drums = song.drums.map(row=>Array.from({length:bars*4},(_,i)=>row[i%4]));
+      song.melody = Array.from({length:bars*4},(_,i)=>[...song.melody[i%4]]);
+      const visited = [], errors = [];
+      const engine = new AudioEngine(()=>song,step=>{if(step>=0)visited.push(step);},()=>{},error=>errors.push(error)); engine.setVolume(0);
+      try {
+        await engine.start({cycles:1}); await wait(bars*800+180);
+        check(!errors.length && !engine.playing && same(visited,Array.from({length:bars*4},(_,i)=>i)), `${bars} bars: actual audio engine visits every beat once at the selected BPM and stops cleanly`, results);
+      } finally {engine.stop(); await engine.context?.close();}
+    }
+  } finally {
+    pad = null;
+    if (descriptor) Object.defineProperty(navigator,'getGamepads',descriptor); else delete navigator.getGamepads;
+    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
+    $('[data-loop-bars="1"]').click(); $('[data-preset="breaks"]').click(); $('#reset').click(); $('#tab-drums').click(); $('[data-page="0"]')?.click();
+    if(original===null)localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY,original);
   }
   return results;
 }

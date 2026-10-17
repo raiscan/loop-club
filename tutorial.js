@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=12';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=13';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -105,11 +105,11 @@ export const TUTORIAL_STEPS = [
 ];
 
 export const TUTORIAL_REWARDS = {
-  drum: { title: 'Your drum!', spoken: 'Your drum! That was you. Tap Next.' },
-  beat: { title: 'Your beat!', spoken: 'Your beat! That was you. Tap Next.' },
-  note: { title: 'Your note!', spoken: 'Your note! That was you. Tap Next.' },
-  chord: { title: 'Your notes!', spoken: 'Your notes! That was you. Tap Next.' },
-  slide: { title: 'Your sound!', spoken: 'Your sound! That was you. Tap Next.' }
+  drum: { title: 'Your drum!', copy: 'Tap it again!', spoken: 'Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.' },
+  beat: { title: 'Your beat!', copy: 'Tap more boxes!', spoken: 'Your beat! That was you. Tap more boxes for more beats. When you’re ready to add a tune, tap Next.' },
+  note: { title: 'Your note!', copy: 'Try more notes!', spoken: 'Your note! That was you. Tap more boxes for more notes. When you’re ready to stack notes, tap Next.' },
+  chord: { title: 'Your notes!', copy: 'Stack more notes!', spoken: 'Your notes! That was you. Try more notes in your stacks. When you’re ready to try new sounds, tap Next.' },
+  slide: { title: 'Your sound!', copy: 'Slide and play!', spoken: 'Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.' }
 };
 export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS,
   ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `reward-${kind}`, spoken: reward.spoken }))];
@@ -152,7 +152,7 @@ export function tutorialPicture(kind, song, playhead = -1) {
   const box = (x, y, on, current = false, width = 32, height = 32) => `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="${on ? '#91b943' : '#e0e3d7'}" stroke="${current ? '#27302e' : '#b7c0aa'}" stroke-width="${current ? 3 : 1}"/>`;
   if (kind === 'loop' || kind === 'beat') {
     label = kind === 'loop' ? 'It plays again.' : 'Lit = beat. Dark = rest.';
-    const count = kind === 'loop' ? 16 : 8, spacing = kind === 'loop' ? 19 : 38;
+    const count = song.melody.length, spacing = 304 / count;
     for (let i = 0; i < count; i++) art += box(6 + i * spacing, 4, song.drums[0][i], playhead === i, spacing - 5, 28);
     art += kind === 'loop' ? '<path d="M299 37v8H12v-8m0 8 6-5m-6 5 6 5" fill="none" stroke="#637747" stroke-width="2"/>' : '';
   } else if (kind === 'notes' || kind === 'chord') {
@@ -289,7 +289,7 @@ export class ZachTutorial {
   previewEnded() {
     if (!this.active || !this.reviewing) return;
     const firstListen = !this.heard; this.heard = true;
-    document.querySelector('#tutorial-copy').textContent = 'That was you!';
+    document.querySelector('#tutorial-copy').textContent = TUTORIAL_REWARDS[this.step.reward]?.copy || 'That was you!';
     document.querySelector('#tutorial-next').disabled = false;
     if (firstListen) this.focus(document.querySelector('#tutorial-next'));
     this.position(); this.sayReward();

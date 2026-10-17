@@ -45,23 +45,23 @@ export const TUTORIAL_RECORDINGS = {
     "src": "./assets/tutorial-voice/done.mp3?v=5354ebca00c5"
   },
   "reward-drum": {
-    "text": "Your drum! That was you. Tap Next.",
-    "src": "./assets/tutorial-voice/reward-drum.mp3?v=5981e60fe3e2"
+    "text": "Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.",
+    "src": "./assets/tutorial-voice/reward-drum.mp3?v=ae1d1005eeb4"
   },
   "reward-beat": {
-    "text": "Your beat! That was you. Tap Next.",
-    "src": "./assets/tutorial-voice/reward-beat.mp3?v=95102c7e1515"
+    "text": "Your beat! That was you. Tap more boxes for more beats. When you’re ready to add a tune, tap Next.",
+    "src": "./assets/tutorial-voice/reward-beat.mp3?v=d23d7ccdd1dd"
   },
   "reward-note": {
-    "text": "Your note! That was you. Tap Next.",
-    "src": "./assets/tutorial-voice/reward-note.mp3?v=42ad50c41c2a"
+    "text": "Your note! That was you. Tap more boxes for more notes. When you’re ready to stack notes, tap Next.",
+    "src": "./assets/tutorial-voice/reward-note.mp3?v=e20c533679d7"
   },
   "reward-chord": {
-    "text": "Your notes! That was you. Tap Next.",
-    "src": "./assets/tutorial-voice/reward-chord.mp3?v=bcdcbea9e32a"
+    "text": "Your notes! That was you. Try more notes in your stacks. When you’re ready to try new sounds, tap Next.",
+    "src": "./assets/tutorial-voice/reward-chord.mp3?v=b109311265dd"
   },
   "reward-slide": {
-    "text": "Your sound! That was you. Tap Next.",
-    "src": "./assets/tutorial-voice/reward-slide.mp3?v=6ac0f24f7211"
+    "text": "Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.",
+    "src": "./assets/tutorial-voice/reward-slide.mp3?v=3876d8366db5"
   }
 };
