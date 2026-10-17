@@ -771,3 +771,32 @@ access to both controls. Layout and tour checks passed 8/120 assertions at both
 use 44px CSS targets and themed surfaces. A real responsive rebuild preserved
 audition-pad focus across the eight-to-four-column change. Syntax, build and
 diff checks pass. No physical tablet or Xbox hardware was tested.
+
+## Voice settings tooltip in Credits — 17 October 2026
+
+Sites fetched clean main `98f4632`. Baseline: 45 Node tests and 554 browser
+checks passed. The word “voice” in Credits now reveals Sulafat, the recorded
+generation model, OpenRouter, the exact approved delivery instructions, and
+MP3/loudness settings from the local generation metadata/tool. No generation
+request, credential access or audio regeneration was needed.
+
+Hover and keyboard focus reveal the themed tooltip; tapping pins it. Moving
+away, pressing outside, tapping again, closing Credits or Escape dismisses it.
+Escape leaves Credits open and suppresses immediate hover re-entry. Placement
+uses available viewport space above/below the word, without covering it; long
+content scrolls. Metadata comparison checks the full prompt, voice and model.
+
+A native mouse hover initially exposed positioning overlap and Escape re-entry;
+both were fixed and actual hover/Escape then passed. The T3 preview subsequently
+lost its automation host. Chrome fallback checks at 360×800 and 800×360 exposed
+a delayed native close event; explicit close cleanup now runs immediately.
+All ten focused tooltip checks then passed at both sizes. The final 360×800
+Sunny screenshot was inspected. The existing controller fixture initially
+failed in the fallback browser before the tab was brought to the foreground;
+the unchanged baseline's 19 speaker-sync checks passed after bringing it forward.
+No application controller logic was changed.
+
+Final development: 45 Node tests and 564 full browser checks passed with the
+app tab active. Browser focus emulation/viewport overrides were temporary QA
+settings and are reset during teardown. Syntax, build and diff checks pass.
+Physical Windows, Android and Xbox hardware were not tested.

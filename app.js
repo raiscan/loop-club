@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=25';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=25';
-import { GamepadReader } from './gamepad.js?v=25';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=25';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=26';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=26';
+import { GamepadReader } from './gamepad.js?v=26';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=26';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -451,11 +451,54 @@ const activeDialog = () => document.querySelector('dialog[open]');
 const creditsDialog = $('#credits-dialog');
 $('#credits-open').addEventListener('click', () => {
   if (tutorial?.active) tutorial.stop(false);
+  hideVoiceInfo(); voiceInfoDismissed = false;
   creditsDialog.showModal(); focusControl($('#credits-close'));
 });
-$('#credits-close').addEventListener('click', () => creditsDialog.close());
-$('#credits-done').addEventListener('click', () => creditsDialog.close());
-creditsDialog.addEventListener('close', () => focusControl($('#credits-open')));
+function closeCredits() { hideVoiceInfo(); voiceInfoDismissed = false; creditsDialog.close(); }
+$('#credits-close').addEventListener('click', closeCredits);
+$('#credits-done').addEventListener('click', closeCredits);
+creditsDialog.addEventListener('cancel', hideVoiceInfo);
+const voiceInfoButton = $('#credits-voice'), voiceTooltip = $('#voice-tooltip');
+let voiceInfoPinned = false, voiceInfoDismissed = false, voiceInfoTimer;
+function positionVoiceInfo() {
+  if (voiceTooltip.hidden) return;
+  const modal = creditsDialog.getBoundingClientRect(), anchor = voiceInfoButton.getBoundingClientRect();
+  const above = Math.max(0, anchor.top - 18), below = Math.max(0, innerHeight - anchor.bottom - 18);
+  voiceTooltip.style.width = `${Math.min(480, modal.width - 32)}px`;
+  voiceTooltip.style.maxHeight = `${Math.min(480, Math.max(above, below))}px`;
+  const tip = voiceTooltip.getBoundingClientRect();
+  voiceTooltip.style.left = `${Math.max(modal.left + 12, Math.min(anchor.right - tip.width, modal.right - tip.width - 12))}px`;
+  voiceTooltip.style.top = `${above >= below ? Math.max(8, anchor.top - tip.height - 10) : Math.min(innerHeight - tip.height - 8, anchor.bottom + 10)}px`;
+}
+function showVoiceInfo() {
+  if (voiceInfoDismissed || !creditsDialog.open) return;
+  clearTimeout(voiceInfoTimer); voiceTooltip.hidden = false;
+  voiceInfoButton.setAttribute('aria-expanded', 'true'); positionVoiceInfo();
+}
+function hideVoiceInfo() {
+  clearTimeout(voiceInfoTimer); voiceInfoPinned = false; voiceTooltip.hidden = true;
+  voiceInfoButton.setAttribute('aria-expanded', 'false');
+}
+function leaveVoiceInfo() {
+  clearTimeout(voiceInfoTimer);
+  voiceInfoTimer = setTimeout(() => {
+    if (!voiceInfoPinned && document.activeElement !== voiceInfoButton && !voiceInfoButton.matches(':hover') && !voiceTooltip.matches(':hover')) hideVoiceInfo();
+  }, 180);
+}
+voiceInfoButton.addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') showVoiceInfo(); });
+voiceInfoButton.addEventListener('focus', showVoiceInfo);
+voiceInfoButton.addEventListener('click', () => { voiceInfoDismissed = false; if (voiceInfoPinned) hideVoiceInfo(); else { voiceInfoPinned = true; showVoiceInfo(); } });
+voiceInfoButton.addEventListener('pointerleave', () => { voiceInfoDismissed = false; leaveVoiceInfo(); });
+voiceInfoButton.addEventListener('blur', () => { voiceInfoDismissed = false; leaveVoiceInfo(); });
+voiceTooltip.addEventListener('pointerenter', () => clearTimeout(voiceInfoTimer));
+voiceTooltip.addEventListener('pointerleave', leaveVoiceInfo);
+document.addEventListener('pointerdown', event => { if (!voiceInfoButton.contains(event.target) && !voiceTooltip.contains(event.target)) hideVoiceInfo(); }, true);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !voiceTooltip.hidden) { event.preventDefault(); event.stopImmediatePropagation(); hideVoiceInfo(); voiceInfoDismissed = true; }
+}, true);
+creditsDialog.addEventListener('scroll', positionVoiceInfo, true);
+window.addEventListener('resize', positionVoiceInfo);
+creditsDialog.addEventListener('close', () => { hideVoiceInfo(); voiceInfoDismissed = false; focusControl($('#credits-open')); });
 
 $('#theme-open').addEventListener('click', () => {
   if (tutorial?.active) tutorial.stop(false);

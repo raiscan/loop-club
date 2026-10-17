@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=25';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=25';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=25';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=25';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=26';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=26';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=26';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=26';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -242,7 +242,7 @@ export async function runBrowserChecks() {
   const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
   try {
   input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
-  const checks = [...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
   } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
 }
@@ -920,5 +920,32 @@ export async function runKeyboardChecks() {
     if (playing()) $('#play').click();
     $('#play').blur();
   }
+  return results;
+}
+
+export async function runCreditsVoiceChecks() {
+  const results = [], button = $('#credits-voice'), tip = $('#voice-tooltip');
+  try {
+    $('#credits-open').click();
+    check(tip.hidden, 'credits voice details start collapsed', results);
+    button.focus();
+    check(!tip.hidden && button.getAttribute('aria-expanded') === 'true' && button.getAttribute('aria-describedby') === tip.id, 'keyboard focus exposes the described voice settings', results);
+    const metadata = await (await fetch('./assets/tutorial-voice/generation.json')).json();
+    check(tip.textContent.includes(metadata.voice) && tip.textContent.includes(metadata.model) && tip.textContent.includes(metadata.instructions), 'voice tooltip matches the actual generation voice model and full prompt', results);
+    const rect = tip.getBoundingClientRect();
+    check(rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight && tip.scrollWidth <= tip.clientWidth, 'voice settings stay readable inside the viewport', results);
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }); button.dispatchEvent(escape); await wait(60);
+    check(escape.defaultPrevented && tip.hidden && $('#credits-dialog').open, 'Escape dismisses voice details while keeping Credits open', results);
+    button.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+    button.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+    check(!tip.hidden, 'returning the mouse to voice reveals its tooltip again', results);
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    check(tip.hidden, 'pressing outside dismisses voice settings', results);
+    button.click(); button.blur(); button.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'touch' })); await wait(230);
+    check(!tip.hidden, 'tap pins voice settings for reading without hover', results);
+    button.click(); check(tip.hidden, 'a second tap closes pinned voice settings', results);
+    button.focus(); $('#credits-close').click(); await wait(60);
+    check(tip.hidden && !$('#credits-dialog').open, 'closing Credits also clears its voice tooltip', results);
+  } finally { if ($('#credits-dialog').open) $('#credits-close').click(); }
   return results;
 }

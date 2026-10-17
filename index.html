@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=25">
-  <script type="module" src="app.js?v=25"></script>
+  <link rel="stylesheet" href="style.css?v=26">
+  <script type="module" src="app.js?v=26"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -90,7 +90,13 @@
       <li><strong>ZM</strong><span>Play tester</span></li>
       <li><strong>OpenAI Codex</strong><span>Developer · GPT-6.1</span></li>
     </ul>
-    <p class="credits-note">The sounds are made in your browser with Web Audio. The tour uses a recorded AI voice.</p>
+    <p class="credits-note">The sounds are made in your browser with Web Audio. The tour uses a recorded AI <button id="credits-voice" class="voice-info-button" aria-describedby="voice-tooltip" aria-controls="voice-tooltip" aria-expanded="false">voice</button>.</p>
+    <div id="voice-tooltip" class="voice-tooltip" role="tooltip" hidden>
+      <strong>Tutorial voice settings</strong>
+      <p><b>Voice:</b> Sulafat<br><b>Model:</b> google/gemini-3.8-flash-tts<br><b>Generated via:</b> OpenRouter</p>
+      <p><b>Delivery instructions</b><br>A friendly woman from Edinburgh speaking gentle, conversational Scottish English. A light, natural everyday Scottish accent, relaxed and understated. Calm, warm and reassuring, like speaking one-to-one with a five-year-old. Use an unhurried, clear pace and small pauses. Keep the delivery soft and matter-of-fact, without theatrical emphasis, a sing-song teaching voice, or exaggerated R sounds. Pronounce Zach as Zak. Read only the supplied words exactly. No music, sound effects or extra words.</p>
+      <p><b>Audio:</b> 24 kHz mono MP3, 64 kb/s. Leading silence trimmed; loudness −19 LUFS, true peak −3 dBTP, loudness range 7 LU.</p>
+    </div>
     <button id="credits-done" class="play-button">Done ✓</button>
   </dialog>
   <dialog id="theme-dialog" class="theme-dialog" aria-labelledby="theme-title">

@@ -48,7 +48,9 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 - **Credits**, at the bottom beside Xbox help, lists Farrell Hayman (idea and
   direction), ZM (play tester), and OpenAI Codex (development), with a short
-  note about browser-made sounds and the recorded AI tutorial voice.
+  note about browser-made sounds and the recorded AI tutorial voice. Hover,
+  focus or tap **voice** to see Sulafat, the generation model, exact delivery
+  prompt and audio settings. Escape dismisses these details before Credits.
 - **Look** opens five pictured themes: Sunny (the original), Pink, Space
   (dark and starry), Dino (green), and Race (blue/red with a chequered stripe).
   The choice is saved separately on each device and works with touch, mouse
@@ -185,14 +187,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=25')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=26')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=25')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=26')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
