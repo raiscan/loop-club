@@ -1,5 +1,5 @@
-import { NOTES, DRUM_COLORS } from './model.js?v=22';
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=22';
+import { NOTES, DRUM_COLORS } from './model.js?v=23';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=23';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {

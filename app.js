@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=22';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=22';
-import { GamepadReader } from './gamepad.js?v=22';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=22';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=23';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=23';
+import { GamepadReader } from './gamepad.js?v=23';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=23';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -471,6 +471,15 @@ document.addEventListener('focusin', event => {
 document.addEventListener('keydown', event => {
   controllerMode = false;
   $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+  const target = event.target;
+  const typing = target instanceof Element && (target.isContentEditable || target.closest('input:not([type=range]), textarea, select'));
+  if ((event.code === 'Space' || event.key === ' ') && !event.defaultPrevented &&
+      !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.isComposing &&
+      !typing && !activeDialog() && !tutorial?.active) {
+    event.preventDefault();
+    if (!event.repeat) togglePlay();
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !activeDialog()) {
     event.preventDefault(); if (!tutorial?.active) undo();
   }

@@ -14,6 +14,9 @@ python3 -m http.server 8080 --bind 127.0.0.1
 ```
 
 Open http://localhost:8080 in a current browser and click **Let's play**.
+Press **Space** to play or stop while using the music machine, including when
+a beat box or slider has focus. Holding Space toggles once. Dialogs and the
+guided tour keep their normal keyboard controls; Enter activates buttons.
 Use a web server rather than opening `index.html` directly: the app uses
 JavaScript modules. Sound starts only after an interaction. Playback stops
 when the window loses focus, the page is hidden or the controller disconnects.
@@ -179,14 +182,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=22')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=23')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=22')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=23')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload

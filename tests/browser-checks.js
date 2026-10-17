@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=22';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=22';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=22';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=22';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=23';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=23';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=23';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=23';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -238,7 +238,7 @@ export async function runBrowserChecks() {
   const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
   try {
   input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
-  const checks = [...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
   } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
 }
@@ -877,5 +877,43 @@ export async function runSpeakerSyncChecks() {
     engine.setVisualDelay(1000);engine.stop();const count=visits.length;await wait(1050);
     check(visits.length===count&&!engine.visuals.size&&!engine.visualEvents.size,'Stop cancels even one-second delayed visual callbacks',results);
   }finally{engine.stop();await engine.context?.close();}
+  return results;
+}
+
+export async function runKeyboardChecks() {
+  const results = [], before = localStorage.getItem(SAVE_KEY);
+  const press = (target, options = {}) => {
+    const event = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true, ...options });
+    target.dispatchEvent(event); return event;
+  };
+  const playing = () => $('#play').getAttribute('aria-pressed') === 'true';
+  try {
+    if (playing()) $('#play').click();
+    const box = $('#drum-grid .step'); box.focus();
+    const first = press(box); await wait(100);
+    check(first.defaultPrevented && playing(), 'Space starts music from a focused beat box and suppresses native activation/scroll', results);
+    press(box, { repeat: true }); await wait(40);
+    check(playing(), 'holding Space never retriggers playback', results);
+    press(box); await wait(40);
+    check(!playing() && localStorage.getItem(SAVE_KEY) === before, 'Space stops without editing the focused beat or song', results);
+    $('#tempo').focus(); press($('#tempo')); await wait(100);
+    check(playing(), 'Space starts music from a focused slider', results);
+    press($('#tempo')); await wait(40);
+    press(document.body); press(document.body); await wait(100);
+    check(!playing(), 'two quick Space presses cancel pending playback', results);
+    for (const modifier of ['ctrlKey', 'metaKey', 'altKey', 'shiftKey', 'isComposing']) press(document.body, { [modifier]: true });
+    await wait(40); check(!playing(), 'modified and composing Space presses leave playback unchanged', results);
+    $('#help').click(); const dialogKey = press($('#close-help')); await wait(40);
+    check(!dialogKey.defaultPrevented && !playing(), 'Space retains native button behavior inside help', results); $('#close-help').click();
+    const field = document.createElement('input'); document.body.append(field);
+    try { field.focus(); const inputKey = press(field); await wait(40); check(!inputKey.defaultPrevented && !playing(), 'Space remains available for text input', results); } finally { field.remove(); }
+    $('#tutorial-start').click(); const tourKey = press($('#tutorial-next')); await wait(40);
+    check(!tourKey.defaultPrevented && !playing(), 'Space retains guided tour keyboard behavior', results); $('#tutorial-exit').click();
+  } finally {
+    if (!$('#tutorial-card').hidden) $('#tutorial-exit').click();
+    if ($('#help-dialog').open) $('#close-help').click();
+    if (playing()) $('#play').click();
+    $('#play').blur();
+  }
   return results;
 }

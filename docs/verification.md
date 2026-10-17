@@ -710,3 +710,23 @@ the narrow layout had no page overflow. The narrow Space screenshot was
 inspected. Existing preset loading, Undo, reading, tour and controller checks
 pass. Syntax, build and diff checks pass. This presentation change adds no
 audio or input behavior.
+
+## Space playback shortcut — 17 October 2026
+
+Sites fetched clean main `8b70696`. Baseline: 45 Node tests and 542 browser
+checks passed, with no failures. The new keyboard check failed on the missing
+Space playback behavior before implementation, then all nine focused checks
+passed. Development: 45 Node tests and 551 full browser checks passed.
+
+Space toggles the music machine's existing play/stop action from beat boxes,
+buttons, sliders or the page. Preventing its native default avoids editing a
+focused box, activating another button or scrolling. Holding the key toggles
+only once; two rapid presses cancel pending startup. Text input, composition,
+modified shortcuts, dialogs and guided tour controls retain their existing
+behavior. The play button advertises its Space shortcut to assistive tools.
+
+Actual browser key-down/up presses from a focused drum box started then stopped
+playback, with unchanged localStorage and scroll position. Focused checks also
+cover slider focus, repeats, startup cancellation, modifiers, text fields, help
+and the tour. Syntax, build and diff checks pass. No audio scheduler, mouse,
+touch or controller behavior changed.
