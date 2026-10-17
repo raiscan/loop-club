@@ -1,6 +1,11 @@
 {
   "name": "loop-club",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raiscan/loop-club.git"
+  },
   "type": "module",
   "scripts": {
     "build:site": "node scripts/build-site.mjs",

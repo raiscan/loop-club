@@ -1,5 +1,7 @@
 # Loop Club
 
+[Play Loop Club](https://loop-club-kidsynth.auroraacorn4.chatgpt.site) · [Source on GitHub](https://github.com/raiscan/loop-club) · [MIT licence](LICENSE)
+
 A small browser music machine for a five-year-old who likes drum and bass,
 techno and playing with a keyboard. Start with a groove, change the steps,
 draw a tune and hear how a synth changes. The name and styling are provisional.
@@ -239,8 +241,9 @@ and browser module imports when publishing changes.
 
 This first playable prototype has no recording, export, MIDI, pattern chaining or a backend. It grew from the archived UH-16
 Pocket Transmitter. UncleHerbert remains the user's separate music identity;
-Loop Club is not presented as an UncleHerbert portfolio. No licence has been
-selected. Sites source synchronization uses a short-lived native credential;
+Loop Club is not presented as an UncleHerbert portfolio. The source is available
+under the [MIT licence](LICENSE), copyright 2026 Farrell Hayman.
+Sites source synchronization uses a short-lived native credential;
 no token is stored in this repository.
 
 ## Codex Site
@@ -252,7 +255,7 @@ tracked in `.openai/hosting.json`; reuse that project ID for future updates.
 node scripts/build-site.mjs
 ```
 
-This prepares nine app assets and eleven MP3 clips in ignored `dist/`. The original
+This prepares nine app assets and thirty-one MP3 clips in ignored `dist/`. The original
 reference site, tests, source history and local state are not part of the
 served bundle. The script preserves unexpected files in `dist/` by stopping
 instead of deleting them. Use the Sites skill's source/package helper from
