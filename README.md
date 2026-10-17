@@ -69,8 +69,11 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
-  and **Cloud chords**. The new loops explore different instruments and chords.
-  Choosing one replaces the current groove, and **Undo** brings it back.
+  and **Cloud chords**, below the music machine. Each is now authored for whole
+  beats, with its own loop size and painted sounds. Jump is Small; Robot, Moon,
+  Ants and Dance are Medium; River, Skate, Game and Cloud are Large. Longer
+  phrases mix bass, chords, game sounds and chimes. Choosing one loads its size;
+  **Undo** restores your previous music and size.
 - **Drums:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
   cowbell. Tap a numbered sound selector to cycle instruments; it previews
@@ -81,26 +84,28 @@ currently targeted at PC. No tablet/controller pairing is required.
   beats per bar in 4/4. Small shows only four boxes, widened to fill the grid.
   Growing repeats the current pattern into extra bars, with independently
   editable drums and chords. Shrinking keeps the first bars; Undo restores
-  removed music and size. Presets and Start over keep the selected size.
+  removed music and size. Presets load their authored size; Start over keeps your selected size.
   Resizing during playback restarts at the beginning. Tablets show up to eight
   boxes and narrower screens four; the loop map below the grid highlights the part being edited. Tap another
   part of that map to reveal it without shrinking targets. D-pad navigation crosses pages. The moving lights show the whole loop.
   The tour uses a four-beat practice song; leaving restores the original size,
   and Keep it repeats the learned phrase across that size.
-- **Tunes:** choose Bass, Pluck, Game or Bell as a brush, then tap a coloured
+- **Tunes:** choose Bass, Pluck, Game, Bell or Chime as a brush, then tap a coloured
   square to paint that sound. Its icon appears in the square (Game uses a robot).
   A different brush replaces that square's sound; the same brush clears it.
   Each square holds one instrument. Stack notes in the same column for a chord,
   mixing instruments across pitches if you like. Changing brushes keeps the
   sounds already painted.
   While stopped, editing a column previews the whole resulting chord. The six keys use C minor pentatonic notes and play individually.
-  The same brush selection appears in Sounds and is used by the six keys.
+  Chime is a bright, tuned struck sound with quickly fading upper tones and a
+  soft ringing body; its sparkle icon marks painted notes. The same brush
+  selection appears in Sounds and is used by the six keys.
   The white outlined column follows playback in both grids.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
   those settings; it is not an oscilloscope. These settings shape all painted
   instruments. Sliders audition the active brush while stopped.
-- **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio from a large standalone speaker slider between
+- **Speed** changes the tempo from 30–600 BPM; **Volume** controls all audio from a large standalone speaker slider between
   the loop map and playback controls. Press the speaker to mute all audio; press
   again to restore the last nonzero level. Raising the slider also unmutes.
 - The latest groove, tempo and synth settings save automatically in this
@@ -110,8 +115,8 @@ currently targeted at PC. No tablet/controller pairing is required.
   with its previous synth sound.
   Earlier 16-step saves become Large four-bar loops so every hit and note is retained.
   Playback now gives each box a full beat, so those old sequences play more slowly
-  at the same BPM than the former sixteenth-note grid. New examples condense each
-  group of four old steps into one beat. Single notes become one-note chords; three-drum saves also gain an empty
+  at the same BPM than the former sixteenth-note grid. The remade examples are
+  authored directly for whole beats; fast dance examples use double-time tempos. Single notes become one-note chords; three-drum saves also gain an empty
   fourth lane. It is one current song per browser/origin, not a
   library or cloud account. Volume starts at a moderate default each visit.
   If storage is unavailable, the instrument still works and reports that saving
@@ -162,14 +167,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=17')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=19')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=17')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=19')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload

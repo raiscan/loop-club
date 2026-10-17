@@ -6,11 +6,11 @@ test('each starter is a complete editable loop, with independently owned arrays'
   for (const id of Object.keys(PRESETS)) {
     const first = createSong(id);
     assert.equal(first.drums.length, 4);
-    assert.ok(first.drums.every(row => row.length === STEPS));
+    assert.ok(first.drums.every(row => row.length === first.bars * STEPS));
     assert.ok(first.drums.slice(0, 3).every(row => row.some(Boolean)));
-    if (['breaks', 'club', 'float'].includes(id)) assert.ok(first.drums[3].every(value => !value));
+    if (id === 'breaks') assert.ok(first.drums[3].every(value => !value));
     assert.deepEqual(restoreSong(JSON.stringify(first)), first, `${id} is a valid save`);
-    assert.equal(first.melody.length, STEPS);
+    assert.equal(first.melody.length, first.bars * STEPS);
     assert.ok(first.melody.every(notes => Array.isArray(notes)));
     assert.ok(first.melody.some(notes => notes.length > 0));
     first.drums[0][0] = !first.drums[0][0];
@@ -35,7 +35,7 @@ test('editing a drum or pitch changes one step and does not mutate the prior son
 
 test('tempo and synth settings remain in range; invalid edits leave the song unchanged', () => {
   const song = createSong();
-  assert.equal(editSong(song, { type: 'tempo', value: 999 }).tempo, 300);
+  assert.equal(editSong(song, { type: 'tempo', value: 999 }).tempo, 600);
   assert.equal(editSong(song, { type: 'tempo', value: 1 }).tempo, 30);
   assert.equal(editSong(song, { type: 'sound', key: 'brightness', value: -10 }).sound.brightness, 0);
   for (const edit of [
@@ -46,12 +46,12 @@ test('tempo and synth settings remain in range; invalid edits leave the song unc
 });
 
 test('both tempo extremes survive saving and values outside them are rejected', () => {
-  for (const tempo of [30, 300]) {
+  for (const tempo of [30, 600]) {
     const song = editSong(createSong(), { type: 'tempo', value: tempo });
     assert.equal(song.tempo, tempo);
     assert.equal(restoreSong(JSON.stringify(song)).tempo, tempo);
   }
-  for (const tempo of [29, 301]) assert.equal(restoreSong(JSON.stringify({ ...createSong(), tempo })), null);
+  for (const tempo of [29, 601]) assert.equal(restoreSong(JSON.stringify({ ...createSong(), tempo })), null);
 });
 
 test('autosave round-trips songs and rejects malformed or incompatible saves', () => {
@@ -189,7 +189,7 @@ test('a slider gesture that passes its starting value still uses a single undo e
 });
 
 test('loop sizes repeat music into 4, 8 or 16 independent beat boxes', () => {
-  const original = createSong('liquid');
+  const original = editSong(createSong('liquid'), { type: 'bars', value: 1 });
   assert.equal(original.bars, 1);
   assert.equal(original.melody.length, 4);
   const medium = editSong(original, { type: 'bars', value: 2 });
@@ -275,4 +275,23 @@ test('painted instruments save strictly and older songs retain the instrument of
   for(let step=0;step<legacy.melody.length;step++) for(let pitch=0;pitch<6;pitch++) {
     assert.equal(migrated.noteSounds[step][pitch],legacy.melody[step].includes(pitch)?'arcade':null);
   }
+});
+
+test('whole-beat presets have authored sizes, mixed brushes and independent phrase data', () => {
+  const sizes = new Set(), voices = new Set();
+  for (const [id, preset] of Object.entries(PRESETS)) {
+    const song = createSong(id); sizes.add(song.bars);
+    assert.equal(song.bars, preset.bars);
+    assert.equal(song.melody.length, preset.bars * 4);
+    assert.deepEqual(song.drums, preset.drums.map(row => [...row].map(hit => hit === '1')));
+    song.noteSounds.flat().filter(Boolean).forEach(id => voices.add(id));
+    assert.deepEqual(restoreSong(JSON.stringify(song)), song);
+  }
+  assert.deepEqual([...sizes].sort(), [1, 2, 4]);
+  assert.ok(voices.has('chime'));
+  const river = createSong('liquid');
+  assert.ok(river.tempo > 300);
+  assert.ok(new Set(river.noteSounds.flat().filter(Boolean)).size > 1);
+  assert.ok(river.melody.some(notes => notes.length > 1));
+  assert.notDeepEqual(river.melody.slice(0, 4), river.melody.slice(12));
 });

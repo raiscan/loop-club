@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=17';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=19';
 
 const noiseBuffers = new WeakMap();
 
@@ -115,7 +115,7 @@ export function drumVoice(context, destination, instrument, time) {
 }
 
 export function synthVoice(context, destination, note, time, sound, tempo, instrument = 'bass') {
-  const duration = (0.08 + sound.length / 100 * 0.55) * (instrument === 'bell' ? 1.4 : instrument === 'pluck' ? 0.7 : 1);
+  const duration = (0.08 + sound.length / 100 * 0.55) * (instrument === 'chime' ? 1.8 : instrument === 'bell' ? 1.4 : instrument === 'pluck' ? 0.7 : 1);
   const filter = context.createBiquadFilter();
   filter.type = 'lowpass'; filter.Q.value = instrument === 'bass' ? 1.8 : 0.6;
   const cutoff = 160 + (sound.brightness / 100) ** 2 * 6500;
@@ -130,10 +130,21 @@ export function synthVoice(context, destination, note, time, sound, tempo, instr
   const gain = envelope(context, destination, time, duration, 0.28);
   filter.connect(gain);
   const oscillator = context.createOscillator();
-  oscillator.type = { bass: 'sawtooth', pluck: 'triangle', arcade: 'square', bell: 'sine' }[instrument] || 'sawtooth';
-  const frequency = NOTES[note].frequency * (instrument === 'bass' ? 1 : 2);
+  oscillator.type = { bass: 'sawtooth', pluck: 'triangle', arcade: 'square', bell: 'sine', chime: 'sine' }[instrument] || 'sawtooth';
+  const frequency = NOTES[note].frequency * (instrument === 'bass' ? 1 : instrument === 'chime' ? 4 : 2);
   oscillator.frequency.value = frequency;
   oscillator.connect(filter);
+  if (instrument === 'chime') {
+    // A tuned struck tone: bright inharmonic partials fade ahead of the soft body.
+    const sources = [oscillator], nodes = [filter, gain];
+    for (const [ratio, level, decay] of [[2.76, 0.24, 0.45], [5.4, 0.1, 0.22]]) {
+      const partial = context.createOscillator(); partial.type = 'sine';
+      partial.frequency.value = frequency * ratio;
+      const partialGain = envelope(context, filter, time, duration * decay, level);
+      partial.connect(partialGain); sources.push(partial); nodes.push(partialGain);
+    }
+    return voice(sources, nodes, time, duration);
+  }
   const sub = context.createOscillator();
   sub.type = 'sine';
   sub.frequency.value = frequency * (instrument === 'bass' ? 0.5 : instrument === 'bell' ? 2.76 : 2);

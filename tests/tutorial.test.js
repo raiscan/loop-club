@@ -118,10 +118,10 @@ test('speech failures and missing device APIs leave visual guidance usable', () 
 test('tutorial pictures show the actual beat, chord notes and sound settings', () => {
   const song = createSong('cloud');
   const loop = tutorialPicture('loop', song, 3);
-  assert.equal((loop.match(/<rect /g) || []).length, 4);
+  assert.equal((loop.match(/<rect /g) || []).length, song.melody.length);
   assert.match(loop, /class="tutorial-pill[^"\n]* current"/);
   const chord = tutorialPicture('chord', song);
-  assert.equal((chord.match(/class="tutorial-pill on[^"\n]*"/g) || []).length, song.melody.reduce((sum, notes) => sum + notes.length, 0));
+  assert.equal((chord.match(/class="tutorial-pill on[^"\n]*"/g) || []).length, song.melody.slice(0, 4).reduce((sum, notes) => sum + notes.length, 0));
   const bright = tutorialPicture('wave', { ...song, sound: { ...song.sound, brightness: 100 } });
   assert.notEqual(bright, tutorialPicture('wave', song));
   assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 2);

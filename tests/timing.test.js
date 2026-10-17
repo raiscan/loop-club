@@ -9,8 +9,8 @@ test('four quarter-note beats use audio time and wrap across the bar', () => {
   assert.equal(clock.step, 1);
 });
 
-test('30 and 300 BPM schedule one box per beat at their actual tempos', () => {
-  for (const [tempo, interval] of [[30, 2], [300, 0.2]]) {
+test('30, 300 and 600 BPM schedule one box per beat at their actual tempos', () => {
+  for (const [tempo, interval] of [[30, 2], [300, 0.2], [600, 0.1]]) {
     const clock = { nextTime: 0.04, step: 0 };
     const events = scheduledSteps(clock, 0, tempo);
     assert.equal(events[0].step, 0);

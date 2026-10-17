@@ -1,7 +1,7 @@
 export const STEPS = 4;
 export const LOOP_BARS = [1, 2, 4];
 export const TEMPO_MIN = 30;
-export const TEMPO_MAX = 300;
+export const TEMPO_MAX = 600;
 export const SAVE_KEY = 'loop-club.song.v1';
 // Retain the storage key so earlier songs migrate in place.
 export const DRUM_TRACKS = 4;
@@ -14,7 +14,7 @@ export const DRUM_SOUNDS = {
 };
 export const SYNTH_SOUNDS = {
   bass: { name: 'Bass', icon: 'wave' }, pluck: { name: 'Pluck', icon: 'notes' },
-  arcade: { name: 'Game', icon: 'robot' }, bell: { name: 'Bell', icon: 'bell' }
+  arcade: { name: 'Game', icon: 'robot' }, bell: { name: 'Bell', icon: 'bell' }, chime: { name: 'Chime', icon: 'sparkle' }
 };
 export const NOTES = [
   { name: 'C', frequency: 130.8128, color: '#c9e77b' },
@@ -25,66 +25,70 @@ export const NOTES = [
   { name: 'C↑', frequency: 261.6256, color: '#8fd3cb' }
 ];
 
+// Authored directly as whole-beat boxes. Each pitch stores its own brush.
 export const PRESETS = {
   breaks: {
-    name: 'Jungle jump', genre: 'DRUM & BASS', tempo: 164, icon: 'bolt',
-    drums: ['1000001000100000', '0000100000001000', '1010101110101011'],
-    melody: [0, null, null, 0, null, null, 2, null, 3, null, 2, null, 1, null, null, 0],
-    sound: { brightness: 48, length: 28, wobble: 30 }
+    name: "Jungle jump", genre: "DRUM & BASS", bars: 1, tempo: 164, icon: "bolt",
+    drums: ["1010", "0101", "1111", "0000"],
+    drumSounds: ["kick", "snare", "hat", "clap"], synth: "bass",
+    melody: [{"0": "bass"}, null, {"3": "bass"}, {"1": "bass"}],
+    sound: {"brightness": 48, "length": 24, "wobble": 24}
   },
   club: {
-    name: 'Robot dance', genre: 'TECHNO', tempo: 132, icon: 'robot',
-    drums: ['1000100010001000', '0000100000001000', '0010001000100010'],
-    melody: [0, null, 0, null, 3, null, 0, null, 0, null, 4, null, 3, null, 1, null],
-    sound: { brightness: 60, length: 18, wobble: 10 }
+    name: "Robot dance", genre: "TECHNO", bars: 2, tempo: 264, icon: "robot",
+    drums: ["10101010", "00100010", "01010101", "00010001"],
+    drumSounds: ["kick", "clap", "openhat", "cowbell"], synth: "arcade",
+    melody: [{"0": "bass"}, {"3": "arcade"}, {"0": "bass"}, {"5": "arcade"}, {"0": "bass"}, {"4": "arcade"}, {"2": "bass"}, {"3": "arcade", "5": "chime"}],
+    sound: {"brightness": 64, "length": 20, "wobble": 10}
   },
   float: {
-    name: 'Moon bounce', genre: 'SPACE GROOVE', tempo: 104, icon: 'moon',
-    drums: ['1000000010000010', '0000100000001000', '0010001000100011'],
-    melody: [0, null, 2, null, 3, null, null, 5, 4, null, 3, null, 2, null, 1, null],
-    sound: { brightness: 32, length: 65, wobble: 48 }
+    name: "Moon bounce", genre: "SPACE GROOVE", bars: 2, tempo: 112, icon: "moon",
+    drums: ["10001000", "00100010", "01010101", "00000001"],
+    drumSounds: ["kick", "clap", "shaker", "tom"], synth: "chime",
+    melody: [{"0": "bell", "3": "bell", "5": "chime"}, null, {"4": "chime"}, null, {"1": "bell", "3": "bell", "5": "chime"}, null, {"2": "chime"}, {"3": "chime"}],
+    sound: {"brightness": 62, "length": 70, "wobble": 22}
   },
   liquid: {
-    name: 'Liquid lift', genre: 'LIQUID D&B', tempo: 172, icon: 'wave',
-    drums: ['1000001000100010', '0000100000001000', '1010101010101011', '0000000100000001'],
-    drumSounds: ['kick', 'snare', 'shaker', 'openhat'], synth: 'pluck',
-    melody: [[0, 1, 3], null, null, 5, null, null, 3, null, [1, 3, 4], null, null, 5, null, 3, null, 1],
-    sound: { brightness: 58, length: 62, wobble: 12 }
+    name: "Liquid lift", genre: "LIQUID D&B", bars: 4, tempo: 344, icon: "wave",
+    drums: ["1000010010100100", "0010001000100010", "1111111111111111", "0000000100000101"],
+    drumSounds: ["kick", "snare", "shaker", "openhat"], synth: "chime",
+    melody: [{"0": "bass", "1": "pluck", "3": "pluck"}, null, {"5": "chime"}, {"0": "bass"}, null, {"3": "chime"}, {"2": "bass"}, {"4": "chime"}, {"1": "bass", "3": "pluck", "4": "pluck"}, null, {"5": "chime"}, {"1": "bass"}, {"3": "chime"}, null, {"3": "bass"}, {"2": "chime", "5": "chime"}],
+    sound: {"brightness": 66, "length": 42, "wobble": 12}
   },
   roller: {
-    name: 'Roller skate', genre: 'DRUM & BASS', tempo: 176, icon: 'bolt',
-    drums: ['1000000000100010', '0000100000001000', '1011101010111010', '0000001000000011'],
-    drumSounds: ['kick', 'snare', 'hat', 'tom'], synth: 'bass',
-    melody: [0, 0, null, 0, null, 3, 0, null, 0, null, 4, 3, null, 1, 0, null],
-    sound: { brightness: 38, length: 32, wobble: 72 }
+    name: "Roller skate", genre: "DRUM & BASS", bars: 4, tempo: 352, icon: "bolt",
+    drums: ["1001000010010100", "0010001000100010", "1111111111111111", "0000000100000011"],
+    drumSounds: ["kick", "snare", "hat", "tom"], synth: "bass",
+    melody: [{"0": "bass"}, {"0": "bass"}, null, {"3": "bass"}, {"0": "bass"}, null, {"4": "pluck"}, {"1": "bass"}, {"0": "bass"}, {"0": "bass"}, null, {"2": "bass"}, {"3": "arcade"}, {"1": "bass"}, null, {"0": "bass", "5": "chime"}],
+    sound: {"brightness": 42, "length": 19, "wobble": 62}
   },
   acid: {
-    name: 'Acid ants', genre: 'ACID TECHNO', tempo: 138, icon: 'robot',
-    drums: ['1000100010001000', '0000100000001000', '0010001000100010', '0001000000010001'],
-    drumSounds: ['kick', 'clap', 'openhat', 'cowbell'], synth: 'bass',
-    melody: [0, 3, 0, 5, 0, null, 1, 0, 3, 0, 4, 3, 0, 1, 0, 5],
-    sound: { brightness: 82, length: 16, wobble: 67 }
+    name: "Acid ants", genre: "ACID TECHNO", bars: 2, tempo: 276, icon: "robot",
+    drums: ["10101010", "00100010", "01010101", "00010001"],
+    drumSounds: ["kick", "clap", "openhat", "cowbell"], synth: "bass",
+    melody: [{"0": "bass"}, {"3": "bass"}, {"0": "bass"}, {"5": "arcade"}, {"1": "bass"}, {"3": "bass"}, {"2": "bass"}, {"5": "chime"}],
+    sound: {"brightness": 86, "length": 15, "wobble": 72}
   },
   disco: {
-    name: 'Disco dots', genre: 'HOUSE', tempo: 122, icon: 'notes',
-    drums: ['1000100010001000', '0000100000001000', '0010001000100010', '1001010010010100'],
-    drumSounds: ['kick', 'clap', 'openhat', 'shaker'], synth: 'pluck',
-    melody: [null, null, [0, 1, 3], null, null, null, [0, 1, 3], null, null, null, [1, 3, 4], null, null, [1, 3, 4], null, 5],
-    sound: { brightness: 72, length: 36, wobble: 8 }
+    name: "Disco dots", genre: "HOUSE", bars: 2, tempo: 244, icon: "notes",
+    drums: ["10101010", "00100010", "01010101", "10010100"],
+    drumSounds: ["kick", "clap", "openhat", "shaker"], synth: "pluck",
+    melody: [{"0": "pluck", "1": "pluck", "3": "pluck"}, null, {"5": "chime"}, null, {"1": "pluck", "3": "pluck", "4": "pluck"}, null, {"3": "chime"}, {"4": "chime"}],
+    sound: {"brightness": 72, "length": 38, "wobble": 8}
   },
   pixel: {
-    name: 'Pixel party', genre: 'ARCADE', tempo: 148, icon: 'pad',
-    drums: ['1000001010000010', '0000100000001000', '1010101010101111', '0000000100000001'],
-    drumSounds: ['kick', 'snare', 'hat', 'cowbell'], synth: 'arcade',
-    melody: [0, 3, 5, 3, 1, 3, 4, null, 2, 3, 5, 4, 3, 1, 0, null],
-    sound: { brightness: 68, length: 20, wobble: 0 }
+    name: "Pixel party", genre: "ARCADE", bars: 4, tempo: 296, icon: "pad",
+    drums: ["1000100010001000", "0010001000100010", "0101010101010111", "0000000100000001"],
+    drumSounds: ["kick", "snare", "hat", "cowbell"], synth: "arcade",
+    melody: [{"0": "bass", "3": "arcade"}, {"5": "arcade"}, {"4": "arcade"}, {"5": "chime"}, {"2": "arcade"}, {"3": "arcade"}, null, {"4": "chime"}, {"1": "bass", "3": "arcade"}, {"4": "arcade"}, {"5": "arcade"}, {"3": "chime"}, {"2": "arcade"}, {"1": "arcade"}, {"0": "bass", "3": "arcade"}, {"5": "chime"}],
+    sound: {"brightness": 76, "length": 23, "wobble": 0}
   },
   cloud: {
-    name: 'Cloud chords', genre: 'CHILL OUT', tempo: 78, icon: 'moon',
-    drums: ['1000000000100000', '0000100000001000', '0010001000100010', '0000000100000000'],
-    drumSounds: ['kick', 'clap', 'shaker', 'tom'], synth: 'bell',
-    melody: [[0, 1, 3], null, null, null, null, null, 5, null, [1, 3, 4], null, null, null, null, null, 2, null],
-    sound: { brightness: 40, length: 88, wobble: 18 }
+    name: "Cloud chords", genre: "CHILL OUT", bars: 4, tempo: 112, icon: "moon",
+    drums: ["1000000010000000", "0000100000001000", "0010001000100010", "0000000100000001"],
+    drumSounds: ["kick", "clap", "shaker", "tom"], synth: "chime",
+    melody: [{"0": "bell", "1": "bell", "3": "bell", "5": "chime"}, null, null, {"4": "chime"}, null, {"3": "chime"}, null, null, {"1": "bell", "3": "bell", "4": "bell", "5": "chime"}, null, null, {"3": "chime"}, null, {"2": "chime"}, null, {"5": "chime"}],
+    sound: {"brightness": 56, "length": 86, "wobble": 18}
   }
 };
 
@@ -96,16 +100,12 @@ export function createSong(preset = 'breaks') {
   if (!Object.hasOwn(PRESETS, preset)) preset = 'breaks';
   const source = PRESETS[preset];
   const synth = source.synth || 'bass';
-  const melody = Array.from({ length: STEPS }, (_, beat) => {
-    const note = source.melody.slice(beat * 4, beat * 4 + 4).find(note => note !== null);
-    return note === undefined ? [] : Array.isArray(note) ? [...note] : [note];
-  });
+  const melody = source.melody.map(column => column ? Object.keys(column).map(Number).sort((a, b) => a - b) : []);
   return {
-    version: 5, bars: 1, preset, tempo: source.tempo,
-    drums: Array.from({ length: DRUM_TRACKS }, (_, row) => source.drums[row]
-      ? Array.from({ length: STEPS }, (_, beat) => source.drums[row].slice(beat * 4, beat * 4 + 4).includes('1')) : Array(STEPS).fill(false)),
-    drumSounds: [...(source.drumSounds || ['kick', 'snare', 'hat', 'clap'])], synth,
-    melody, noteSounds: melody.map(notes => NOTES.map((_, pitch) => notes.includes(pitch) ? synth : null)),
+    version: 5, bars: source.bars, preset, tempo: source.tempo,
+    drums: source.drums.map(row => [...row].map(hit => hit === '1')),
+    drumSounds: [...source.drumSounds], synth, melody,
+    noteSounds: source.melody.map(column => NOTES.map((_, pitch) => column?.[pitch] || null)),
     sound: { ...source.sound }
   };
 }

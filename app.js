@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=17';
-import { AudioEngine } from './audio.js?v=17';
-import { GamepadReader } from './gamepad.js?v=17';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=17';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=19';
+import { AudioEngine } from './audio.js?v=19';
+import { GamepadReader } from './gamepad.js?v=19';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=19';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -346,7 +346,7 @@ for (const [id, preset] of Object.entries(PRESETS)) {
   button.setAttribute('aria-pressed', 'false');
   button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><strong>${songNames[id]}</strong><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
   button.addEventListener('click', () => {
-    history.end(); commit(editSong(createSong(id), { type: 'bars', value: history.song.bars }));
+    history.end(); commit(createSong(id));
   });
   $('.groove-picker').append(button);
 }

@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=17';
-import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=17';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture } from '../tutorial.js?v=17';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=17';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=19';
+import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=19';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture } from '../tutorial.js?v=19';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=19';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -61,7 +61,7 @@ export async function runAudioChecks() {
   }
   for (const preset of Object.keys(PRESETS)) {
     const song = createSong(preset);
-    const seconds = 60 / song.tempo * 4 + 1;
+    const seconds = 60 / song.tempo * song.melody.length + 1.3;
     const data = await render((ctx, out) => {
       const gain = ctx.createGain(); gain.gain.value = 0.55 * 0.65; gain.connect(out);
       const compressor = ctx.createDynamicsCompressor();
@@ -69,10 +69,10 @@ export async function runAudioChecks() {
       for (let step = 0; step < song.melody.length; step++) {
         const time = 0.04 + step * 60 / song.tempo;
         song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, song.drumSounds[index], time); });
-        if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth);
+        if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth, song.noteSounds[step]);
       }
     }, seconds);
-    check(data.every(Number.isFinite) && energy(data) > 0.01 && data.every(value => Math.abs(value) < 1), `${preset}: full bar renders without silence, non-finite samples or clipping`, results);
+    check(data.every(Number.isFinite) && energy(data) > 0.01 && data.every(value => Math.abs(value) < 1), `${preset}: full phrase renders without silence, non-finite samples or clipping`, results);
   }
   const states = [];
   const engine = new AudioEngine(() => createSong(), () => {}, state => states.push(state), error => { throw new Error(error); });
@@ -518,7 +518,7 @@ export async function runChordChecks() {
     await wait(60);
     check(engine.voices.size === 0, 'removing the last chord note stops its audition', results);
   } finally { engine.stop(); if (engine.context) await engine.context.close(); }
-  for (const tempo of [30, 300]) {
+  for (const tempo of [30, 600]) {
     const data = await render((ctx, out) => {
       const gain = ctx.createGain(); gain.gain.value = 0.55 * 0.65; gain.connect(out);
       const compressor = ctx.createDynamicsCompressor(); compressor.threshold.value = -12; compressor.ratio.value = 6; compressor.knee.value = 12; compressor.connect(gain);
@@ -553,9 +553,9 @@ export async function runInstrumentChecks() {
       check(readSong().synth === id && $(`[data-synth-choice="${id}"]`).getAttribute('aria-pressed') === 'true', `${id} choice is saved and reflected in Tunes`, results);
     }
     $('#tab-sound').click();
-    check($('[data-synth-choice="bell"]').getAttribute('aria-pressed') === 'true' && !$('#synth-picker').hidden, 'Sounds shares the instrument selected in Tunes', results);
+    check($('[data-synth-choice="chime"]').getAttribute('aria-pressed') === 'true' && !$('#synth-picker').hidden, 'Sounds shares the instrument selected in Tunes', results);
     $('#undo').click();
-    check(readSong().synth === 'arcade', 'synth instrument choice is undoable', results);
+    check(readSong().synth === 'bell', 'synth instrument choice is undoable', results);
     await wait(100);
   } finally {
     if (original === null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, original);
@@ -729,7 +729,7 @@ export async function runLoopSizeChecks() {
   const columns = () => document.querySelectorAll('#drum-grid .step').length / 4;
   try {
     if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
-    $('[data-loop-bars="1"]').click(); $('[data-preset="club"]').click(); $('#reset').click(); $('#tab-drums').click();
+    $('[data-preset="club"]').click(); $('#reset').click(); $('[data-loop-bars="1"]').click(); $('#tab-drums').click();
     const small = readSong();
     check(small.melody.length === 4 && columns() === 4, 'Small shows exactly four beat boxes per row', results);
     const smallWidth = $('#drum-grid .step').getBoundingClientRect().width;
@@ -752,7 +752,7 @@ export async function runLoopSizeChecks() {
     check(columns() === 4 && [...document.querySelectorAll('.sequence-grid [data-step], #loop-lights [data-step]')].every(cell => Number(cell.dataset.step) < 4), 'Small renders only four beats with no leftover boxes or lights', results);
     $('#undo').click(); check(same(readSong(),large) && $('[data-loop-bars="4"]').getAttribute('aria-pressed') === 'true', 'Undo restores removed bars, chords and the size choice', results);
     $('[data-preset="pixel"]').click(); $('#reset').click();
-    check(readSong().bars === 4 && readSong().melody.length === 16, 'new songs and Start over keep the selected loop size', results);
+    check(readSong().bars === 4 && readSong().melody.length === 16, 'the Game preset loads its authored size and Start over keeps that size', results);
     $('#tab-drums').click(); $('[data-page="0"]')?.click();
     const tempo = $('#tempo'); tempo.value = 300; tempo.dispatchEvent(new Event('input',{bubbles:true}));
     $('#play').click(); await wait(950);
@@ -772,11 +772,11 @@ export async function runLoopSizeChecks() {
     const saved = localStorage.getItem(SAVE_KEY); $('#tutorial-start').click(); $('#tutorial-exit').click();
     check(localStorage.getItem(SAVE_KEY) === saved && $('[data-loop-bars="2"]').getAttribute('aria-pressed') === 'true', 'leaving the tutorial restores the longer song and loop size', results);
     for (const bars of [1,2,4]) {
-      const song = editSong(createSong(), {type:'bars',value:bars}); song.tempo = 300;
+      const song = editSong(createSong(), {type:'bars',value:bars}); song.tempo = 600;
       const visited = [], errors = [];
       const engine = new AudioEngine(()=>song,step=>{if(step>=0)visited.push(step);},()=>{},error=>errors.push(error)); engine.setVolume(0);
       try {
-        await engine.start({cycles:1}); await wait(bars*800+180);
+        await engine.start({cycles:1}); await wait(bars*400+180);
         check(!errors.length && !engine.playing && same(visited,Array.from({length:bars*4},(_,i)=>i)), `${bars} bars: actual audio engine visits every beat once at the selected BPM and stops cleanly`, results);
       } finally {engine.stop(); await engine.context?.close();}
     }

@@ -593,3 +593,31 @@ original-site checks passed.
 Full development browser suite: 468 passed. All 80 theme/layout/reading checks
 passed at both 360×800 and 1280×800. DOM order and a measured 28px gap confirm
 presets follow the machine; the desktop spacing screenshot was inspected.
+
+## Chime and remade whole-beat presets — 17 October 2026
+
+The user extended the preset-move task before publication. The local integrated
+base for this extension is `2b9e3e3`; the source helper's opening/fetch record
+remains `8e4e690`. The new model regression initially failed because old preset
+metadata had no authored loop sizes. Remade presets now store native whole-beat
+patterns and per-pitch brushes directly, without condensing sixteenth steps.
+Jump uses one bar; Robot, Moon, Ants and Dance use two; River, Skate, Game and
+Cloud use four. Preset selection loads the authored size, as requested; Undo
+restores the previous song/size. Start over retains the user's selected size.
+
+Chime adds a tuned sine body and two inharmonic upper partials with shorter
+independent decays. Existing shared Tone, Length and Wobble controls shape it.
+The five brush choices fit one desktop row, with Chime spanning the final row
+on smaller screens. A sparkle marks its notes. The tempo range is 30–600 BPM;
+fast dance presets use double-time playback. Existing saves retain their music.
+
+Development: 42 Node tests and 472 full browser checks passed. Audio checks
+render all five distinct instruments, normalized chords and every full preset
+phrase with its per-note instruments. The focused loop-size/engine checks
+then passed all 22 assertions with actual one-, two- and four-bar playback at
+600 BPM; Node timing checks cover 30, 300 and 600 BPM. Eighty theme/layout/reading
+checks passed at each of 360×800, 800×360 and 1280×800. An actual reload retained
+a painted Chime note, sparkle icon, active brush and the four-bar Cloud size.
+Physical Android and Xbox hardware were not tested.
+The integrated preset-move base `2b9e3e3` also passed its complete 468 browser
+checks before merging the extension (41 Node tests, no baseline failures).
