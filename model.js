@@ -42,6 +42,48 @@ export const PRESETS = {
     drums: ['1000000010000010', '0000100000001000', '0010001000100011'],
     melody: [0, null, 2, null, 3, null, null, 5, 4, null, 3, null, 2, null, 1, null],
     sound: { brightness: 32, length: 65, wobble: 48 }
+  },
+  liquid: {
+    name: 'Liquid lift', genre: 'LIQUID D&B', tempo: 172, icon: 'wave',
+    drums: ['1000001000100010', '0000100000001000', '1010101010101011', '0000000100000001'],
+    drumSounds: ['kick', 'snare', 'shaker', 'openhat'], synth: 'pluck',
+    melody: [[0, 1, 3], null, null, 5, null, null, 3, null, [1, 3, 4], null, null, 5, null, 3, null, 1],
+    sound: { brightness: 58, length: 62, wobble: 12 }
+  },
+  roller: {
+    name: 'Roller skate', genre: 'DRUM & BASS', tempo: 176, icon: 'bolt',
+    drums: ['1000000000100010', '0000100000001000', '1011101010111010', '0000001000000011'],
+    drumSounds: ['kick', 'snare', 'hat', 'tom'], synth: 'bass',
+    melody: [0, 0, null, 0, null, 3, 0, null, 0, null, 4, 3, null, 1, 0, null],
+    sound: { brightness: 38, length: 32, wobble: 72 }
+  },
+  acid: {
+    name: 'Acid ants', genre: 'ACID TECHNO', tempo: 138, icon: 'robot',
+    drums: ['1000100010001000', '0000100000001000', '0010001000100010', '0001000000010001'],
+    drumSounds: ['kick', 'clap', 'openhat', 'cowbell'], synth: 'bass',
+    melody: [0, 3, 0, 5, 0, null, 1, 0, 3, 0, 4, 3, 0, 1, 0, 5],
+    sound: { brightness: 82, length: 16, wobble: 67 }
+  },
+  disco: {
+    name: 'Disco dots', genre: 'HOUSE', tempo: 122, icon: 'notes',
+    drums: ['1000100010001000', '0000100000001000', '0010001000100010', '1001010010010100'],
+    drumSounds: ['kick', 'clap', 'openhat', 'shaker'], synth: 'pluck',
+    melody: [null, null, [0, 1, 3], null, null, null, [0, 1, 3], null, null, null, [1, 3, 4], null, null, [1, 3, 4], null, 5],
+    sound: { brightness: 72, length: 36, wobble: 8 }
+  },
+  pixel: {
+    name: 'Pixel party', genre: 'ARCADE', tempo: 148, icon: 'pad',
+    drums: ['1000001010000010', '0000100000001000', '1010101010101111', '0000000100000001'],
+    drumSounds: ['kick', 'snare', 'hat', 'cowbell'], synth: 'arcade',
+    melody: [0, 3, 5, 3, 1, 3, 4, null, 2, 3, 5, 4, 3, 1, 0, null],
+    sound: { brightness: 68, length: 20, wobble: 0 }
+  },
+  cloud: {
+    name: 'Cloud chords', genre: 'CHILL OUT', tempo: 78, icon: 'moon',
+    drums: ['1000000000100000', '0000100000001000', '0010001000100010', '0000000100000000'],
+    drumSounds: ['kick', 'clap', 'shaker', 'tom'], synth: 'bell',
+    melody: [[0, 1, 3], null, null, null, null, null, 5, null, [1, 3, 4], null, null, null, null, null, 2, null],
+    sound: { brightness: 40, length: 88, wobble: 18 }
   }
 };
 
@@ -54,9 +96,10 @@ export function createSong(preset = 'breaks') {
   const source = PRESETS[preset];
   return {
     version: 3, preset, tempo: source.tempo,
-    drums: [...source.drums.map(row => [...row].map(value => value === '1')), Array(STEPS).fill(false)],
-    drumSounds: ['kick', 'snare', 'hat', 'clap'], synth: 'bass',
-    melody: source.melody.map(note => note === null ? [] : [note]), sound: { ...source.sound }
+    drums: Array.from({ length: DRUM_TRACKS }, (_, row) => source.drums[row]
+      ? [...source.drums[row]].map(value => value === '1') : Array(STEPS).fill(false)),
+    drumSounds: [...(source.drumSounds || ['kick', 'snare', 'hat', 'clap'])], synth: source.synth || 'bass',
+    melody: source.melody.map(note => note === null ? [] : Array.isArray(note) ? [...note] : [note]), sound: { ...source.sound }
   };
 }
 

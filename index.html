@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=6">
-  <script type="module" src="app.js?v=6"></script>
+  <link rel="stylesheet" href="style.css?v=7">
+  <script type="module" src="app.js?v=7"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -40,11 +40,7 @@
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">SMALL HANDS. BIG IDEAS.</p><h1 id="page-title">Find your groove<span>.</span></h1><p class="intro-copy">Pick a beat. Press play. Make it yours.</p></div></section>
-      <section class="groove-picker" aria-label="Starting grooves">
-        <button class="groove-card groove-breaks" data-preset="breaks" aria-pressed="true" data-nav="presets"><span class="groove-art"><svg class="icon"><use href="#i-bolt"/></svg></span><span><small>DRUM & BASS</small><strong>Jungle jump</strong></span><span class="chosen" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span></button>
-        <button class="groove-card groove-club" data-preset="club" aria-pressed="false" data-nav="presets"><span class="groove-art"><svg class="icon"><use href="#i-robot"/></svg></span><span><small>TECHNO</small><strong>Robot dance</strong></span><span class="chosen" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span></button>
-        <button class="groove-card groove-float" data-preset="float" aria-pressed="false" data-nav="presets"><span class="groove-art"><svg class="icon"><use href="#i-moon"/></svg></span><span><small>SPACE GROOVE</small><strong>Moon bounce</strong></span><span class="chosen" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span></button>
-      </section>
+      <section class="groove-picker" aria-label="Starting grooves"></section>
       <section class="machine" aria-label="Music machine">
         <div class="machine-top"><span class="machine-name">LC–01 <span> / </span> LITTLE LOOP MACHINE</span><span id="play-state" class="play-state"><i></i><span>READY TO PLAY</span></span></div>
         <div class="workspace-bar"><div class="tabs" role="tablist" aria-label="Make music"><button id="tab-drums" class="tab" role="tab" aria-selected="true" aria-controls="panel-drums" data-tab="drums"><svg class="icon"><use href="#i-drum"/></svg>Beats</button><button id="tab-melody" class="tab" role="tab" aria-selected="false" aria-controls="panel-melody" tabindex="-1" data-tab="melody"><svg class="icon"><use href="#i-notes"/></svg>Tunes</button><button id="tab-sound" class="tab" role="tab" aria-selected="false" aria-controls="panel-sound" tabindex="-1" data-tab="sound"><svg class="icon"><use href="#i-wave"/></svg>Sounds</button></div><button id="undo" class="machine-button" data-nav="tools" disabled><svg class="icon"><use href="#i-undo"/></svg><span>Undo</span></button></div>

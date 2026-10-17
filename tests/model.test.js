@@ -8,12 +8,18 @@ test('each starter is a complete editable loop, with independently owned arrays'
     assert.equal(first.drums.length, 4);
     assert.ok(first.drums.every(row => row.length === STEPS));
     assert.ok(first.drums.slice(0, 3).every(row => row.some(Boolean)));
-    assert.ok(first.drums[3].every(value => !value));
+    if (['breaks', 'club', 'float'].includes(id)) assert.ok(first.drums[3].every(value => !value));
+    assert.deepEqual(restoreSong(JSON.stringify(first)), first, `${id} is a valid save`);
     assert.equal(first.melody.length, STEPS);
     assert.ok(first.melody.every(notes => Array.isArray(notes)));
     assert.ok(first.melody.some(notes => notes.length > 0));
     first.drums[0][0] = !first.drums[0][0];
     assert.notDeepEqual(first.drums, createSong(id).drums);
+    const pitch = first.melody.findIndex(notes => notes.length);
+    first.melody[pitch].push(99);
+    first.drumSounds[0] = 'missing';
+    assert.ok(!createSong(id).melody[pitch].includes(99));
+    assert.notEqual(createSong(id).drumSounds[0], 'missing');
   }
 });
 

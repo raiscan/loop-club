@@ -2,8 +2,8 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord } from '../audio.js?v=6';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=6';
+import { AudioEngine, drumVoice, synthVoice, synthChord } from '../audio.js?v=7';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=7';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -231,8 +231,29 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks()];
+  const checks = [...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks()];
   return { passed: checks.length, checks };
+}
+
+export function runPresetChecks() {
+  const results = [], original = localStorage.getItem(SAVE_KEY);
+  try {
+    $('#tab-drums').click(); $('[data-preset=breaks]').click(); $('#reset').click();
+    const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
+    $('[data-drum="0"][data-step="0"]').click();
+    check(document.querySelectorAll('[data-preset]').length === Object.keys(PRESETS).length, 'every example has a starting-groove card', results);
+    for (const id of Object.keys(PRESETS)) {
+      const before = readSong();
+      $(`[data-preset="${id}"]`).click();
+      check(same(readSong(), createSong(id)), `${id}: card loads the complete beat, chords and instruments`, results);
+      check(document.querySelectorAll('[data-preset][aria-pressed=true]').length === 1 && $(`[data-preset="${id}"]`).getAttribute('aria-pressed') === 'true', `${id}: only the chosen example is highlighted`, results);
+      $('#undo').click();
+      check(same(readSong(), before), `${id}: choosing an example is undoable`, results);
+    }
+  } finally {
+    if (original === null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, original);
+  }
+  return results;
 }
 
 export async function runChordChecks() {
@@ -313,6 +334,10 @@ export async function runInstrumentChecks() {
 
 export function runLayoutChecks() {
   const results = [];
+  check([...document.querySelectorAll('[data-preset]')].every(node => {
+    const rect = node.getBoundingClientRect();
+    return rect.width >= 44 && rect.height >= 44 && rect.left >= 0 && rect.right <= innerWidth;
+  }), `${innerWidth}px: every groove card fits and retains a 44px target`, results);
   for (const name of ['drums', 'melody', 'sound']) {
     $(`#tab-${name}`).click();
     const machine = $('.machine').getBoundingClientRect();

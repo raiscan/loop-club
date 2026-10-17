@@ -33,7 +33,9 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 ## Play
 
-- **Jungle jump**, **Robot dance** and **Moon bounce** are starting grooves.
+- Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
+  **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
+  and **Cloud chords**. The new loops explore different instruments and chords.
   Choosing one replaces the current groove, and **Undo** brings it back.
 - **Beats:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
@@ -103,14 +105,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=6')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=7')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=6')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=7')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -130,7 +132,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=6`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=7`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
@@ -143,7 +145,7 @@ no token is stored in this repository.
 
 ## Codex Site
 
-The app is configured for an owner-private Codex Site. Its identity is
+The app is configured for a public Codex Site. Its identity is
 tracked in `.openai/hosting.json`; reuse that project ID for future updates.
 
 ```sh
@@ -156,5 +158,5 @@ served bundle. The script preserves unexpected files in `dist/` by stopping
 instead of deleting them. Use the Sites skill's source/package helper from
 the integrated main checkout to push and publish that exact source state.
 Prepare commits with the required co-author trailer before the helper runs.
-The Site starts private and requires its owner's sign-in. Saves remain local
+The Site is public and does not require sign-in. Saves remain local
 to each browser and origin; hosting does not copy a localhost save to the Site.

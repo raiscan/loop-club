@@ -164,3 +164,26 @@ Baseline main `0e88a57` passed 19 Node tests. Development verification:
 
 Physical Android/Xbox testing remains outstanding. No remote is configured;
 local integration can proceed, while push and post-push cleanup remain pending.
+
+
+## More starting grooves — 2026-10-17
+
+Added six examples (nine total), using distinct drum patterns, instrument
+choices, synth settings and several chord examples. Cards are generated from
+the preset catalogue. Original preset IDs and saved-song schema stay intact.
+Asset queries advance to `v=7`. Hosting remains public.
+
+- Updated main baseline: `node --test` passed 22 tests, no failures.
+- Development: `node --test` passed 22 tests, including validation and independent
+  ownership of every preset's chords and instruments. Module syntax and diff
+  whitespace checks passed.
+- Chrome `runBrowserChecks()` passed 136 checks: all nine loops render finite,
+  audible audio; each card loads its complete song and can be undone.
+- `runLayoutChecks()` passed all eight checks at 1152, 800 and 360 pixels.
+  The nine cards retain 44px targets; the page has no horizontal overflow.
+  The 800px layout was also visually inspected.
+- T3 preview snapshot/evaluation timed out, so browser QA used the installed
+  Chrome connector. A test-fixture failure initially undid a no-op selection;
+  the fixture now starts from a deliberate edit. A later run stalled without
+  a user audio gesture after reload; clicking Play before the run resolved it.
+- Physical Android and Xbox hardware were not retested for this preset update.

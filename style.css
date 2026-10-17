@@ -51,8 +51,8 @@ h1 > span { color: #8fa14e; }
 .groove-card:hover { background: #fffef8; }
 .groove-art { width: 48px; height: 48px; display: grid; place-items: center; background: #f0c66c; border-radius: 12px; flex-shrink: 0; transform: rotate(-6deg); }
 .groove-art .icon { width: 28px; height: 28px; }
-.groove-club .groove-art { background: var(--violet); transform: rotate(5deg); }
-.groove-float .groove-art { background: var(--aqua); transform: rotate(-4deg); }
+.groove-club .groove-art, .groove-acid .groove-art, .groove-pixel .groove-art { background: var(--violet); transform: rotate(5deg); }
+.groove-float .groove-art, .groove-liquid .groove-art, .groove-cloud .groove-art { background: var(--aqua); transform: rotate(-4deg); }
 .groove-card small { font: 700 9px system-ui, sans-serif; letter-spacing: 1.5px; color: #767a6d; display: block; margin-bottom: 6px; }
 .groove-card strong { font-size: 18px; font-weight: 800; letter-spacing: -.4px; }
 .chosen { margin-left: auto; align-self: flex-start; visibility: hidden; }
