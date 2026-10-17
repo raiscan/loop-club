@@ -1,12 +1,424 @@
-'use strict';
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const presets={neon:{tempo:118,notes:[110,130.81,164.81,146.83],rows:['1000100010001000','0000100000001000','1010101010101010','1001001010010010']},dust:{tempo:138,notes:[82.41,98,110,73.42],rows:['1000001010000010','0000100000001000','1011101010111010','1001010010010110']},rift:{tempo:92,notes:[130.81,164.81,196,146.83],rows:['1000000010100000','0000100000001000','0010001000100011','1000101010001010']}};
-let preset='neon',pattern=[],audio,master,playing=false,timer=null,nextTime=0,step=0,visualTimers=new Set();const rowNames=['KICK','SNARE','HAT','SYNTH'];
-function renderPattern(){let root=$('#sequencer');root.replaceChildren();pattern.forEach((r,ri)=>{let row=document.createElement('div');row.className='seq-row';let label=document.createElement('span');label.textContent=rowNames[ri];row.append(label);r.forEach((v,i)=>{let b=document.createElement('button');b.className='step'+(v?' on':'');b.setAttribute('aria-label',`${rowNames[ri]} step ${i+1}`);b.setAttribute('aria-pressed',!!v);b.dataset.step=i;b.onclick=()=>{pattern[ri][i]=!pattern[ri][i];b.classList.toggle('on',pattern[ri][i]);b.setAttribute('aria-pressed',pattern[ri][i])};row.append(b)});root.append(row)})}
-function setPreset(name){preset=name;pattern=presets[name].rows.map(s=>[...s].map(Number));$('#tempo').value=presets[name].tempo;$('#bpm').textContent=presets[name].tempo+' BPM';$$('[data-preset]').forEach(b=>{b.classList.toggle('selected',b.dataset.preset===name);b.setAttribute('aria-pressed',b.dataset.preset===name)});renderPattern()}
-function tone(freq,time,duration,type,volume,endFreq){let osc=audio.createOscillator(),gain=audio.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,time);if(endFreq)osc.frequency.exponentialRampToValueAtTime(endFreq,time+duration);gain.gain.setValueAtTime(.001,time);gain.gain.exponentialRampToValueAtTime(volume,time+.006);gain.gain.exponentialRampToValueAtTime(.001,time+duration);osc.connect(gain);gain.connect(master);osc.start(time);osc.stop(time+duration+.02)}
-function noise(time,duration,high,volume){let buffer=audio.createBuffer(1,Math.ceil(audio.sampleRate*duration),audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;let src=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();src.buffer=buffer;filter.type='highpass';filter.frequency.value=high;gain.gain.setValueAtTime(volume,time);gain.gain.exponentialRampToValueAtTime(.001,time+duration);src.connect(filter);filter.connect(gain);gain.connect(master);src.start(time);src.stop(time+duration)}
-function schedule(){while(nextTime<audio.currentTime+.1){let i=step;if(pattern[0][i])tone(140,nextTime,.2,'sine',.55,42);if(pattern[1][i]){noise(nextTime,.13,1100,.16);tone(180,nextTime,.09,'triangle',.1,80)}if(pattern[2][i])noise(nextTime,.045,6500,.08);if(pattern[3][i]){let note=presets[preset].notes[Math.floor(i/4)];tone(note,nextTime,.22,'triangle',.21);tone(note*2,nextTime,.15,'sine',.07)}let id=setTimeout(()=>{visualTimers.delete(id);if(playing)$$('.step').forEach(b=>b.classList.toggle('current',+b.dataset.step===i))},Math.max(0,(nextTime-audio.currentTime)*1000));visualTimers.add(id);nextTime+=60/(+$('#tempo').value)/4;step=(step+1)%16}}
-function stop(){playing=false;clearInterval(timer);visualTimers.forEach(clearTimeout);visualTimers.clear();if(master)master.gain.setTargetAtTime(0,audio.currentTime,.02);$$('.step').forEach(b=>b.classList.remove('current'));$('#play').innerHTML='▶ <span>START SIGNAL</span>';$('#play').setAttribute('aria-pressed','false');$('#audio-status').textContent='STANDBY'}
-$('#play').onclick=async()=>{if(playing){stop();return}try{if(!audio){audio=new(window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=.6;master.connect(audio.destination)}await audio.resume();master.gain.setTargetAtTime(.6,audio.currentTime,.02);playing=true;step=0;nextTime=audio.currentTime+.04;schedule();timer=setInterval(schedule,25);$('#play').innerHTML='■ <span>STOP SIGNAL</span>';$('#play').setAttribute('aria-pressed','true');$('#audio-status').textContent='ON AIR'}catch(e){$('#audio-status').textContent='AUDIO UNAVAILABLE'}};
-$('#tempo').oninput=e=>$('#bpm').textContent=e.target.value+' BPM';$$('[data-preset]').forEach(b=>b.onclick=()=>setPreset(b.dataset.preset));$('#reset').onclick=()=>setPreset(preset);document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing)stop()});setPreset('neon');
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY } from './model.js';
+import { AudioEngine } from './audio.js';
+import { GamepadReader } from './gamepad.js';
+
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const sections = ['drums', 'melody', 'sound'];
+const drums = [
+  { name: 'Kick', color: '#c9e77b', icon: 'kick' },
+  { name: 'Snare', color: '#f29c80', icon: 'snare' },
+  { name: 'Hat', color: '#8fd3cb', icon: 'hat' }
+];
+let saved = null, invalidSave = false;
+try {
+  const raw = localStorage.getItem(SAVE_KEY);
+  saved = restoreSong(raw);
+  invalidSave = raw !== null && saved === null;
+} catch { /* Saving remains optional; the instrument can still play. */ }
+const history = new SongHistory(saved || createSong());
+let section = 'drums', page = 0, visibleSteps = stepCount();
+let currentStep = -1, controllerMode = false, connectedPad = null;
+let messageTimer, previewTimer, groupTimer;
+const reader = new GamepadReader();
+const engine = new AudioEngine(() => history.song, showStep, showPlayback, message);
+
+function message(text) {
+  clearTimeout(messageTimer);
+  $('#message').textContent = text;
+  $('#message').hidden = false;
+  messageTimer = setTimeout(() => { $('#message').hidden = true; }, 6500);
+}
+
+function saveSong() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(history.song));
+    $('#save-status span').textContent = 'Saved on this device';
+  } catch {
+    $('#save-status span').textContent = 'Saving unavailable in this browser';
+  }
+}
+
+function commit(next) {
+  if (!history.commit(next)) return;
+  saveSong(); updateSong();
+}
+
+function undo() {
+  if (!history.canUndo) return;
+  history.undo(); saveSong(); updateSong();
+  message('Undone. Keep exploring.');
+  if (document.activeElement === $('#undo') && $('#undo').disabled) focusControl($(`#tab-${section}`));
+}
+
+function stepCount() {
+  return matchMedia('(max-width: 559px)').matches ? 4 : matchMedia('(max-width: 1249px)').matches ? 8 : 16;
+}
+
+function focusControl(element) {
+  if (!element) return;
+  $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+  element.focus({ preventScroll: true });
+  if (controllerMode) element.classList.add('controller-focus');
+  const rect = element.getBoundingClientRect();
+  if (rect.top < 8 || rect.bottom > innerHeight - 8) element.scrollIntoView({ block: 'center', behavior: 'instant' });
+}
+
+function numberRow(root) {
+  root.append(document.createElement('span'));
+  for (let i = page * visibleSteps; i < (page + 1) * visibleSteps; i++) {
+    const label = document.createElement('span');
+    label.className = 'step-number' + (i % 4 === 0 ? ' beat-start' : '');
+    label.dataset.step = i;
+    label.textContent = i + 1;
+    root.append(label);
+  }
+}
+
+function gridMetadata(button, row, col) {
+  button.dataset.gridRow = row; button.dataset.gridCol = col;
+}
+
+function flash(element) {
+  element.classList.add('sounding');
+  setTimeout(() => element.classList.remove('sounding'), 180);
+}
+
+function buildGrids() {
+  const drumGrid = $('#drum-grid'), melodyGrid = $('#melody-grid');
+  drumGrid.replaceChildren(); melodyGrid.replaceChildren();
+  numberRow(drumGrid); numberRow(melodyGrid);
+  drums.forEach((drum, row) => {
+    const pad = document.createElement('button');
+    pad.className = 'drum-pad'; pad.style.setProperty('--row-color', drum.color);
+    pad.innerHTML = `${icon(drum.icon)}<span>${drum.name}</span>`;
+    pad.setAttribute('aria-label', `Play ${drum.name}`);
+    gridMetadata(pad, row, -1);
+    pad.addEventListener('click', () => { flash(pad); engine.audition('drum', row); });
+    drumGrid.append(pad);
+    for (let col = 0; col < visibleSteps; col++) {
+      const step = page * visibleSteps + col;
+      const button = document.createElement('button');
+      button.className = 'step' + (step % 4 === 0 ? ' beat-start' : '');
+      button.style.setProperty('--row-color', drum.color);
+      button.dataset.step = step; button.dataset.drum = row;
+      gridMetadata(button, row, col);
+      button.setAttribute('aria-label', `${drum.name}, step ${step + 1}`);
+      button.addEventListener('click', () => {
+        commit(editSong(history.song, { type: 'drum', row, step }));
+        if (!engine.playing && history.song.drums[row][step]) engine.audition('drum', row);
+      });
+      drumGrid.append(button);
+    }
+  });
+  [...NOTES].reverse().forEach((note, row) => {
+    const pitch = NOTES.length - 1 - row;
+    const key = document.createElement('button');
+    key.className = 'note-key'; key.style.setProperty('--row-color', note.color);
+    key.innerHTML = `<span class="key-dot" aria-hidden="true"></span>${note.name}`;
+    key.setAttribute('aria-label', `Play ${note.name}${pitch === 5 ? ', high' : ''}`);
+    gridMetadata(key, row, -1);
+    key.addEventListener('click', () => { flash(key); engine.audition('note', pitch); });
+    melodyGrid.append(key);
+    for (let col = 0; col < visibleSteps; col++) {
+      const step = page * visibleSteps + col;
+      const button = document.createElement('button');
+      button.className = 'step' + (step % 4 === 0 ? ' beat-start' : '');
+      button.style.setProperty('--row-color', note.color);
+      button.dataset.step = step; button.dataset.note = pitch;
+      gridMetadata(button, row, col);
+      button.setAttribute('aria-label', `${note.name}, step ${step + 1}`);
+      button.addEventListener('click', () => {
+        commit(editSong(history.song, { type: 'note', step, note: pitch }));
+        if (!engine.playing && history.song.melody[step] === pitch) engine.audition('note', pitch);
+      });
+      melodyGrid.append(button);
+    }
+  });
+  const picker = $('#page-picker'); picker.replaceChildren();
+  for (let p = 0; p < STEPS / visibleSteps; p++) {
+    const button = document.createElement('button');
+    button.textContent = `${p * visibleSteps + 1}–${(p + 1) * visibleSteps}`;
+    button.setAttribute('aria-label', `Steps ${button.textContent}`);
+    button.setAttribute('aria-pressed', p === page);
+    button.dataset.page = p;
+    button.addEventListener('click', () => {
+      const keepFocus = document.activeElement === button;
+      changePage(p);
+      if (keepFocus) focusControl($(`[data-page="${p}"]`));
+    });
+    picker.append(button);
+  }
+  updateSong(); showStep(currentStep);
+}
+
+function changePage(nextPage) {
+  page = Math.max(0, Math.min(STEPS / visibleSteps - 1, nextPage));
+  buildGrids();
+}
+
+function setSection(next, focusTab = false) {
+  section = next;
+  history.end();
+  $$('[data-tab]').forEach(button => {
+    const selected = button.dataset.tab === section;
+    button.setAttribute('aria-selected', selected);
+    button.tabIndex = selected ? 0 : -1;
+  });
+  sections.forEach(name => { $(`#panel-${name}`).hidden = name !== section; });
+  $('#page-picker').hidden = section === 'sound';
+  const titles = {
+    drums: ['Tap a square. Make a beat.', 'Try the big drums, too.'],
+    melody: ['Draw a little tune.', 'Every coloured key belongs in your groove.'],
+    sound: ['What does your synth sound like?', 'Three little changes. Lots of new sounds.']
+  };
+  $('#workspace-title').textContent = titles[section][0];
+  $('#workspace-hint').textContent = titles[section][1];
+  if (focusTab) focusControl($(`#tab-${section}`));
+}
+
+function updateRange(input) {
+  input.style.setProperty('--fill', `${(Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100}%`);
+}
+
+function updateSong() {
+  const song = history.song;
+  $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', button.dataset.preset === song.preset));
+  $$('[data-drum]').forEach(button => button.setAttribute('aria-pressed', song.drums[button.dataset.drum][button.dataset.step]));
+  $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step] === Number(button.dataset.note)));
+  $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo} BPM`;
+  $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
+  $$('input[type=range]').forEach(updateRange);
+  $('#undo').disabled = !history.canUndo;
+  drawWave();
+}
+
+function drawWave() {
+  const { brightness, length, wobble } = history.song.sound;
+  const points = [];
+  for (let x = 0; x <= 400; x += 2) {
+    const t = x / 400;
+    const phase = t * 7 * Math.PI;
+    const harmonic = brightness / 100;
+    const shape = Math.sin(phase) + harmonic * Math.sin(phase * 2) / 2 + harmonic * Math.sin(phase * 3) / 3;
+    const movement = 1 - wobble / 100 * 0.65 * (0.5 + 0.5 * Math.sin(t * 15));
+    const decay = Math.exp(-t * (3 - length / 100 * 2.5));
+    points.push(`${x === 0 ? 'M' : 'L'}${x} ${(75 - shape * 52 * movement * decay).toFixed(2)}`);
+  }
+  $('#wave-path').setAttribute('d', points.join(' '));
+}
+
+function showStep(step) {
+  currentStep = step;
+  $$('[data-step]').forEach(element => element.classList.toggle('current', Number(element.dataset.step) === step));
+}
+
+function showPlayback(state) {
+  const active = state === 'playing', starting = state === 'starting';
+  $('#play').setAttribute('aria-pressed', active || starting);
+  $('#play').innerHTML = `${icon(active || starting ? 'stop' : 'play')}<span>${starting ? 'Starting…' : active ? 'Stop' : "Let's play"}</span>`;
+  $('#play-state').classList.toggle('playing', active);
+  $('#play-state span').textContent = starting ? 'WAKING UP…' : active ? 'MAKING MUSIC' : 'READY TO PLAY';
+}
+
+function togglePlay() {
+  clearTimeout(previewTimer);
+  if (engine.playing || engine.pending) engine.stop(); else engine.start();
+}
+
+$('#play').addEventListener('click', togglePlay);
+$('#undo').addEventListener('click', undo);
+$('#reset').addEventListener('click', () => {
+  history.end(); commit(createSong(history.song.preset));
+  message('Back to the starting groove. Undo can bring yours back.');
+});
+$$('[data-preset]').forEach(button => button.addEventListener('click', () => {
+  history.end(); commit(createSong(button.dataset.preset));
+}));
+$$('[data-tab]').forEach(button => {
+  button.addEventListener('click', () => setSection(button.dataset.tab));
+  button.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = sections.indexOf(section);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (index + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+    setSection(sections[next], true);
+  });
+});
+
+$$('input[type=range]').forEach(input => {
+  if (input.id !== 'volume') {
+    input.addEventListener('pointerdown', () => history.begin());
+    input.addEventListener('keydown', event => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) history.begin();
+    });
+    input.addEventListener('keyup', () => history.end());
+    input.addEventListener('blur', () => history.end());
+  }
+  input.addEventListener('input', () => {
+    const value = Number(input.value);
+    if (input.id === 'volume') { engine.setVolume(value / 100); updateRange(input); return; }
+    commit(editSong(history.song, input.id === 'tempo' ? { type: 'tempo', value } : { type: 'sound', key: input.dataset.sound, value }));
+    if (input.dataset.sound && !engine.playing) {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => engine.audition('note', 0), 150);
+    }
+  });
+});
+window.addEventListener('pointerup', () => history.end());
+window.addEventListener('pointercancel', () => history.end());
+$('#hear-synth').addEventListener('click', () => engine.audition('note', 0));
+
+const dialog = $('#help-dialog');
+let helpReturn;
+function openHelp() {
+  helpReturn = document.activeElement;
+  dialog.showModal();
+  if (controllerMode) focusControl($('#close-help'));
+}
+function closeHelp() { dialog.close(); }
+$('#help').addEventListener('click', openHelp);
+$('#controller-help').addEventListener('click', openHelp);
+$('#close-help').addEventListener('click', closeHelp);
+$('#help-done').addEventListener('click', closeHelp);
+dialog.addEventListener('close', () => focusControl(helpReturn || $('#help')));
+
+document.addEventListener('pointerdown', () => {
+  controllerMode = false;
+  $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+}, { capture: true });
+document.addEventListener('focusin', event => {
+  if (controllerMode) {
+    $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+    event.target.classList.add('controller-focus');
+  }
+});
+document.addEventListener('keydown', event => {
+  controllerMode = false;
+  $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !dialog.open) {
+    event.preventDefault(); undo();
+  }
+});
+
+function controls() {
+  return [...(dialog.open ? dialog : document).querySelectorAll('button, input[type=range]')]
+    .filter(element => !element.disabled && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+}
+
+function moveFocus(direction) {
+  const available = controls();
+  let current = document.activeElement;
+  if (!available.includes(current)) { focusControl(available.includes($('#play')) ? $('#play') : available[0]); return; }
+  const horizontal = direction === 'left' || direction === 'right';
+  const sign = direction === 'left' || direction === 'up' ? -1 : 1;
+  if (horizontal && current.matches('input[type=range]')) {
+    if (current.id !== 'volume') history.begin();
+    current.value = Number(current.value) + sign * 5;
+    current.dispatchEvent(new Event('input', { bubbles: true }));
+    clearTimeout(groupTimer); groupTimer = setTimeout(() => history.end(), 250);
+    return;
+  }
+  if (current.hasAttribute('data-grid-row')) {
+    const row = Number(current.dataset.gridRow), col = Number(current.dataset.gridCol);
+    const root = current.closest('.sequence-grid');
+    const nextRow = horizontal ? row : row + sign, nextCol = horizontal ? col + sign : col;
+    const adjacent = root.querySelector(`[data-grid-row="${nextRow}"][data-grid-col="${nextCol}"]`);
+    if (adjacent) { focusControl(adjacent); return; }
+    if (horizontal && nextCol >= visibleSteps && page < STEPS / visibleSteps - 1) {
+      changePage(page + 1);
+      focusControl(root.querySelector(`[data-grid-row="${row}"][data-grid-col="0"]`)); return;
+    }
+    if (horizontal && nextCol < -1 && page > 0) {
+      changePage(page - 1);
+      focusControl(root.querySelector(`[data-grid-row="${row}"][data-grid-col="${visibleSteps - 1}"]`)); return;
+    }
+  }
+  const box = current.getBoundingClientRect();
+  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  let best, bestScore = Infinity;
+  for (const element of available) {
+    if (element === current) continue;
+    const rect = element.getBoundingClientRect();
+    const dx = rect.x + rect.width / 2 - center.x, dy = rect.y + rect.height / 2 - center.y;
+    const primary = (horizontal ? dx : dy) * sign;
+    const secondary = Math.abs(horizontal ? dy : dx);
+    if (primary < 8) continue;
+    const score = primary + secondary * 3;
+    if (score < bestScore) { best = element; bestScore = score; }
+  }
+  focusControl(best);
+}
+
+function controllerAction(action) {
+  controllerMode = true;
+  const available = controls();
+  if (!available.includes(document.activeElement)) focusControl(dialog.open ? $('#close-help') : $('#play'));
+  else focusControl(document.activeElement);
+  if (['up', 'down', 'left', 'right'].includes(action)) moveFocus(action);
+  else if (action === 'activate') document.activeElement.click();
+  else if (action === 'back') {
+    if (dialog.open) closeHelp(); else focusControl($(`#tab-${section}`));
+  } else if (!dialog.open) {
+    if (action === 'play') togglePlay();
+    if (action === 'undo') undo();
+    if (action === 'next-section' || action === 'previous-section') {
+      const index = (sections.indexOf(section) + (action === 'next-section' ? 1 : 2)) % 3;
+      setSection(sections[index], true);
+    }
+  }
+}
+
+function pollController(now) {
+  let pad = null;
+  try {
+    if (!document.hidden && document.hasFocus()) {
+      const pads = [...(navigator.getGamepads?.() || [])].filter(item => item?.connected);
+      pad = pads.find(item => item.index === connectedPad && item.mapping === 'standard') || pads.find(item => item.mapping === 'standard');
+      if (!pad && pads.length) $('#controller-status').textContent = 'Controller mapping unavailable · touch / mouse ready';
+    }
+  } catch { $('#controller-status').textContent = 'Controller unavailable here · touch / mouse ready'; }
+  if (pad) {
+    if (connectedPad !== pad.index) {
+      connectedPad = pad.index;
+      $('#controller-status').textContent = 'Xbox ready · A select · X undo · LB/RB sections · ☰ play';
+    }
+  } else if (connectedPad !== null) {
+    connectedPad = null; engine.stop();
+    $('#controller-status').textContent = 'Xbox on PC · press a button to connect';
+    if (!document.hidden && document.hasFocus()) message('Controller disconnected. Your groove is still here.');
+    controllerMode = false;
+    $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
+  }
+  for (const action of reader.read(pad, now)) controllerAction(action);
+  requestAnimationFrame(pollController);
+}
+
+function leavePage() {
+  clearTimeout(previewTimer); history.end(); engine.stop(); reader.read(null, 0);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) leavePage(); });
+window.addEventListener('blur', leavePage);
+window.addEventListener('pagehide', leavePage);
+window.addEventListener('resize', () => {
+  const next = stepCount();
+  if (next === visibleSteps) return;
+  const focused = document.activeElement;
+  const selectedStep = focused?.hasAttribute('data-step') ? Number(focused.dataset.step) : page * visibleSteps;
+  const row = focused?.dataset.gridRow, col = focused?.dataset.gridCol;
+  visibleSteps = next; page = Math.floor(selectedStep / next);
+  buildGrids();
+  if (row !== undefined) {
+    const nextCol = Number(col) === -1 ? -1 : selectedStep % next;
+    focusControl($(`#panel-${section} [data-grid-row="${row}"][data-grid-col="${nextCol}"]`));
+  }
+});
+
+for (let step = 0; step < STEPS; step++) {
+  const light = document.createElement('i'); light.className = 'loop-light'; light.dataset.step = step;
+  $('#loop-lights').append(light);
+}
+buildGrids(); saveSong();
+if (invalidSave) message('That saved groove could not be opened. Here’s a fresh one to play with.');
+requestAnimationFrame(pollController);
