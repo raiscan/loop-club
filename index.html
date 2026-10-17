@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=3">
-  <script type="module" src="app.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=4">
+  <script type="module" src="app.js?v=4"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -62,7 +62,7 @@
           </div>
           <div class="beat-ruler" aria-hidden="true"><span>LOOP</span><div id="loop-lights"></div><svg class="icon"><use href="#i-reset"/></svg></div>
         </div>
-        <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span>Slower</span><span>Faster</span></span><input id="tempo" type="range" min="80" max="180" value="164" data-nav="transport"></label><label class="volume-control" for="volume"><span><svg class="icon"><use href="#i-volume"/></svg>Volume</span><input id="volume" type="range" min="0" max="100" value="55" data-nav="transport"></label><div class="transport-actions"><button id="play" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button></div></div>
+        <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span>Slower</span><span>Faster</span></span><input id="tempo" type="range" min="30" max="300" value="164" data-nav="transport"></label><label class="volume-control" for="volume"><span><svg class="icon"><use href="#i-volume"/></svg>Volume</span><input id="volume" type="range" min="0" max="100" value="55" data-nav="transport"></label><div class="transport-actions"><button id="play" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button></div></div>
       </section>
       <footer class="app-footer"><span class="discovery"><span aria-hidden="true">✳</span> There’s no wrong way to play.</span><button id="controller-help"><svg class="icon"><use href="#i-pad"/></svg><span id="controller-status">Xbox on PC · press a button to connect</span></button></footer>
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>

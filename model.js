@@ -1,4 +1,6 @@
 export const STEPS = 16;
+export const TEMPO_MIN = 30;
+export const TEMPO_MAX = 300;
 export const SAVE_KEY = 'loop-club.song.v1';
 // Retain the storage key so version-one songs migrate in place.
 export const DRUM_TRACKS = 4;
@@ -62,7 +64,7 @@ export function restoreSong(raw) {
   try {
     const song = JSON.parse(raw);
     if (!song || ![1, 2].includes(song.version) || !Object.hasOwn(PRESETS, song.preset) ||
-      !Number.isInteger(song.tempo) || song.tempo < 80 || song.tempo > 180 ||
+      !Number.isInteger(song.tempo) || song.tempo < TEMPO_MIN || song.tempo > TEMPO_MAX ||
       !Array.isArray(song.drums) || song.drums.length !== (song.version === 1 ? 3 : DRUM_TRACKS) ||
       !song.drums.every(row => Array.isArray(row) && row.length === STEPS && row.every(value => typeof value === 'boolean')) ||
       !Array.isArray(song.melody) || song.melody.length !== STEPS ||
@@ -89,7 +91,7 @@ export function editSong(song, edit) {
   } else if (edit.type === 'note' && index(edit.step, STEPS) && index(edit.note, NOTES.length)) {
     next.melody[edit.step] = next.melody[edit.step] === edit.note ? null : edit.note;
   } else if (edit.type === 'tempo' && Number.isFinite(edit.value)) {
-    next.tempo = clamp(edit.value, 80, 180);
+    next.tempo = clamp(edit.value, TEMPO_MIN, TEMPO_MAX);
   } else if (edit.type === 'sound' && ['brightness', 'length', 'wobble'].includes(edit.key) && Number.isFinite(edit.value)) {
     next.sound[edit.key] = clamp(edit.value, 0, 100);
   } else if (edit.type === 'drumSound' && index(edit.row, DRUM_TRACKS) && Object.hasOwn(DRUM_SOUNDS, edit.value)) {

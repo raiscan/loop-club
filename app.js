@@ -1,6 +1,6 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS } from './model.js?v=3';
-import { AudioEngine } from './audio.js?v=3';
-import { GamepadReader } from './gamepad.js?v=3';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS } from './model.js?v=4';
+import { AudioEngine } from './audio.js?v=4';
+import { GamepadReader } from './gamepad.js?v=4';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];

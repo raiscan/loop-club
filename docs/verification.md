@@ -118,3 +118,17 @@ its two page-crossing checks apply only to narrower paged layouts. Layout checks
 passed in all sections at desktop, 800px and 360px. Direct geometry checks
 confirmed one Play/Stop button, sharing a parent with Start over, immediately
 preceding it and staying on the same row at all tested widths.
+
+## Tempo playground — 17 October 2026
+
+Expanded the Speed slider, model editing/save validation and audio clock from
+80–180 to 30–300 BPM. The model and scheduler share the tempo limits. Existing
+starter tempos are unchanged. Release asset queries advance to `v=4`.
+
+Baseline main at `3b1227a`: 17 Node tests passed. New endpoint tests reproduced
+the former clamps before the change. Development verification passes 19 Node
+tests, JavaScript syntax checks, `git diff --check` and 88 browser/audio checks.
+The browser accepted and saved both limits; actual moving-playhead intervals
+averaged 500ms at 30 BPM and 48ms at 300 BPM, versus expected sixteenth-note
+intervals of 500ms and 50ms. The precise audio-clock intervals are covered by
+the Node timing test, and save validation rejects values outside 30–300.

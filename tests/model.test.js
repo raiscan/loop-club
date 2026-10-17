@@ -28,14 +28,23 @@ test('editing a drum or pitch changes one step and does not mutate the prior son
 
 test('tempo and synth settings remain in range; invalid edits leave the song unchanged', () => {
   const song = createSong();
-  assert.equal(editSong(song, { type: 'tempo', value: 999 }).tempo, 180);
-  assert.equal(editSong(song, { type: 'tempo', value: 1 }).tempo, 80);
+  assert.equal(editSong(song, { type: 'tempo', value: 999 }).tempo, 300);
+  assert.equal(editSong(song, { type: 'tempo', value: 1 }).tempo, 30);
   assert.equal(editSong(song, { type: 'sound', key: 'brightness', value: -10 }).sound.brightness, 0);
   for (const edit of [
     { type: 'drum', row: 8, step: 1 }, { type: 'drum', row: 0, step: -1 },
     { type: 'note', step: 3, note: 999 }, { type: 'tempo', value: NaN },
     { type: 'sound', key: '__proto__', value: 1 }, { type: 'unknown' }
   ]) assert.deepEqual(editSong(song, edit), song);
+});
+
+test('both tempo extremes survive saving and values outside them are rejected', () => {
+  for (const tempo of [30, 300]) {
+    const song = editSong(createSong(), { type: 'tempo', value: tempo });
+    assert.equal(song.tempo, tempo);
+    assert.equal(restoreSong(JSON.stringify(song)).tempo, tempo);
+  }
+  for (const tempo of [29, 301]) assert.equal(restoreSong(JSON.stringify({ ...createSong(), tempo })), null);
 });
 
 test('autosave round-trips songs and rejects malformed or incompatible saves', () => {

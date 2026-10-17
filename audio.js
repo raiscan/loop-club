@@ -1,9 +1,9 @@
-import { NOTES } from './model.js?v=3';
+import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=4';
 
 const noiseBuffers = new WeakMap();
 
 export function scheduledSteps(clock, now, tempo) {
-  const bpm = Number.isFinite(tempo) ? Math.max(80, Math.min(180, tempo)) : 120;
+  const bpm = Number.isFinite(tempo) ? Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, tempo)) : 120;
   if (clock.nextTime < now - 0.1) clock.nextTime = now + 0.025;
   const events = [];
   while (clock.nextTime < now + 0.09 && events.length < 4) {

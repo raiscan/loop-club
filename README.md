@@ -47,7 +47,7 @@ currently targeted at PC. No tablet/controller pairing is required.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
   those settings; it is not an oscilloscope. Sliders audition a note while stopped.
-- **Speed** changes the tempo from 80–180 BPM; **Volume** controls all audio.
+- **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio.
 - The latest groove, tempo and synth settings save automatically in this
   browser's local storage, including drum and synth instrument choices. Older
   three-drum saves upgrade automatically, keeping every existing step and
@@ -101,14 +101,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=3')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=4')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=3')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=4')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -128,7 +128,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=3`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=4`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
