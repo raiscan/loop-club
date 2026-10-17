@@ -886,3 +886,16 @@ Share remains a 44px footer target. Syntax, diff and build checks pass. Static
 output now includes ten runtime assets and the unchanged thirty-one voice clips.
 Runtime asset queries advance together to `v=28`. Physical Android/Xbox testing
 and native device share-sheet delivery are not claimed.
+
+## Song button alignment — 17 October 2026
+
+- Updated base `dd2c236` and development: `node --test` passed all 61 tests;
+  `node --run check` and `git diff --check` passed on development.
+- Chrome layout checks passed at 360, 600, 800, 1366, 1400 and 1920 CSS pixels
+  (8 checks at each width). All nine song tiles have matching dot offsets at
+  each width, no content overflow, and centred loop dots. The sidebar fits
+  without internal scrolling at 1920×940.
+- The canonical full browser run stops on both base and development at
+  `Xbox D-pad tunes speaker sync in ten-millisecond steps`. Broader diagnostic
+  runs also encounter simulated-controller and focus failures, so this change
+  does not claim a clean full browser suite or physical-controller verification.
