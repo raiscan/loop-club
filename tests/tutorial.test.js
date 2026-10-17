@@ -168,3 +168,23 @@ test('keeping a tutorial song repeats the learned phrase across the full loop', 
   assert.deepEqual(lesson.melody[0], [0, 1]);
   assert.deepEqual(result.melody[8], [0, 1]);
 });
+
+test('player names are opt-in and named greetings never leak into the default tour', async () => {
+  const { tutorialPlayer, tutorialStepsFor } = await import('../tutorial.js');
+  assert.equal(tutorialPlayer(''), null);
+  assert.equal(tutorialPlayer('?marcie=no&name=Zach'), null);
+  assert.equal(tutorialPlayer('?theme=space&zach=yes'), 'zach');
+  assert.equal(tutorialPlayer('?theme=space&marcie=yes'), 'marcie');
+  assert.equal(tutorialPlayer('?zach=yes&marcie=yes'), 'zach');
+  for (const [mode,name] of [[null,null],['zach','Zach'],['marcie','Marcie']]) {
+    const steps = tutorialStepsFor(mode);
+    const text = JSON.stringify(steps);
+    if (name) {
+      assert.match(steps[0].title,new RegExp(name));
+      assert.match(steps.at(-1).copy,new RegExp(name));
+      assert.equal(steps[0].audio, `hello-${mode}`);
+      assert.equal(steps.at(-1).audio, `done-${mode}`);
+    } else assert.doesNotMatch(text,/Zach|Marcie/);
+    assert.equal(steps.length,TUTORIAL_STEPS.length);
+  }
+});

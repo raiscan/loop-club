@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=13';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=14';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -91,7 +91,7 @@ export class TutorialSpeech {
 }
 
 export const TUTORIAL_STEPS = [
-  { audio: 'hello', title: 'Hi Zach!', copy: 'Tap “Let\'s play”.', spoken: "Hi Zach! Let’s make some music. Tap the Let's play button.", target: '#play', action: 'playing', picture: 'loop' },
+  { audio: 'hello', title: 'Hi!', copy: 'Tap “Let\'s play”.', spoken: "Hi! Let’s make some music. Tap the Let's play button.", target: '#play', action: 'playing', picture: 'loop' },
   { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
   { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat', reward: 'drum' },
   { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="0"]', section: 'drums', picture: 'beat', reward: 'beat' },
@@ -101,8 +101,23 @@ export const TUTORIAL_STEPS = [
   { audio: 'sounds', title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
   { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave', reward: 'slide' },
   { audio: 'play', title: 'Your tune!', copy: 'Tap “Let\'s play”.', spoken: "Now hear your tune. Tap the Let's play button.", target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
-  { audio: 'done', title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
+  { audio: 'done', title: 'You made music!', copy: 'Have fun!', done: true, picture: 'loop' }
 ];
+
+const PLAYER_PROMPTS = Object.fromEntries(['zach', 'marcie'].map(id => {
+  const name = id === 'zach' ? 'Zach' : 'Marcie';
+  return [id, {
+    hello: { audio: `hello-${id}`, title: `Hi ${name}!`, spoken: `Hi ${name}! Let’s make some music. Tap the Let's play button.` },
+    done: { audio: `done-${id}`, copy: `Have fun, ${name}.` }
+  }];
+}));
+export function tutorialPlayer(search = '') {
+  const params = new URLSearchParams(search);
+  return params.get('zach') === 'yes' ? 'zach' : params.get('marcie') === 'yes' ? 'marcie' : null;
+}
+export function tutorialStepsFor(player) {
+  return TUTORIAL_STEPS.map(step => ({ ...step, ...(PLAYER_PROMPTS[player]?.[step.audio] || {}) }));
+}
 
 export const TUTORIAL_REWARDS = {
   drum: { title: 'Your drum!', copy: 'Tap it again!', spoken: 'Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.' },
@@ -111,7 +126,7 @@ export const TUTORIAL_REWARDS = {
   chord: { title: 'Your notes!', copy: 'Stack more notes!', spoken: 'Your notes! That was you. Try more notes in your stacks. When you’re ready to try new sounds, tap Next.' },
   slide: { title: 'Your sound!', copy: 'Slide and play!', spoken: 'Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.' }
 };
-export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS,
+export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS, ...['zach', 'marcie'].flatMap(player => tutorialStepsFor(player).filter(step => step.audio.endsWith(`-${player}`))),
   ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `reward-${kind}`, spoken: reward.spoken }))];
 
 export function blankTutorialSong(song) {
@@ -181,6 +196,7 @@ export class ZachTutorial {
     this.card = document.querySelector('#tutorial-card'); this.ring = document.querySelector('#tutorial-ring');
     this.shade = document.querySelector('#tutorial-shade');
     this.active = false; this.index = 0;
+    this.steps = tutorialStepsFor(tutorialPlayer(globalThis.location?.search));
     document.querySelector('#tutorial-start').addEventListener('click', () => this.start());
     document.querySelector('#tutorial-exit').addEventListener('click', () => this.stop());
     document.querySelector('#tutorial-done').addEventListener('click', () => this.stop(true, true));
@@ -241,7 +257,7 @@ export class ZachTutorial {
     window.addEventListener('scroll', () => this.position(), { passive: true });
     window.addEventListener('resize', () => requestAnimationFrame(() => this.refresh()));
   }
-  get step() { return TUTORIAL_STEPS[this.index]; }
+  get step() { return this.steps[this.index]; }
   get preferredControl() { return this.reviewing ? document.querySelector(this.heard ? '#tutorial-next' : '#tutorial-repeat') : this.target; }
   start() {
     this.stop(false); this.onStart(); this.active = true; this.index = 0;

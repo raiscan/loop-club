@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=13';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=13';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=13';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=13';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=14';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=14';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=14';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=14';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -671,6 +671,16 @@ export async function runThemeChecks() {
       check(document.querySelectorAll('[data-theme-choice][aria-pressed="true"]').length === 1 && choice.querySelector('.theme-picture').textContent.trim(), `${id}: one pictured choice is selected`, results);
       check(palette.colorScheme === (id === 'space' ? 'dark' : 'light'), `${id}: browser controls use the correct light or dark scheme`, results);
       check(localStorage.getItem(SAVE_KEY) === song, `${id}: changing the look leaves the saved music untouched`, results);
+      const rgbLuminance = colour => {
+        const channels = colour.match(/[\d.]+/g).slice(0,3).map(Number).map(c=>c/255).map(c=>c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4);
+        return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
+      };
+      for (const section of ['drums','melody','sound']) {
+        $(`#tab-${section}`).click();
+        const tab = getComputedStyle($(`#tab-${section}`));
+        const a = rgbLuminance(tab.color), b = rgbLuminance(tab.backgroundColor);
+        check((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5, `${id} ${section}: selected tab text and icon contrast exceeds 4.5`,results);
+      }
       const colour = name => palette.getPropertyValue(name).trim();
       check(contrast(colour('--ink'), colour('--surface')) >= 4.5 && contrast(colour('--muted'), colour('--paper')) >= 4.5 && contrast(colour('--action-ink'), colour('--action')) >= 4.5, `${id}: main text, quiet labels and action buttons retain readable contrast`, results);
     }
@@ -738,7 +748,7 @@ export async function runLoopSizeChecks() {
     $('#tab-melody').click(); $('[data-note="5"][data-step="12"]').click();
     check(!same(readSong().melody[12],before.melody[12]) && same(readSong().melody[0],before.melody[0]), 'chords in the last bar edit independently and save', results);
     const large = readSong(); $('[data-loop-bars="1"]').click();
-    check(readSong().bars === 1 && $('#page-picker').hidden && $('#melody-grid [data-step="0"]'), 'shrinking from a late bar returns to the one-bar grid', results);
+    check(readSong().bars === 1 && document.querySelectorAll('#page-picker button').length === 1 && $('#melody-grid [data-step="0"]'), 'shrinking from a late bar returns to the one-bar grid', results);
     check(columns() === 4 && [...document.querySelectorAll('.sequence-grid [data-step], #loop-lights [data-step]')].every(cell => Number(cell.dataset.step) < 4), 'Small renders only four beats with no leftover boxes or lights', results);
     $('#undo').click(); check(same(readSong(),large) && $('[data-loop-bars="4"]').getAttribute('aria-pressed') === 'true', 'Undo restores removed bars, chords and the size choice', results);
     $('[data-preset="pixel"]').click(); $('#reset').click();
@@ -779,5 +789,29 @@ export async function runLoopSizeChecks() {
     $('[data-loop-bars="1"]').click(); $('[data-preset="breaks"]').click(); $('#reset').click(); $('#tab-drums').click(); $('[data-page="0"]')?.click();
     if(original===null)localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY,original);
   }
+  return results;
+}
+
+export function runMapAndVolumeChecks() {
+  const results = [], old = $('[data-loop-bars][aria-pressed="true"]').dataset.loopBars;
+  check([1,2,4].every(n=>document.querySelectorAll(`[data-loop-bars="${n}"] .loop-size-dots i`).length===n*4) && [...document.querySelectorAll('[data-loop-bars]')].every(b=>!b.innerText.includes('bar') && b.getAttribute('aria-label').includes('beats')), 'size choices show four, eight and sixteen pills with accessible beat counts',results);
+  try {
+    $('[data-loop-bars="4"]').click(); $('#tab-drums').click();
+    const map = $('.loop-map'), picker = $('#page-picker');
+    check(map.contains(picker) && !$('#pattern-controls').contains(picker), 'page controls are on the loop map beneath the grid',results);
+    const pages = [...picker.querySelectorAll('button')];
+    pages.at(-1).click();
+    check(pages.length === 16 / (document.querySelectorAll('#drum-grid .step').length/4) && document.querySelectorAll('#page-picker [aria-pressed="true"]').length === 1, 'the map highlights exactly the visible part of the loop',results);
+    check([...document.querySelectorAll('#page-picker button')].every(button=>{const r=button.getBoundingClientRect(),m=map.getBoundingClientRect();return r.width>=44&&r.height>=44&&r.left>=m.left&&r.right<=m.right+.1;}), 'every highlighted map section is a large target inside the loop map',results);
+    check($('.loop-light .map-dot.on') && document.querySelectorAll('.loop-light .map-dot').length===16*5, 'the map shows a miniature of drum and tune hits',results);
+    const volume = $('.volume-section'), row = volume.getBoundingClientRect(), transport = $('.transport').getBoundingClientRect(), ruler = $('.beat-ruler').getBoundingClientRect();
+    check(row.top>=ruler.bottom && row.bottom<=transport.top+.1 && volume.contains($('#volume')) && !$('.transport').contains($('#volume')), 'the standalone volume row sits between the loop map and playback controls',results);
+    check(!volume.textContent.trim() && volume.querySelector('svg') && $('#volume').getAttribute('aria-label')==='Volume', 'volume has a speaker, no visible text and an accessible name',results);
+    check($('#volume').getBoundingClientRect().width>=row.width*.65 && $('#volume').getBoundingClientRect().height>=60, 'volume uses a wide, large slider',results);
+    const prior = $('#volume').value;
+    $('#volume').value=23;$('#volume').dispatchEvent(new Event('input',{bubbles:true}));
+    check($('#volume').value==='23','the moved volume slider still accepts input',results);
+    $('#volume').value=prior;$('#volume').dispatchEvent(new Event('input',{bubbles:true}));
+  } finally { $(`[data-loop-bars="${old}"]`).click(); $('[data-page="0"]')?.click(); }
   return results;
 }

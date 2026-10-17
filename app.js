@@ -1,12 +1,16 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=13';
-import { AudioEngine } from './audio.js?v=13';
-import { GamepadReader } from './gamepad.js?v=13';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=13';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=14';
+import { AudioEngine } from './audio.js?v=14';
+import { GamepadReader } from './gamepad.js?v=14';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=14';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const sections = ['drums', 'melody', 'sound'];
+const player = tutorialPlayer(location.search);
+const helpLabel = player ? `Help ${player === 'zach' ? 'Zach' : 'Marcie'}` : 'Help';
+$('#tutorial-start').innerHTML = `${helpLabel} <span aria-hidden="true">▶</span>`;
+$('#tutorial-card').setAttribute('aria-label', helpLabel);
 const songIcons = { breaks: 'jump', roller: 'skate', acid: 'ant', cloud: 'cloud' };
 const songNames = { breaks: 'Jump', club: 'Robot', float: 'Moon', liquid: 'River', roller: 'Skate', acid: 'Ants', disco: 'Dance', pixel: 'Game', cloud: 'Cloud' };
 const THEME_KEY = 'loop-club.theme.v1';
@@ -181,7 +185,7 @@ function buildGrids() {
     }
   });
   const picker = $('#page-picker'); picker.replaceChildren();
-  picker.hidden = section === 'sound' || renderedSteps <= visibleSteps;
+  picker.style.gridTemplateColumns = `repeat(${renderedSteps / visibleSteps}, minmax(0, 1fr))`;
   for (let p = 0; p < renderedSteps / visibleSteps; p++) {
     const firstBar = p * visibleSteps / STEPS + 1, lastBar = (p + 1) * visibleSteps / STEPS;
     const button = document.createElement('button');
@@ -198,6 +202,10 @@ function buildGrids() {
   $('#loop-lights').style.gridTemplateColumns = `repeat(${renderedSteps}, 1fr)`;
   for (let step = 0; step < renderedSteps; step++) {
     const light = document.createElement('i'); light.className = 'loop-light'; light.dataset.step = step;
+    for (let row = 0; row < DRUM_TRACKS + 1; row++) {
+      const dot = document.createElement('span'); dot.className = 'map-dot';
+      dot.style.setProperty('--map-color', DRUM_COLORS[row] || '#b7a8e7'); light.append(dot);
+    }
     $('#loop-lights').append(light);
   }
   updateSong(); showStep(currentStep);
@@ -217,7 +225,6 @@ function setSection(next, focusTab = false) {
     button.tabIndex = selected ? 0 : -1;
   });
   sections.forEach(name => { $(`#panel-${name}`).hidden = name !== section; });
-  $('#page-picker').hidden = section === 'sound' || history.song.melody.length <= visibleSteps;
   $('#synth-picker').hidden = section === 'drums';
   const titles = {
     drums: ['Tap a box.', 'Make a beat!'],
@@ -252,6 +259,10 @@ function updateSong() {
   });
   $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
   $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step].includes(Number(button.dataset.note))));
+  $$('.loop-light').forEach(light => {
+    const step = Number(light.dataset.step);
+    [...light.children].forEach((dot, row) => dot.classList.toggle('on', row < DRUM_TRACKS ? song.drums[row][step] : song.melody[step].length > 0));
+  });
   $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo}`;
   $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
   $$('input[type=range]').forEach(updateRange);

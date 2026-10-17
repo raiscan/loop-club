@@ -41,7 +41,7 @@ currently targeted at PC. No tablet/controller pairing is required.
   drum pads, chunky yellow play buttons, Arial, short labels and large pictures. Visible words
   and numbers stay at least 18px, with larger action labels. Song cards use
   one-word names; genre names and synth terms are in grown-up help.
-- **Help Zach** opens the hands-on tutorial. Ten short tasks use large Arial /
+- **Help** opens the hands-on tutorial. Ten short tasks use large Arial /
   sans-serif text and a gold ring around the next real control. Each lesson
   includes a diagram of the beat, loop, notes, chord stack or sound shape.
   Diagrams reflect the actual song and playhead. The screen dims around the highlighted control and helper;
@@ -76,14 +76,15 @@ currently targeted at PC. No tablet/controller pairing is required.
   cowbell. Tap a numbered sound selector to cycle instruments; it previews
   the new sound and keeps the pattern. The large drum pads play individual sounds.
 - **Loop size:** Small is 1 bar (4 beat boxes), Medium is 2 bars (8 boxes),
-  and Large is 4 bars (16 boxes). Every box is one quarter-note beat: four
+  and Large is 4 bars (16 boxes). The choices show 4/8/16 pills instead of bar
+  counts, while screen readers get the beat and bar counts. Every box is one quarter-note beat: four
   beats per bar in 4/4. Small shows only four boxes, widened to fill the grid.
   Growing repeats the current pattern into extra bars, with independently
   editable drums and chords. Shrinking keeps the first bars; Undo restores
   removed music and size. Presets and Start over keep the selected size.
   Resizing during playback restarts at the beginning. Tablets show up to eight
-  boxes and narrower screens four; bar buttons reveal the rest without shrinking
-  targets. D-pad navigation crosses pages. The moving lights show the whole loop.
+  boxes and narrower screens four; the loop map below the grid highlights the part being edited. Tap another
+  part of that map to reveal it without shrinking targets. D-pad navigation crosses pages. The moving lights show the whole loop.
   The tour uses a four-beat practice song; leaving restores the original size,
   and Keep it repeats the learned phrase across that size.
 - **Tunes:** tap a coloured square to add a note. Stack several notes in the same
@@ -94,7 +95,8 @@ currently targeted at PC. No tablet/controller pairing is required.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
   those settings; it is not an oscilloscope. Sliders audition a note while stopped.
-- **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio.
+- **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio from a large standalone speaker slider between
+  the loop map and playback controls.
 - The latest groove, tempo and synth settings save automatically in this
   browser's local storage, including drum and synth instrument choices. Older
   saves upgrade automatically, keeping every existing note and step.
@@ -152,14 +154,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=13')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=14')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=13')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=14')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -181,7 +183,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=13`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=14`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
@@ -232,3 +234,11 @@ outdated clips so prompts cannot silently drift from the narration. Only the
 finished MP3s and runtime mapping are served; the generator and provenance are
 not in the hosted bundle. Generation incurs one-time API use; playback is local
 to the browser using same-origin static files.
+
+
+Player modes are chosen only by URL: no player parameter uses unnamed greetings;
+`?zach=yes` personalises Help, hello and goodbye for Zach; `?marcie=yes` does the
+same for Marcie. Append with `&` when the URL already has a query. If both are
+present, Zach takes precedence. These modes do not change the saved music or
+look. Generic, Zach and Marcie greetings each have matching bundled Scottish
+recordings; the remaining prompts are shared.

@@ -3,12 +3,6 @@
   "voice": "Sulafat",
   "instructions": "A friendly woman from Edinburgh speaking gentle, conversational Scottish English. A light, natural everyday Scottish accent, relaxed and understated. Calm, warm and reassuring, like speaking one-to-one with a five-year-old. Use an unhurried, clear pace and small pauses. Keep the delivery soft and matter-of-fact, without theatrical emphasis, a sing-song teaching voice, or exaggerated R sounds. Pronounce Zach as Zak. Read only the supplied words exactly. No music, sound effects or extra words.",
   "clips": {
-    "hello": {
-      "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
-      "seconds": 5.4,
-      "sha256": "0d43e18f871a28547ba656e05640c39f035aa8804dc3f4786daaa577e93bd9d3",
-      "generation_id": "gen-tts-1792242035-2AIJ0TOUoC0SlZp88Wso"
-    },
     "stop": {
       "text": "Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.",
       "seconds": 9.44,
@@ -63,12 +57,6 @@
       "sha256": "382144e03150b9040e77e435458287da4262a847f679022aa85cd523d9a7bfd1",
       "generation_id": "gen-tts-1792242381-a5tXW2Uq7g70c6kLQsdn"
     },
-    "done": {
-      "text": "You made music! Have fun, Zach.",
-      "seconds": 3.8,
-      "sha256": "5354ebca00c57a289264ca33fcbfd45c331df0ebd9d75450fee00fcbee5bc8b8",
-      "generation_id": "gen-tts-1792242263-63E7l14rNvTHf6u8jIF8"
-    },
     "reward-drum": {
       "text": "Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.",
       "seconds": 8.4,
@@ -98,6 +86,42 @@
       "seconds": 10.16,
       "sha256": "3876d8366db5de01ca70f6862da3b77bc5199a7712c37041bc23b939ac45345c",
       "generation_id": "gen-tts-1792246144-FdAYlVrIcKhsEE4F1tUb"
+    },
+    "hello-zach": {
+      "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.4,
+      "sha256": "0d43e18f871a28547ba656e05640c39f035aa8804dc3f4786daaa577e93bd9d3",
+      "generation_id": "gen-tts-1792242035-2AIJ0TOUoC0SlZp88Wso"
+    },
+    "done-zach": {
+      "text": "You made music! Have fun, Zach.",
+      "seconds": 3.8,
+      "sha256": "5354ebca00c57a289264ca33fcbfd45c331df0ebd9d75450fee00fcbee5bc8b8",
+      "generation_id": "gen-tts-1792242263-63E7l14rNvTHf6u8jIF8"
+    },
+    "hello": {
+      "text": "Hi! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.48,
+      "sha256": "7a92e1ce8a60f70492083f618463f811734a3ce0d2734bb23b492eb45929721b",
+      "generation_id": "gen-tts-1792247088-LTaGBhe3NqQYEwRRIapB"
+    },
+    "done": {
+      "text": "You made music! Have fun!",
+      "seconds": 3.44,
+      "sha256": "3e329c0a1721bb81d372d75baa1478e396c12e201b304aebdc2023f3d094b362",
+      "generation_id": "gen-tts-1792247091-3t7AssZLOxypjfAQQSsC"
+    },
+    "hello-marcie": {
+      "text": "Hi Marcie! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.84,
+      "sha256": "e9c5ab13e35df79876aa5d5b66986f9a9243a64dea8c9be019c7b8cc059e0908",
+      "generation_id": "gen-tts-1792247094-j5nfxJf97F1iMe23Wkg5"
+    },
+    "done-marcie": {
+      "text": "You made music! Have fun, Marcie.",
+      "seconds": 3.56,
+      "sha256": "5f9e1fa59076adb156b600e47271b2547a7f61e92fdb2bd4b57a939922395726",
+      "generation_id": "gen-tts-1792247097-eSpVnMjmImcjGLyIofEH"
     }
   }
 }

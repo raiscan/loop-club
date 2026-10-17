@@ -467,3 +467,40 @@ learned phrase in an existing four-bar song. Actual reloads restore Medium's
 16-step save reloads as version 4/Large with 16 columns. Playback stays stopped.
 Hardware limits remain: browser and simulated pad checks, no physical Android
 or Windows/Xbox device test.
+
+## Player modes, loop map, volume and Space contrast — 17 October 2026
+
+The verified/pushed base for this follow-up is `a47c982`: 38 Node tests and
+374 browser checks pass, with no baseline failures. It was not deployed while
+these additional user requests were incorporated. Source helper fetch/fast-
+forward checks confirmed main remained at that commit.
+
+Selected tabs inherited a hard-coded dark text colour from a legacy selector;
+Tunes/Sounds also had legacy selected-background selectors. Selected states
+now explicitly use theme ink and their own theme backgrounds. Browser checks
+measure computed contrast on all three selected tabs in all five themes,
+requiring at least 4.5:1 instead of only checking root colour variables.
+
+URL modes opt in to Zach (`?zach=yes`) or Marcie (`?marcie=yes`); no parameter
+names no player. Help labels and tutorial hello/goodbye text and recordings
+match the mode. Named Zach recordings are preserved, with new generic and
+Marcie recordings under the same approved Scottish settings. All twenty clips
+match narration text and hashes. Automated transcription of the four new clips
+matched the words and names and reported no unclear words/noise/truncation.
+Actual navigation/Play activation confirmed each mode selects its own greeting
+and MP3, including unnamed default speech.
+
+Paging now overlays the miniature loop map below the grid. The selected region
+outlines the visible boxes; coloured dots show drum/tune hits and the moving
+light remains separate. Buttons fill the map sections as touch targets. A
+reproduced inherited align-items rule centered 44px buttons within the map;
+stretching the items now makes their selected outline cover the whole region.
+There are no page controls above the grid. The large standalone volume row is
+between the map and playback controls, with only a speaker icon and slider,
+an accessible Volume name, a 64px hit area and a 38px thumb. Loop-size labels
+use 4/8/16 pills; beat/bar counts remain available to screen readers.
+
+Development Node suite: 39 passed. Final full browser suite: 406 passed, including the pill counts.
+267 theme/layout/reading/map/volume assertions pass per viewport at 360×800,
+800×360 and 1280×800, covering all sizes. The focused landscape tutorial passes
+all 110 checks after the map/volume move. Syntax, build and diff checks pass.

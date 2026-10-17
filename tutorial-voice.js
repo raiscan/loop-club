@@ -1,9 +1,5 @@
 // Generated voice clips. See assets/tutorial-voice/generation.json for provenance.
 export const TUTORIAL_RECORDINGS = {
-  "hello": {
-    "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
-    "src": "./assets/tutorial-voice/hello.mp3?v=0d43e18f871a"
-  },
   "stop": {
     "text": "Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.",
     "src": "./assets/tutorial-voice/stop.mp3?v=caf01fcec949"
@@ -40,10 +36,6 @@ export const TUTORIAL_RECORDINGS = {
     "text": "Now hear your tune. Tap the Let's play button.",
     "src": "./assets/tutorial-voice/play.mp3?v=382144e03150"
   },
-  "done": {
-    "text": "You made music! Have fun, Zach.",
-    "src": "./assets/tutorial-voice/done.mp3?v=5354ebca00c5"
-  },
   "reward-drum": {
     "text": "Your drum! That was you. Tap the drum again. When you’re ready to make a beat, tap Next.",
     "src": "./assets/tutorial-voice/reward-drum.mp3?v=ae1d1005eeb4"
@@ -63,5 +55,29 @@ export const TUTORIAL_RECORDINGS = {
   "reward-slide": {
     "text": "Your sound! That was you. Try the sliders and hear it change. When you’re ready to hear your whole tune, tap Next.",
     "src": "./assets/tutorial-voice/reward-slide.mp3?v=3876d8366db5"
+  },
+  "hello-zach": {
+    "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
+    "src": "./assets/tutorial-voice/hello-zach.mp3?v=0d43e18f871a"
+  },
+  "done-zach": {
+    "text": "You made music! Have fun, Zach.",
+    "src": "./assets/tutorial-voice/done-zach.mp3?v=5354ebca00c5"
+  },
+  "hello": {
+    "text": "Hi! Let’s make some music. Tap the Let's play button.",
+    "src": "./assets/tutorial-voice/hello.mp3?v=7a92e1ce8a60"
+  },
+  "done": {
+    "text": "You made music! Have fun!",
+    "src": "./assets/tutorial-voice/done.mp3?v=3e329c0a1721"
+  },
+  "hello-marcie": {
+    "text": "Hi Marcie! Let’s make some music. Tap the Let's play button.",
+    "src": "./assets/tutorial-voice/hello-marcie.mp3?v=e9c5ab13e35d"
+  },
+  "done-marcie": {
+    "text": "You made music! Have fun, Marcie.",
+    "src": "./assets/tutorial-voice/done-marcie.mp3?v=5f9e1fa59076"
   }
 };
