@@ -33,6 +33,10 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 ## Play
 
+- **Look** opens five pictured themes: Sunny (the original), Pink, Space
+  (dark and starry), Dino (green), and Race (blue/red with a chequered stripe).
+  The choice is saved separately on each device and works with touch, mouse
+  and Xbox on PC.
 - The main screen uses a bright cream-and-pastel music-toy theme, colourful
   drum pads, chunky yellow play buttons, Arial, short labels and large pictures. Visible words
   and numbers stay at least 18px, with larger action labels. Song cards use
@@ -43,10 +47,14 @@ currently targeted at PC. No tablet/controller pairing is required.
   Diagrams reflect the actual song and playhead. The screen dims around the highlighted control and helper;
   tap the bright control to try it. Each musical action then plays back on its
   own with a selective moving highlight. **Hear again** repeats it; **Next**
-  becomes available after listening. The sound lesson loops the new notes
-  while the slider changes them.
-- A soft chime marks each action. Eleven bundled MP3 prompts use one friendly
-  soft Scottish female AI voice, generated once through OpenRouter. Windows 11,
+  becomes available after listening and stays available during repeat tries.
+  The highlighted drum can be tapped again, beats and notes can be edited
+  freely within the highlighted phrase, and all three sound sliders stay
+  playable. The sound lesson loops the new notes while the sliders change them.
+- A soft chime marks each action. Sixteen bundled MP3 prompts use one friendly
+  soft Scottish female AI voice, generated once through OpenRouter. Five
+  reward lines praise the played result and say “Tap Next”; experimenting
+  interrupts the reminder so the music can be heard. Windows 11,
   Android and other devices play the same files without installing a voice.
   Device speech is a fallback if a clip fails to load or play. **Say it** reads
   one prompt, even with automatic speech off; **Voice on/off** toggles narration.
@@ -130,14 +138,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=11')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=12')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=11')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=12')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -159,7 +167,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=11`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=12`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseTutorialVoice, TutorialSpeech, tutorialPicture, TUTORIAL_STEPS, spotlightPath } from '../tutorial.js';
+import { chooseTutorialVoice, TutorialSpeech, tutorialPicture, TUTORIAL_STEPS, TUTORIAL_NARRATIONS, spotlightPath } from '../tutorial.js';
 import { createSong } from '../model.js';
 import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js';
 import { readFileSync } from 'node:fs';
@@ -56,8 +56,8 @@ test('outdated recordings never read a different task aloud', () => {
 
 test('all tutorial prompts have matching, intact bundled MP3 recordings', () => {
   const metadata = JSON.parse(readFileSync(new URL('../assets/tutorial-voice/generation.json', import.meta.url)));
-  assert.equal(Object.keys(TUTORIAL_RECORDINGS).length, TUTORIAL_STEPS.length);
-  for (const step of TUTORIAL_STEPS) {
+  assert.equal(Object.keys(TUTORIAL_RECORDINGS).length, TUTORIAL_NARRATIONS.length);
+  for (const step of TUTORIAL_NARRATIONS) {
     const clip = TUTORIAL_RECORDINGS[step.audio], info = metadata.clips[step.audio];
     assert.equal(clip.text, step.spoken || `${step.title} ${step.copy}`);
     const bytes = readFileSync(new URL('../' + clip.src.split('?')[0], import.meta.url));

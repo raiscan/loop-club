@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=11';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=12';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -104,6 +104,16 @@ export const TUTORIAL_STEPS = [
   { audio: 'done', title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
 ];
 
+export const TUTORIAL_REWARDS = {
+  drum: { title: 'Your drum!', spoken: 'Your drum! That was you. Tap Next.' },
+  beat: { title: 'Your beat!', spoken: 'Your beat! That was you. Tap Next.' },
+  note: { title: 'Your note!', spoken: 'Your note! That was you. Tap Next.' },
+  chord: { title: 'Your notes!', spoken: 'Your notes! That was you. Tap Next.' },
+  slide: { title: 'Your sound!', spoken: 'Your sound! That was you. Tap Next.' }
+};
+export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS,
+  ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `reward-${kind}`, spoken: reward.spoken }))];
+
 export function blankTutorialSong(song) {
   const lesson = structuredClone(song);
   lesson.tempo = 120;
@@ -183,19 +193,37 @@ export class ZachTutorial {
       speech.enabled = !speech.enabled;
       voice.textContent = speech.enabled ? 'Voice on' : 'Voice off';
       voice.setAttribute('aria-pressed', String(speech.enabled));
-      if (speech.enabled && !this.reviewing) this.speak(); else speech.stop();
+      if (speech.enabled) { if (this.reviewing && this.heard) this.sayReward(); else if (!this.reviewing) this.speak(); } else speech.stop();
     });
     // Capture the hit before the instrument updates a button's child content.
     document.addEventListener('click', event => {
       if (!this.active || this.card.contains(event.target)) return;
-      if (this.reviewing) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+      if (this.reviewing) {
+        const control = event.target.closest('button, input');
+        if (this.canExplore(control)) {
+          if (control.matches('button')) {
+            this.speech.stop(); const index = this.index;
+            queueMicrotask(() => { if (this.active && this.index === index) this.review(false); });
+          }
+          return;
+        }
+        event.preventDefault(); event.stopImmediatePropagation(); return;
+      }
       const index = this.index;
       const hit = this.target?.contains(event.target);
       if (hit && !this.step.action) queueMicrotask(() => { if (this.active && this.index === index) this.completeAction(); });
       else requestAnimationFrame(() => this.refresh());
     }, true);
     document.addEventListener('input', event => {
-      if (!this.active || this.reviewing || this.step.action !== 'input' || event.target !== this.target) return;
+      if (!this.active) return;
+      if (this.reviewing && this.step.reward === 'slide' && this.canExplore(event.target)) {
+        this.speech.stop(); clearTimeout(this.inputTimer);
+        if (!this.editing) { this.editing = true; this.playPreview('slide', true); }
+        const index = this.index;
+        this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.review(false); }, 650);
+        return;
+      }
+      if (this.reviewing || this.step.action !== 'input' || event.target !== this.target) return;
       clearTimeout(this.inputTimer);
       const index = this.index;
       this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.completeAction(); }, 650);
@@ -204,7 +232,8 @@ export class ZachTutorial {
       if (this.active && event.key === 'Escape') { event.preventDefault(); this.stop(); }
       if (this.active && event.key === 'Tab') {
         event.preventDefault();
-        const controls = [this.reviewing ? null : this.target, ...this.card.querySelectorAll('button')].filter(node => node && !node.hidden && !node.disabled);
+        const targets = this.reviewing ? [...document.querySelectorAll('button, input')].filter(node => this.canExplore(node)) : [this.target];
+        const controls = [...targets, ...this.card.querySelectorAll('button')].filter(node => node && !node.hidden && !node.disabled);
         const index = controls.indexOf(document.activeElement);
         this.focus(controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]);
       }
@@ -243,25 +272,40 @@ export class ZachTutorial {
   completeAction() {
     if (this.step.reward) this.review(); else this.advance();
   }
-  review() {
-    this.stopPreview(); this.speech.stop(); this.reviewing = true; this.heard = false;
+  review(focusHelper = true) {
+    const heard = this.reviewing && this.heard;
+    clearTimeout(this.inputTimer); this.editing = false;
+    this.stopPreview(); this.speech.stop(); this.reviewing = true; this.heard = heard;
     this.card.dataset.tutorialPhase = 'hear';
     document.body.classList.add('tutorial-listening');
-    const titles = { drum: 'Your drum!', beat: 'Your beat!', note: 'Your note!', chord: 'Your chord!', slide: 'Your sound!' };
-    document.querySelector('#tutorial-title').textContent = titles[this.step.reward];
+    document.querySelector('#tutorial-title').textContent = TUTORIAL_REWARDS[this.step.reward].title;
     document.querySelector('#tutorial-copy').textContent = 'Hear it!';
     document.querySelector('#tutorial-repeat').textContent = 'Hear again ↻';
     document.querySelector('#tutorial-repeat').hidden = false;
-    const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = true;
-    this.refresh(); this.draw(); this.focus(document.querySelector('#tutorial-repeat'));
+    const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = !this.heard;
+    this.refresh(); this.draw(); if (focusHelper) this.focus(document.querySelector('#tutorial-repeat'));
     this.playPreview(this.step.reward);
   }
   previewEnded() {
     if (!this.active || !this.reviewing) return;
-    this.heard = true;
+    const firstListen = !this.heard; this.heard = true;
     document.querySelector('#tutorial-copy').textContent = 'That was you!';
     document.querySelector('#tutorial-next').disabled = false;
-    this.focus(document.querySelector('#tutorial-next')); this.position();
+    if (firstListen) this.focus(document.querySelector('#tutorial-next'));
+    this.position(); this.sayReward();
+  }
+  sayReward() {
+    const reward = TUTORIAL_REWARDS[this.step.reward];
+    if (reward) this.speech.say(reward.spoken, false, `reward-${this.step.reward}`);
+  }
+  canExplore(control) {
+    if (!control) return false;
+    if (!this.reviewing) return control === this.target;
+    const kind = this.step.reward;
+    if (kind === 'drum') return control.matches('[data-drum-pad="0"]');
+    if (kind === 'beat') return control.matches('[data-drum="0"][data-step]') && Number(control.dataset.step) < 4;
+    if (kind === 'note' || kind === 'chord') return control.matches('#melody-grid button[data-note][data-step]') && Number(control.dataset.step) < 4;
+    return kind === 'slide' && control.matches('input[data-sound]');
   }
   advance() {
     if (!this.active || this.step.done) return;
@@ -336,7 +380,7 @@ export class ZachTutorial {
       ? [...document.querySelectorAll('[data-drum="0"][data-step]')].filter(node => Number(node.dataset.step) < 4)
       : this.reviewing && ['note', 'chord'].includes(kind)
         ? [...document.querySelectorAll('#melody-grid button[data-step]')].filter(node => Number(node.dataset.step) < 4)
-        : [this.target];
+        : this.reviewing && kind === 'slide' ? [...document.querySelectorAll('input[data-sound]')] : [this.target];
     const rects = nodes.filter(Boolean).map(node => node.getBoundingClientRect());
     const left = Math.min(...rects.map(rect => rect.left)), top = Math.min(...rects.map(rect => rect.top));
     const right = Math.max(...rects.map(rect => rect.right)), bottom = Math.max(...rects.map(rect => rect.bottom));

@@ -2,12 +2,12 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSyn
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js';
-import { TUTORIAL_STEPS } from '../tutorial.js';
+import { TUTORIAL_NARRATIONS } from '../tutorial.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = join(root, 'dist');
 const assets = ['index.html', 'style.css', 'app.js', 'model.js', 'audio.js', 'gamepad.js', 'tutorial.js', 'tutorial-voice.js', 'icon.svg'];
-const clips = TUTORIAL_STEPS.map(step => {
+const clips = TUTORIAL_NARRATIONS.map(step => {
   const clip = TUTORIAL_RECORDINGS[step.audio];
   const expected = `./assets/tutorial-voice/${step.audio}.mp3`;
   if (clip?.text !== (step.spoken || `${step.title} ${step.copy}`) || clip.src.split('?')[0] !== expected) {

@@ -68,6 +68,36 @@
       "seconds": 3.8,
       "sha256": "5354ebca00c57a289264ca33fcbfd45c331df0ebd9d75450fee00fcbee5bc8b8",
       "generation_id": "gen-tts-1792242263-63E7l14rNvTHf6u8jIF8"
+    },
+    "reward-drum": {
+      "text": "Your drum! That was you. Tap Next.",
+      "seconds": 4.12,
+      "sha256": "5981e60fe3e21e420899eefc18024031e1f02223d64b1ff504ecd15700ab92ef",
+      "generation_id": "gen-tts-1792244886-oeUhN4IXKCWMzUmPUdFA"
+    },
+    "reward-beat": {
+      "text": "Your beat! That was you. Tap Next.",
+      "seconds": 4.6,
+      "sha256": "95102c7e15154aff0e9e5538870d0dab72693a76e03adefc74492455012d7436",
+      "generation_id": "gen-tts-1792244890-2JykQzI69u6gzxqu9RUs"
+    },
+    "reward-note": {
+      "text": "Your note! That was you. Tap Next.",
+      "seconds": 4.52,
+      "sha256": "42ad50c41c2abf96c7bbbd759ae9007a68a454e30ad7fe4798cede84604f5459",
+      "generation_id": "gen-tts-1792244892-bBMqAX2Q0FjnnVNyVpn4"
+    },
+    "reward-chord": {
+      "text": "Your notes! That was you. Tap Next.",
+      "seconds": 4.48,
+      "sha256": "bcdcbea9e32a561c3856f6c940ae62a035ae842558ff608903525799b1b5038f",
+      "generation_id": "gen-tts-1792244895-7w0qff5CCNF6DsT6RVnr"
+    },
+    "reward-slide": {
+      "text": "Your sound! That was you. Tap Next.",
+      "seconds": 4.04,
+      "sha256": "6ac0f24f7211542fcb013d75700a3ef4bae13849981de36e0722679041936a87",
+      "generation_id": "gen-tts-1792244897-XyM78xquWGZIZs9TiSCl"
     }
   }
 }

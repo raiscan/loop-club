@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { homedir, tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { TUTORIAL_STEPS } from '../tutorial.js';
+import { TUTORIAL_NARRATIONS } from '../tutorial.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const folder = join(root, 'assets/tutorial-voice');
@@ -16,7 +16,7 @@ const instructions = 'A friendly woman from Edinburgh speaking gentle, conversat
 const key = readFileSync(join(homedir(), '.config/openrouter/api-key'), 'utf8').trim();
 if (!key.startsWith('sk-or-')) throw new Error('A valid shared OpenRouter key is required.');
 const only = process.argv[2];
-if (only && !TUTORIAL_STEPS.some(step => step.audio === only)) throw new Error('Unknown tutorial clip.');
+if (only && !TUTORIAL_NARRATIONS.some(step => step.audio === only)) throw new Error('Unknown tutorial clip.');
 mkdirSync(folder, { recursive: true });
 const metadataPath = join(folder, 'generation.json');
 const metadata = existsSync(metadataPath) ? JSON.parse(readFileSync(metadataPath, 'utf8'))
@@ -25,7 +25,7 @@ if (metadata.model !== model || metadata.voice !== voice || metadata.instruction
   throw new Error('Existing voice settings differ; preserve those clips before making a new voice bank.');
 }
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-for (const step of TUTORIAL_STEPS) {
+for (const step of TUTORIAL_NARRATIONS) {
   if (only && step.audio !== only) continue;
   const text = step.spoken || `${step.title} ${step.copy}`;
   const destination = join(folder, `${step.audio}.mp3`);

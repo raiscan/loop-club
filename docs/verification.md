@@ -360,3 +360,63 @@ Development verification:
 
 These are browser/simulated-gamepad checks, not physical Win11/Android/Xbox
 hardware listening or connection tests.
+
+
+## Five saved looks and repeatable, spoken rewards — 2026-10-17
+
+Updated main baseline ae771b9 passed all 35 Node tests and syntax checks with
+no failures. Sites source synchronization confirmed the same base before edits.
+
+Look opens five large pictured choices: Sunny, Pink, Space, Dino and Race.
+Each sets the complete instrument palette, browser colour scheme and page
+colour; the choice is validated and saved under loop-club.theme.v1 separately
+from music. Space has a dark star field; Dino uses greens; Race uses blue/red
+and a racing stripe. The picker supports native modal keyboard focus, touch,
+mouse and Xbox D-pad/A/B, including returning focus to Look when closed.
+
+The existing tour order is retained. In its listening stages Zach can tap
+the highlighted drum again, edit any beat in the highlighted phrase, try
+notes across that phrase, and use all three sound sliders. After the first
+listen, Next stays enabled during replays and edits; experimentation does
+not force a new waiting period. Chord invitations follow the column where
+he put a note. Repeated trials stop reminders so his music stays audible.
+
+Five additional MP3s use the unchanged approved softer Scottish voice
+settings. They play after the music: “Your drum/beat/note/notes/sound! That
+was you. Tap Next.” The runtime now bundles sixteen recordings. Automated
+transcription matched every new line after punctuation/case normalization
+and reported no unclear words, truncation or unexpected sounds. This is an
+automated content check, not a fresh human accent assessment.
+
+An initial synchronous picker-focus assertion ran before the native dialog's
+close event; the test now waits for that event turn. No product workaround
+was needed. Existing tutorial actions are tested with their newly repeatable
+Next behaviour rather than expecting the old replay lockout.
+
+Focused runs also exposed a test-fixture mismatch: the broad suite restores
+saved storage but asks callers to reload to restore the visible song. A
+no-op preset reset could therefore compare different starting songs. The
+focused tutorial fixture now switches away and back before capturing its
+baseline, keeping its rendered and stored starting state in sync.
+
+Final development verification:
+
+- `node --test`: 35 passed, 0 failed, including transcript/hash validation
+  for all sixteen recordings. All runtime, browser-test and build/generation
+  modules pass syntax checks; `git diff --check` passes.
+- The tablet browser suite passed 354 checks. This includes five-theme
+  selection, persistence, storage failure, selected marks, readable palette
+  contrast, Xbox D-pad/A/B, real praise playback, cancelling reminders,
+  repeatable drum/beat/note/sound actions and the existing audio/tour checks.
+- At 360×800, 800×360, 1280×800 and 800×1280: all five themes passed
+  80 combined picker/layout/reading checks. The focused tutorial passed 110
+  checks at the first three sizes; its tablet checks passed within the full
+  suite. Text stays at least 18px and sequence controls at least 44px.
+- A real navigation/reload preserved Dino; an invalid stored theme fell back
+  to Sunny without changing music. Space's dark palette and the pictured
+  picker were visually inspected.
+- Static build: nine app assets plus sixteen MP3s. Original-site reference
+  files are unchanged. No credentials or generation tools enter the bundle.
+
+Verification uses a browser and a simulated Xbox boundary. Physical Win11,
+Android and controller hardware were not available.

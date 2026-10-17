@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=11';
-import { AudioEngine } from './audio.js?v=11';
-import { GamepadReader } from './gamepad.js?v=11';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=11';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=12';
+import { AudioEngine } from './audio.js?v=12';
+import { GamepadReader } from './gamepad.js?v=12';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=12';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -9,6 +9,33 @@ const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}
 const sections = ['drums', 'melody', 'sound'];
 const songIcons = { breaks: 'jump', roller: 'skate', acid: 'ant', cloud: 'cloud' };
 const songNames = { breaks: 'Jump', club: 'Robot', float: 'Moon', liquid: 'River', roller: 'Skate', acid: 'Ants', disco: 'Dance', pixel: 'Game', cloud: 'Cloud' };
+const THEME_KEY = 'loop-club.theme.v1';
+const THEMES = {
+  sunny: { name: 'Sunny', icon: '☀️', colour: '#fff8e9' },
+  pink: { name: 'Pink', icon: '🌸', colour: '#fff0f6' },
+  space: { name: 'Space', icon: '🚀', colour: '#10182e' },
+  dino: { name: 'Dino', icon: '🦕', colour: '#eef7d9' },
+  race: { name: 'Race', icon: '🏎️', colour: '#ecf4ff' }
+};
+let theme = 'sunny';
+try { const stored = localStorage.getItem(THEME_KEY); if (Object.hasOwn(THEMES, stored)) theme = stored; } catch { /* Looks still work without storage. */ }
+function applyTheme(id, persist = true) {
+  if (!Object.hasOwn(THEMES, id)) return;
+  theme = id; document.documentElement.dataset.theme = id;
+  document.querySelector('meta[name="theme-color"]').content = THEMES[id].colour;
+  $('#theme-symbol').textContent = THEMES[id].icon;
+  $('#theme-mascot').textContent = THEMES[id].icon;
+  $$('[data-theme-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.themeChoice === id));
+  if (persist) { try { localStorage.setItem(THEME_KEY, id); } catch { /* Keep the chosen look for this visit. */ } }
+}
+for (const [id, look] of Object.entries(THEMES)) {
+  const button = document.createElement('button');
+  button.dataset.themeChoice = id; button.type = 'button';
+  button.innerHTML = `<span class="theme-picture" aria-hidden="true">${look.icon}</span><span>${look.name}</span><span class="theme-picked" aria-hidden="true">✓</span>`;
+  button.addEventListener('click', () => applyTheme(id));
+  $('#theme-choices').append(button);
+}
+applyTheme(theme, false);
 let saved = null, invalidSave = false;
 try {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -311,7 +338,15 @@ window.addEventListener('pointerup', () => history.end());
 window.addEventListener('pointercancel', () => history.end());
 $('#hear-synth').addEventListener('click', () => engine.audition('note', 0));
 
-const dialog = $('#help-dialog');
+const dialog = $('#help-dialog'), themeDialog = $('#theme-dialog');
+const activeDialog = () => document.querySelector('dialog[open]');
+$('#theme-open').addEventListener('click', () => {
+  if (tutorial?.active) tutorial.stop(false);
+  themeDialog.showModal(); focusControl($(`[data-theme-choice="${theme}"]`));
+});
+$('#theme-close').addEventListener('click', () => themeDialog.close());
+$('#theme-done').addEventListener('click', () => themeDialog.close());
+themeDialog.addEventListener('close', () => focusControl($('#theme-open')));
 let helpReturn;
 function openHelp() {
   if (tutorial?.active) tutorial.stop(false);
@@ -339,15 +374,15 @@ document.addEventListener('focusin', event => {
 document.addEventListener('keydown', event => {
   controllerMode = false;
   $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !dialog.open) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !activeDialog()) {
     event.preventDefault(); if (!tutorial?.active) undo();
   }
 });
 
 function controls() {
-  return [...(dialog.open ? dialog : document).querySelectorAll('button, input[type=range]')]
+  return [...(activeDialog() || document).querySelectorAll('button, input[type=range]')]
     .filter(element => !element.disabled && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden')
-    .filter(element => !tutorial?.active || (!tutorial.reviewing && element === tutorial.target) || tutorial.card.contains(element));
+    .filter(element => !tutorial?.active || tutorial.canExplore(element) || tutorial.card.contains(element));
 }
 
 function moveFocus(direction) {
@@ -400,13 +435,13 @@ function controllerAction(action) {
   if (tutorial?.active && action === 'back') { tutorial.stop(); return; }
   if (tutorial?.active && ['next-section', 'previous-section'].includes(action)) { tutorial.refresh(!tutorial.reviewing); return; }
   const available = controls();
-  if (!available.includes(document.activeElement)) focusControl(tutorial?.active ? (tutorial.preferredControl || available[0]) : dialog.open ? $('#close-help') : $('#play'));
+  if (!available.includes(document.activeElement)) focusControl(tutorial?.active ? (tutorial.preferredControl || available[0]) : activeDialog() ? available[0] : $('#play'));
   else focusControl(document.activeElement);
   if (['up', 'down', 'left', 'right'].includes(action)) moveFocus(action);
   else if (action === 'activate') document.activeElement.click();
   else if (action === 'back') {
-    if (dialog.open) closeHelp(); else focusControl($(`#tab-${section}`));
-  } else if (!dialog.open) {
+    if (activeDialog()) activeDialog().close(); else focusControl($(`#tab-${section}`));
+  } else if (!activeDialog()) {
     if (action === 'play') togglePlay();
     if (action === 'undo') undo();
     if (action === 'next-section' || action === 'previous-section') {
@@ -505,7 +540,7 @@ tutorial = new ZachTutorial({
   },
   speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
   onStart() {
-    if (dialog.open) dialog.close();
+    if (activeDialog()) activeDialog().close();
     clearTimeout(previewTimer); engine.stop(); history.end();
     originalHistory = history; history = new SongHistory(history.song);
     setSection('drums'); changePage(0);
@@ -516,9 +551,10 @@ tutorial = new ZachTutorial({
     if (step.section && section !== step.section) setSection(step.section);
     if (step.section && step.section !== 'sound' && page !== 0) changePage(0);
     if (step.note && initial) {
-      const notes = history.song.melody[0];
+      const column = step.audio === 'chord' ? Math.max(0, history.song.melody.slice(0, 4).findIndex(notes => notes.length)) : 0;
+      const notes = history.song.melody[column];
       const pitch = NOTES.findIndex((_, index) => !notes.includes(index));
-      return `[data-note="${pitch < 0 ? NOTES.length - 1 : pitch}"][data-step="0"]`;
+      return `[data-note="${pitch < 0 ? NOTES.length - 1 : pitch}"][data-step="${column}"]`;
     }
     return step.target || null;
   }

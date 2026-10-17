@@ -43,5 +43,25 @@ export const TUTORIAL_RECORDINGS = {
   "done": {
     "text": "You made music! Have fun, Zach.",
     "src": "./assets/tutorial-voice/done.mp3?v=5354ebca00c5"
+  },
+  "reward-drum": {
+    "text": "Your drum! That was you. Tap Next.",
+    "src": "./assets/tutorial-voice/reward-drum.mp3?v=5981e60fe3e2"
+  },
+  "reward-beat": {
+    "text": "Your beat! That was you. Tap Next.",
+    "src": "./assets/tutorial-voice/reward-beat.mp3?v=95102c7e1515"
+  },
+  "reward-note": {
+    "text": "Your note! That was you. Tap Next.",
+    "src": "./assets/tutorial-voice/reward-note.mp3?v=42ad50c41c2a"
+  },
+  "reward-chord": {
+    "text": "Your notes! That was you. Tap Next.",
+    "src": "./assets/tutorial-voice/reward-chord.mp3?v=bcdcbea9e32a"
+  },
+  "reward-slide": {
+    "text": "Your sound! That was you. Tap Next.",
+    "src": "./assets/tutorial-voice/reward-slide.mp3?v=6ac0f24f7211"
   }
 };

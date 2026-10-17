@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=11';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=11';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=11';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=11';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=12';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=12';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=12';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=12';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runThemeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -318,6 +318,17 @@ export async function runTutorialControllerChecks() {
     check($('#tutorial-card').dataset.tutorialStep === '10', 'Xbox A finishes the final Play action', results);
     await press(1);
     check($('#tutorial-card').hidden && $('#tutorial-ring').hidden, 'Xbox B leaves the guide', results);
+    const oldTheme = document.documentElement.dataset.theme, oldThemeSaved = localStorage.getItem('loop-club.theme.v1');
+    $('#theme-open').focus(); await press(0);
+    check($('#theme-dialog').open && $('#theme-dialog').contains(document.activeElement), 'Xbox A opens Look and focuses the selected theme', results);
+    $('[data-theme-choice="sunny"]').focus(); await press(15);
+    check(document.activeElement === $('[data-theme-choice="pink"]'), 'Xbox D-pad moves between pictured looks', results);
+    await press(0);
+    check(document.documentElement.dataset.theme === 'pink' && $('#theme-dialog').open, 'Xbox A can try a new theme inside the picker', results);
+    await press(1);
+    check(!$('#theme-dialog').open && document.activeElement === $('#theme-open'), 'Xbox B closes Look and returns to its button', results);
+    $('#theme-open').click(); $(`[data-theme-choice="${oldTheme}"]`).click(); $('#theme-done').click(); await wait(40);
+    if (oldThemeSaved === null) localStorage.removeItem('loop-club.theme.v1'); else localStorage.setItem('loop-club.theme.v1', oldThemeSaved);
     $('#tutorial-start').click();
     window.dispatchEvent(new Event('blur'));
     check($('#tutorial-card').hidden && $('#tutorial-ring').hidden && $('#play').getAttribute('aria-pressed') === 'false', 'leaving the page cancels the guide and audio', results);
@@ -342,7 +353,7 @@ export async function runTutorialChecks() {
   };
   try {
     if (!card.hidden) $('#tutorial-exit').click();
-    $('[data-preset=breaks]').click(); $('#reset').click();
+    $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click();
     const before = readSong();
     $('#tutorial-start').click();
     if ($('#tutorial-voice').getAttribute('aria-pressed') === 'true') $('#tutorial-voice').click();
@@ -364,6 +375,7 @@ export async function runTutorialChecks() {
         `${innerWidth}px tutorial ${index}: large sans-serif words`, results);
       check(Boolean($('#tutorial-picture svg')) && [...card.querySelectorAll('button')].filter(node => !node.hidden).every(node => node.getBoundingClientRect().height >= 44),
         `${innerWidth}px tutorial ${index}: a visual and large buttons are available`, results);
+      if (index === 2 && $('#tutorial-voice').getAttribute('aria-pressed') !== 'true') $('#tutorial-voice').click();
       if (index === 2 || index === 3) check(!document.querySelector('[data-drum][aria-pressed="true"]') && !document.querySelector('[data-note][aria-pressed="true"]'), 'drum practice starts with blank tracks', results);
       if (index === 5) check(!document.querySelector('[data-note][aria-pressed="true"]'), 'tune practice starts with no existing notes', results);
       if (index === 8) {
@@ -399,9 +411,30 @@ export async function runTutorialChecks() {
         check(same(readSong(), before), `lesson ${index}: practice does not overwrite the saved song`, results);
         if (index === 3) {
           $('#tutorial-repeat').click();
-          check($('#tutorial-next').disabled && card.dataset.tutorialPhase === 'hear' && card.dataset.tutorialStep === '3', 'Hear again repeats the music without advancing the lesson', results);
+          check(!$('#tutorial-next').disabled && card.dataset.tutorialPhase === 'hear' && card.dataset.tutorialStep === '3', 'Hear again replays the beat while Next remains available', results);
           for (let i = 0; i < 90 && $('#tutorial-next').disabled; i++) await wait(40);
           check(!$('#tutorial-next').disabled, 'Next returns after hearing the same beat again', results);
+        }
+        if (index === 2) {
+          for (let i = 0; i < 20 && !$('audio[data-tutorial-narration]')?.currentSrc.includes('reward-drum'); i++) await wait(30);
+          const praise = $('audio[data-tutorial-narration]');
+          check(praise && !praise.paused && praise.currentSrc.includes('reward-drum'), 'the drum reward speaks its praise and Tap Next after playback', results);
+          if ($('#tutorial-voice').getAttribute('aria-pressed') === 'true') $('#tutorial-voice').click();
+          $('[data-drum-pad="0"]').click(); await wait(80);
+          check(!$('#tutorial-next').disabled && card.dataset.tutorialStep === '2' && $('#play').getAttribute('aria-pressed') === 'true', 'the highlighted drum can be tapped again without leaving the lesson or locking Next', results);
+          check(!$('audio[data-tutorial-narration]'), 'trying the drum again stops the reminder so the music can be heard', results);
+        }
+        if (index === 3) {
+          $('[data-drum="0"][data-step="1"]').click(); await wait(80);
+          check($('[data-drum="0"][data-step="1"]').getAttribute('aria-pressed') === 'true' && !$('#tutorial-next').disabled, 'Zach can keep changing the highlighted beat before choosing Next', results);
+        }
+        if (index === 5) {
+          $('[data-note="5"][data-step="1"]').click(); await wait(80);
+          check($('[data-note="5"][data-step="1"]').getAttribute('aria-pressed') === 'true' && !$('#tutorial-next').disabled, 'Zach can try a different note and step before choosing Next', results);
+        }
+        if (index === 8) {
+          const length = $('#length'); length.value = 80; length.dispatchEvent(new Event('input', { bubbles: true })); await wait(100);
+          check(!$('#tutorial-next').disabled && $('#play').getAttribute('aria-pressed') === 'true', 'all sound sliders remain playable after the first try without locking Next', results);
         }
         $('#tutorial-next').click();
       }
@@ -615,5 +648,62 @@ export async function runLessonAudioChecks() {
     await wait(220);
     check(steps.length === count && !engine.playing && engine.visuals.size === 0 && engine.voices.size === 0, 'leaving a musical reward cancels sound and stale visual callbacks', results);
   } finally { engine.stop(); await engine.context?.close(); }
+  return results;
+}
+
+export async function runThemeChecks() {
+  const results = [], original = document.documentElement.dataset.theme;
+  const stored = localStorage.getItem('loop-club.theme.v1'), song = localStorage.getItem(SAVE_KEY);
+  try {
+    $('#theme-open').click();
+    check($('#theme-dialog').open && document.querySelectorAll('[data-theme-choice]').length === 5, 'Look opens five pictured theme choices', results);
+    const colours = new Set();
+    const luminance = hex => {
+      const rgb = hex.trim().replace('#', '').match(/../g).map(c => parseInt(c, 16) / 255).map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+    };
+    const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+    for (const id of ['sunny', 'pink', 'space', 'dino', 'race']) {
+      const choice = $(`[data-theme-choice="${id}"]`); choice.click();
+      const palette = getComputedStyle(document.documentElement);
+      colours.add(palette.getPropertyValue('--paper').trim());
+      check(document.documentElement.dataset.theme === id && localStorage.getItem('loop-club.theme.v1') === id && choice.getAttribute('aria-pressed') === 'true', `${id}: the chosen theme applies, saves and shows its selected mark`, results);
+      check(document.querySelectorAll('[data-theme-choice][aria-pressed="true"]').length === 1 && choice.querySelector('.theme-picture').textContent.trim(), `${id}: one pictured choice is selected`, results);
+      check(palette.colorScheme === (id === 'space' ? 'dark' : 'light'), `${id}: browser controls use the correct light or dark scheme`, results);
+      check(localStorage.getItem(SAVE_KEY) === song, `${id}: changing the look leaves the saved music untouched`, results);
+      const colour = name => palette.getPropertyValue(name).trim();
+      check(contrast(colour('--ink'), colour('--surface')) >= 4.5 && contrast(colour('--muted'), colour('--paper')) >= 4.5 && contrast(colour('--action-ink'), colour('--action')) >= 4.5, `${id}: main text, quiet labels and action buttons retain readable contrast`, results);
+    }
+    check(colours.size === 5, 'all five themes have distinct page palettes', results);
+    const write = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => { throw new Error('Storage unavailable'); };
+    try { $('[data-theme-choice="pink"]').click(); check(document.documentElement.dataset.theme === 'pink', 'looks still work when storage is unavailable', results); }
+    finally { Storage.prototype.setItem = write; }
+    $('#theme-done').click(); await wait(40);
+    check(!$('#theme-dialog').open && document.activeElement === $('#theme-open'), 'Done closes the picker and returns focus to Look', results);
+  } finally {
+    if (!$('#theme-dialog').open) $('#theme-open').click();
+    $(`[data-theme-choice="${original || 'sunny'}"]`).click(); $('#theme-done').click(); await wait(40);
+    if (stored === null) localStorage.removeItem('loop-club.theme.v1'); else localStorage.setItem('loop-club.theme.v1', stored);
+  }
+  return results;
+}
+
+export async function runThemeLayoutChecks() {
+  const results = [], original = document.documentElement.dataset.theme;
+  const stored = localStorage.getItem('loop-club.theme.v1');
+  try {
+    for (const id of ['sunny', 'pink', 'space', 'dino', 'race']) {
+      $('#theme-open').click(); $(`[data-theme-choice="${id}"]`).click();
+      const picker = $('#theme-dialog').getBoundingClientRect();
+      check(picker.left >= 0 && picker.right <= innerWidth && picker.top >= 0 && picker.bottom <= innerHeight, `${id}: theme picker stays on screen`, results);
+      $('#theme-done').click(); await wait(40);
+      results.push(...runLayoutChecks(), ...runReadingChecks());
+    }
+  } finally {
+    if (!$('#theme-dialog').open) $('#theme-open').click();
+    $(`[data-theme-choice="${original || 'sunny'}"]`).click(); $('#theme-done').click(); await wait(40);
+    if (stored === null) localStorage.removeItem('loop-club.theme.v1'); else localStorage.setItem('loop-club.theme.v1', stored);
+  }
   return results;
 }
