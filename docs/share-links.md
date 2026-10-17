@@ -5,20 +5,26 @@ works. New links omit existing query parameters, including player names.
 The code contains only music, not local save-slot identities or preferences.
 There is no upload, server lookup or compression API dependency.
 
-Version 1 uses 61 bytes, encoded as 82 unpadded base64url characters:
+New links use version 2: 73 bytes encoded as 98 unpadded base64url characters.
+Version 1 links (61 bytes, 82 characters) still open; their shared sound settings
+are copied to every instrument. Version 2 retains the original note offsets:
 
 | Bytes | Data |
 | --- | --- |
-| 0 | Format version, currently 1 |
+| 0 | Format version, currently 2 |
 | 1 | Preset ID index |
 | 2 | Active bars: 1, 2 or 4 |
 | 3–4 | BPM, unsigned big-endian |
 | 5–8 | Four drum sound IDs |
 | 9 | Active synth brush ID |
-| 10–12 | Brightness, length, wobble, each 0–100 |
+| 10–12 | Bass brightness, length, wobble, each 0–100 |
 | 13–20 | Four rows × sixteen drum bits, row then beat order |
 | 21–56 | Six pitches × sixteen beats, beat then pitch order, three bits per square |
-| 57–60 | CRC32 of bytes 0–56, unsigned big-endian |
+| 57–68 | Pluck, Game, Bell, Chime settings: brightness, length, wobble for each, all 0–100 |
+| 69–72 | CRC32 of bytes 0–68, unsigned big-endian |
+
+Version 1 stores its global settings at bytes 10–12 and its CRC32 at bytes
+57–60 (covering bytes 0–56).
 
 Pattern fields pack the least significant bit first. A note's value is zero
 for empty, or its synth ID plus one. The permanent ID lists are in `share.js`;

@@ -2,11 +2,11 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=28';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, SONG_BOOK_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=28';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=28';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=28';
-import { encodeSong, decodeSong, songShareURL } from '../share.js?v=28';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=31';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, SONG_BOOK_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=31';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=31';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=31';
+import { encodeSong, decodeSong, songShareURL } from '../share.js?v=31';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -70,7 +70,7 @@ export async function runAudioChecks() {
       for (let step = 0; step < song.melody.length; step++) {
         const time = 0.04 + step * 60 / song.tempo;
         song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, song.drumSounds[index], time); });
-        if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth, song.noteSounds[step]);
+        if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sounds, song.tempo, song.synth, song.noteSounds[step]);
       }
     }, seconds);
     check(data.every(Number.isFinite) && energy(data) > 0.01 && data.every(value => Math.abs(value) < 1), `${preset}: full phrase renders without silence, non-finite samples or clipping`, results);
@@ -134,15 +134,15 @@ export async function runInteractionChecks() {
     note.click();
     check(same(readSong().melody[0], [0]), 'tapping an active melody note removes only that note', results);
     $('#tab-sound').click();
-    const oldSound = readSong().sound;
+    const oldSound = readSong().sounds;
     const slider = $('#brightness');
     const oldWave = $('#wave-path').getAttribute('d');
     slider.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
     for (const value of [10, 40, 80]) { slider.value = value; slider.dispatchEvent(new Event('input', { bubbles: true })); }
     window.dispatchEvent(new PointerEvent('pointerup'));
-    check(readSong().sound.brightness === 80 && $('#wave-path').getAttribute('d') !== oldWave, 'sound control updates both saved sound and illustration', results);
+    check(readSong().sounds[readSong().synth].brightness === 80 && $('#wave-path').getAttribute('d') !== oldWave, 'sound control updates both saved sound and illustration', results);
     $('#undo').click();
-    check(same(readSong().sound, oldSound), 'a complete slider drag takes one undo', results);
+    check(same(readSong().sounds, oldSound), 'a complete slider drag takes one undo', results);
     const storedWrite = Storage.prototype.setItem;
     Storage.prototype.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); };
     try {
@@ -243,7 +243,7 @@ export async function runBrowserChecks() {
   const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
   try {
   input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
-  const checks = [...await runShareChecks(), ...await runSongSlotChecks(), ...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialSkipChecks(), ...await runTutorialListeningChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runInstrumentSoundChecks(), ...await runShareChecks(), ...await runSongSlotChecks(), ...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialSkipChecks(), ...await runTutorialListeningChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
   } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
 }
@@ -262,7 +262,7 @@ export async function runShareChecks() {
     $('#share-open').focus(); $('#share-open').click();
     check($('#share-dialog').open && document.activeElement === $('#share-copy'), 'Share opens a modal with Copy link ready', results);
     const link = new URL($('#share-link').value), code = new URLSearchParams(link.hash.slice(1)).get('song');
-    check(code.length === 82 && link.search === '' && same(decodeSong(code), music(song)), 'Share captures the complete loaded song in a short URL without personal parameters', results);
+    check(code.length === 98 && link.search === '' && same(decodeSong(code), music(song)), 'Share captures the complete loaded song in a short URL without personal parameters', results);
     check(!$('#share-send').hidden, 'a supported device exposes its share sheet button', results);
     $('#share-copy').click(); await wait(30);
     check(copied === link.href && $('#share-status').textContent.includes('Copied'), 'Copy writes the snapshot URL and confirms it', results);
@@ -551,7 +551,7 @@ export async function runClearAndSidebarChecks(){
   try{
     $('[data-preset=breaks]').click();$('[data-preset=liquid]').click();const before=readSong();$('#clear').click();const empty=readSong();
     check(empty.drums.flat().every(hit=>!hit)&&empty.melody.every(notes=>!notes.length)&&empty.noteSounds.flat().every(id=>id===null),'Clear wipes every bar and painted note',results);
-    check(empty.bars===before.bars&&empty.tempo===before.tempo&&same(empty.sound,before.sound),'Clear keeps size speed and settings',results);
+    check(empty.bars===before.bars&&empty.tempo===before.tempo&&same(empty.sounds,before.sounds),'Clear keeps size speed and settings',results);
     $('#undo').click();check(same(readSong(),before),'Clear is one complete Undo',results);
     const wide=innerWidth>=1400,sidebar=$('#music-sidebar');check(sidebar.hidden!==wide,'sidebar follows wide breakpoint',results);
     check(document.querySelectorAll('.tabs').length===1&&document.querySelectorAll('.groove-picker').length===1&&document.querySelectorAll('.loop-size').length===1,'one set of tabs size and songs after resize',results);
@@ -1160,4 +1160,44 @@ export async function runCreditsVoiceChecks() {
     check(tip.hidden && !$('#credits-dialog').open, 'closing Credits also clears its voice tooltip', results);
   } finally { if ($('#credits-dialog').open) $('#credits-close').click(); }
   return results;
+}
+
+export async function runInstrumentSoundChecks() {
+  const results = [], original = localStorage.getItem(SAVE_KEY), book = localStorage.getItem(SONG_BOOK_KEY);
+  const change = (key, value) => { const input = document.querySelector(`[data-sound="${key}"]`); input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); };
+  try {
+    $('[data-preset="cloud"]').click(); $('#tab-sound').click();
+    for (const [index, id] of Object.keys(SYNTH_SOUNDS).entries()) {
+      $(`[data-synth-choice="${id}"]`).click();
+      const before = readSong();
+      for (const [key, value] of Object.entries({brightness:10+index*17,length:9+index*19,wobble:index*20})) change(key,value);
+      const after = readSong();
+      check(Object.keys(SYNTH_SOUNDS).every(other => other === id || same(before.sounds[other],after.sounds[other])), `${id}: sliders leave every other instrument unchanged`, results);
+      check($('#sound-name').textContent === SYNTH_SOUNDS[id].name && $('#brightness').getAttribute('aria-label') === `${SYNTH_SOUNDS[id].name} Tone`, `${id}: sound heading and slider label name their instrument`,results);
+    }
+    for (const [index,id] of Object.keys(SYNTH_SOUNDS).entries()) {
+      $(`[data-synth-choice="${id}"]`).click();
+      check(Number($('#brightness').value)===10+index*17 && Number($('#length').value)===9+index*19 && Number($('#wobble').value)===index*20,`${id}: switching brushes restores its three slider values`,results);
+    }
+    const before=readSong(); change('length',100); $('#undo').click();
+    check(same(readSong(),before) && Number($('#length').value)===before.sounds[before.synth].length,'Undo restores the selected instrument without changing the others',results);
+    const sounds=readSong().sounds, notes=[0,5], instruments=Array(6).fill(null); instruments[0]='bass';instruments[5]='chime';
+    const mixed=await render((context,destination)=>synthChord(context,destination,notes,0,sounds,120,'bass',instruments));
+    const separate=await render((context,destination)=>{
+      const mix=context.createGain();mix.gain.value=1/Math.sqrt(notes.length);mix.connect(destination);
+      for(const note of notes) synthVoice(context,mix,note,0,sounds[instruments[note]],120,instruments[note]);
+    });
+    check(mixed.every((value,index)=>Math.abs(value-separate[index])<1e-6),'a mixed chord renders exactly as each instrument with its own settings',results);
+    const changed=structuredClone(sounds);changed.bass={brightness:100,length:100,wobble:100};
+    const chime=await render((context,destination)=>synthChord(context,destination,[5],0,sounds,120,'chime'));
+    const unchangedChime=await render((context,destination)=>synthChord(context,destination,[5],0,changed,120,'chime'));
+    check(chime.every((value,index)=>Math.abs(value-unchangedChime[index])<1e-6),'changing Bass settings leaves Chime audio unchanged',results);
+    const bass=await render((context,destination)=>synthChord(context,destination,[0],0,sounds,120,'bass'));
+    const changedBass=await render((context,destination)=>synthChord(context,destination,[0],0,changed,120,'bass'));
+    check(energy(bass.map((value,index)=>value-changedBass[index]))>0.001,'changing Bass settings audibly changes Bass audio',results);
+    return results;
+  } finally {
+    if(original===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,original);
+    if(book===null)localStorage.removeItem(SONG_BOOK_KEY);else localStorage.setItem(SONG_BOOK_KEY,book);
+  }
 }

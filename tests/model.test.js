@@ -37,7 +37,7 @@ test('tempo and synth settings remain in range; invalid edits leave the song unc
   const song = createSong();
   assert.equal(editSong(song, { type: 'tempo', value: 999 }).tempo, 600);
   assert.equal(editSong(song, { type: 'tempo', value: 1 }).tempo, 30);
-  assert.equal(editSong(song, { type: 'sound', key: 'brightness', value: -10 }).sound.brightness, 0);
+  assert.equal(editSong(song, { type: 'sound', key: 'brightness', value: -10 }).sounds[song.synth].brightness, 0);
   for (const edit of [
     { type: 'drum', row: 8, step: 1 }, { type: 'drum', row: 0, step: -1 },
     { type: 'note', step: 3, note: 999 }, { type: 'tempo', value: NaN },
@@ -60,7 +60,7 @@ test('autosave round-trips songs and rejects malformed or incompatible saves', (
   for (const raw of ['{', 'null', '42', '{}', JSON.stringify({ ...song, version: 999 }),
     JSON.stringify({ ...song, tempo: null }), JSON.stringify({ ...song, preset: 'missing' }),
     JSON.stringify({ ...song, drums: [[true]] }), JSON.stringify({ ...song, melody: Array(16).fill(-1) }),
-    JSON.stringify({ ...song, sound: { ...song.sound, brightness: 'loud' } })
+    JSON.stringify({ ...song, sounds: { ...song.sounds, [song.synth]: { ...song.sounds[song.synth], brightness: 'loud' } } })
   ]) assert.equal(restoreSong(raw), null);
 });
 
@@ -72,7 +72,7 @@ test('old three-drum saves migrate without changing the music or synth settings'
     sound: { brightness: 27, length: 61, wobble: 49 }
   };
   const migrated = restoreSong(JSON.stringify(old));
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.equal(migrated.bars, 4);
   assert.deepEqual(migrated.drums.slice(0, 3), old.drums);
   assert.deepEqual(migrated.drums[3], Array(16).fill(false));
@@ -80,7 +80,7 @@ test('old three-drum saves migrate without changing the music or synth settings'
   assert.equal(migrated.synth, 'bass');
   assert.equal(migrated.tempo, 137);
   assert.deepEqual(migrated.melody, old.melody.map(note => note === null ? [] : [note]));
-  assert.deepEqual(migrated.sound, old.sound);
+  assert.deepEqual(migrated.sounds[migrated.synth], old.sound);
 });
 
 test('chord notes toggle independently and undo preserves the other notes', () => {
@@ -100,17 +100,17 @@ test('chord notes toggle independently and undo preserves the other notes', () =
 });
 
 test('version-two saves retain selected instruments and migrate rests and single notes', () => {
-  const legacy = { ...createSong('club'), version: 2, synth: 'bell', tempo: 300,
+  const legacy = { ...createSong('club'), version: 2, sound: { ...PRESETS.club.sound }, synth: 'bell', tempo: 300,
     drums: createSong('club').drums.map(row => Array.from({length:16},(_,i)=>row[i%4])),
     drumSounds: ['tom', 'clap', 'openhat', 'cowbell'],
     melody: [0, 1, 2, 3, 4, 5, null, null, 3, null, 2, null, 0, null, null, null] };
   const migrated = restoreSong(JSON.stringify(legacy));
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.equal(migrated.synth, 'bell');
   assert.equal(migrated.tempo, 300);
   assert.deepEqual(migrated.drums, legacy.drums);
   assert.deepEqual(migrated.drumSounds, legacy.drumSounds);
-  assert.deepEqual(migrated.sound, legacy.sound);
+  assert.deepEqual(migrated.sounds[migrated.synth], legacy.sound);
   assert.deepEqual(migrated.melody, [[0], [1], [2], [3], [4], [5], [], [], [3], [], [2], [], [0], [], [], []]);
 });
 
@@ -252,10 +252,10 @@ test('all loop sizes round-trip; old 16-step chord saves retain every note in fo
     assert.equal(restoreSong(JSON.stringify({ ...song, melody: song.melody.slice(1) })), null);
     assert.equal(restoreSong(JSON.stringify({ ...song, drums: song.drums.map(row => row.slice(1)) })), null);
   }
-  const legacy = editSong(createSong('liquid'), {type:'bars',value:4}); delete legacy.bars; legacy.version = 3;
+  const legacy = editSong(createSong('liquid'), {type:'bars',value:4}); delete legacy.bars; legacy.version = 3; legacy.sound = { ...PRESETS.liquid.sound };
   const migrated = restoreSong(JSON.stringify(legacy));
   assert.equal(migrated.bars, 4);
-  assert.equal(migrated.version, 6);
+  assert.equal(migrated.version, 7);
   assert.deepEqual(migrated.melody, legacy.melody);
   assert.deepEqual(migrated.drums, legacy.drums);
 });
@@ -296,9 +296,9 @@ test('painted instruments save strictly and older songs retain the instrument of
   assert.equal(restoreSong(JSON.stringify(unknown)),null);
   unknown.noteSounds[0][3]=['bell'];
   assert.equal(restoreSong(JSON.stringify(unknown)),null);
-  const legacy={...createSong('pixel'),version:4};delete legacy.noteSounds;
+  const legacy={...createSong('pixel'),version:4,sound:{...PRESETS.pixel.sound}};delete legacy.noteSounds;
   const migrated=restoreSong(JSON.stringify(legacy));
-  assert.equal(migrated.version,6);
+  assert.equal(migrated.version,7);
   assert.deepEqual(migrated.melody,legacy.melody);
   for(let step=0;step<legacy.melody.length;step++) for(let pitch=0;pitch<6;pitch++) {
     assert.equal(migrated.noteSounds[step][pitch],legacy.melody[step].includes(pitch)?'arcade':null);
@@ -331,7 +331,7 @@ test('Clear wipes every bar and painted sound while preserving settings; Undo re
   assert.ok(empty.drums.flat().every(hit => !hit));
   assert.ok(empty.melody.every(notes => !notes.length));
   assert.ok(empty.noteSounds.flat().every(sound => sound === null));
-  for (const key of ['bars','tempo','synth','drumSounds','sound']) assert.deepEqual(empty[key],original[key]);
+  for (const key of ['bars','tempo','synth','drumSounds','sounds']) assert.deepEqual(empty[key],original[key]);
   assert.deepEqual(restoreSong(JSON.stringify(empty)),empty);
   history.commit(empty);assert.deepEqual(history.undo(),original);
 });
@@ -339,10 +339,10 @@ test('Clear wipes every bar and painted sound while preserving settings; Undo re
 
 test('version-five saves migrate their visible music and seed the remaining hidden bars', () => {
   for (const id of ['breaks', 'club', 'liquid']) {
-    const current = createSong(id), legacy = structuredClone(current); legacy.version = 5; delete legacy.hidden;
+    const current = createSong(id), legacy = structuredClone(current); legacy.version = 5; legacy.sound = { ...PRESETS[id].sound }; delete legacy.sounds; delete legacy.hidden;
     const restored = restoreSong(JSON.stringify(legacy));
-    assert.equal(restored.version, 6);
-    for (const key of ['drums', 'melody', 'noteSounds', 'sound', 'drumSounds']) assert.deepEqual(restored[key], legacy[key]);
+    assert.equal(restored.version, 7);
+    for (const key of ['drums', 'melody', 'noteSounds', 'drumSounds']) assert.deepEqual(restored[key], legacy[key]);
     assert.deepEqual(editSong(restored, { type: 'bars', value: 4 }), editSong(current, { type: 'bars', value: 4 }));
   }
 });

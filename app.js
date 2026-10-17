@@ -1,8 +1,8 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, SONG_BOOK_KEY, SONG_SLOTS, createSlotSong, restoreSongBook, saveSlotSong, openSlotSong, editedSlotSong, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=28';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=28';
-import { GamepadReader } from './gamepad.js?v=28';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=28';
-import { decodeSong, songShareURL, sharedSongCode } from './share.js?v=28';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, SONG_BOOK_KEY, SONG_SLOTS, createSlotSong, restoreSongBook, saveSlotSong, openSlotSong, editedSlotSong, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=31';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=31';
+import { GamepadReader } from './gamepad.js?v=31';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=31';
+import { decodeSong, songShareURL, sharedSongCode } from './share.js?v=31';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -355,7 +355,11 @@ function updateSong() {
     [...light.children].forEach((dot, row) => dot.classList.toggle('on', row < DRUM_TRACKS ? song.drums[row][step] : song.melody[step].length > 0));
   });
   $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo}`;
-  $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
+  $$('[data-sound]').forEach(input => {
+    input.value = song.sounds[song.synth][input.dataset.sound];
+    input.setAttribute('aria-label', `${SYNTH_SOUNDS[song.synth].name} ${input.id === 'brightness' ? 'Tone' : input.id === 'length' ? 'Length' : 'Wobble'}`);
+  });
+  $('#sound-name').textContent = SYNTH_SOUNDS[song.synth].name;
   $$('input[type=range]').forEach(updateRange);
   $('#undo').disabled = !history.canUndo;
   drawWave();
@@ -363,7 +367,7 @@ function updateSong() {
 }
 
 function drawWave() {
-  const { brightness, length, wobble } = history.song.sound;
+  const { brightness, length, wobble } = history.song.sounds[history.song.synth];
   const points = [];
   for (let x = 0; x <= 400; x += 2) {
     const t = x / 400;

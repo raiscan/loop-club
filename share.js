@@ -1,10 +1,10 @@
-import { createSong, restoreSong } from './model.js?v=28';
+import { createSong, restoreSong } from './model.js?v=31';
 
 // Wire IDs are permanent. Append future sounds; never reorder these lists.
 const PRESETS = ['breaks', 'club', 'float', 'liquid', 'roller', 'acid', 'disco', 'pixel', 'cloud'];
 const DRUMS = ['kick', 'snare', 'hat', 'clap', 'tom', 'shaker', 'openhat', 'cowbell'];
 const SOUNDS = ['bass', 'pluck', 'arcade', 'bell', 'chime'];
-const DATA_BYTES = 57, PACKET_BYTES = 61;
+const DATA_BYTES = 69, PACKET_BYTES = 73;
 
 function checksum(bytes) {
   let crc = 0xffffffff;
@@ -20,9 +20,11 @@ export function encodeSong(value) {
   const song = restoreSong(JSON.stringify(value));
   if (!song) throw new TypeError('This song cannot be shared.');
   const bytes = new Uint8Array(PACKET_BYTES);
-  bytes.set([1, PRESETS.indexOf(song.preset), song.bars, song.tempo >>> 8, song.tempo & 255,
+  const settings = SOUNDS.flatMap(id => ['brightness', 'length', 'wobble'].map(key => song.sounds[id][key]));
+  bytes.set([2, PRESETS.indexOf(song.preset), song.bars, song.tempo >>> 8, song.tempo & 255,
     ...song.drumSounds.map(id => DRUMS.indexOf(id)), SOUNDS.indexOf(song.synth),
-    song.sound.brightness, song.sound.length, song.sound.wobble]);
+    ...settings.slice(0, 3)]);
+  bytes.set(settings.slice(3), 57);
   let cursor = 13 * 8;
   const put = (value, length) => {
     for (let bit = 0; bit < length; bit++, cursor++) bytes[cursor >>> 3] |= ((value >>> bit) & 1) << (cursor & 7);
@@ -34,13 +36,14 @@ export function encodeSong(value) {
 }
 
 export function decodeSong(code) {
-  if (typeof code !== 'string' || !/^[A-Za-z0-9_-]{82}$/.test(code)) return null;
+  if (typeof code !== 'string' || !/^(?:[A-Za-z0-9_-]{82}|[A-Za-z0-9_-]{98})$/.test(code)) return null;
   try {
     const bytes = Uint8Array.from(atob(code.replace(/-/g, '+').replace(/_/g, '/') + '=='), char => char.charCodeAt(0));
-    if (bytes.length !== PACKET_BYTES || base64(bytes) !== code || bytes[0] !== 1 ||
+    const dataBytes = bytes[0] === 1 ? 57 : bytes[0] === 2 ? DATA_BYTES : 0;
+    if (!dataBytes || bytes.length !== dataBytes + 4 || base64(bytes) !== code ||
       bytes[1] >= PRESETS.length || ![1, 2, 4].includes(bytes[2]) ||
       [...bytes.subarray(5, 9)].some(id => id >= DRUMS.length) || bytes[9] >= SOUNDS.length ||
-      new DataView(bytes.buffer).getUint32(DATA_BYTES) !== checksum(bytes.subarray(0, DATA_BYTES))) return null;
+      new DataView(bytes.buffer).getUint32(dataBytes) !== checksum(bytes.subarray(0, dataBytes))) return null;
     let cursor = 13 * 8;
     const take = length => {
       let value = 0;
@@ -57,9 +60,11 @@ export function decodeSong(code) {
     if (invalidSound) return null;
     const melody = noteSounds.map(row => row.flatMap((id, pitch) => id ? [pitch] : []));
     const steps = bytes[2] * 4;
-    const song = { ...createSong(PRESETS[bytes[1]]), bars: bytes[2], tempo: (bytes[3] << 8) | bytes[4],
+    const settings = [...bytes.subarray(10, 13), ...bytes.subarray(57, 69)];
+    const sounds = Object.fromEntries(SOUNDS.map((id, index) => [id, Object.fromEntries(['brightness', 'length', 'wobble'].map((key, field) => [key, settings[index * 3 + field]]))]));
+    const song = { ...createSong(PRESETS[bytes[1]]), version: bytes[0] === 1 ? 6 : 7, bars: bytes[2], tempo: (bytes[3] << 8) | bytes[4],
       drumSounds: [...bytes.subarray(5, 9)].map(id => DRUMS[id]), synth: SOUNDS[bytes[9]],
-      sound: { brightness: bytes[10], length: bytes[11], wobble: bytes[12] },
+      sounds, sound: { brightness: bytes[10], length: bytes[11], wobble: bytes[12] },
       drums: drums.map(row => row.slice(0, steps)), melody: melody.slice(0, steps), noteSounds: noteSounds.slice(0, steps),
       hidden: { drums: drums.map(row => row.slice(steps)), melody: melody.slice(steps), noteSounds: noteSounds.slice(steps) } };
     return restoreSong(JSON.stringify(song));

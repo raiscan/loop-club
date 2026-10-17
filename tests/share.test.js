@@ -11,14 +11,14 @@ test('version-one links retain their fixed wire format', () => {
   assert.equal(song.tempo, 164); assert.equal(song.bars, 1);
   assert.deepEqual(song.drums[0], [true, false, true, false]);
   assert.equal(song.noteSounds[0][0], 'bass');
-  assert.equal(encodeSong(song), code);
+  assert.deepEqual(decodeSong(encodeSong(song)), song);
 });
 
 test('every preset and size round-trips through a short URL-safe song code', () => {
   for (const id of Object.keys(PRESETS)) for (const bars of [1, 2, 4]) {
     const song = editSong(createSong(id), { type: 'bars', value: bars });
     const before = structuredClone(song), code = encodeSong(song);
-    assert.match(code, /^[A-Za-z0-9_-]{82}$/);
+    assert.match(code, /^[A-Za-z0-9_-]{98}$/);
     assert.deepEqual(decodeSong(code), song);
     assert.deepEqual(song, before);
   }
@@ -32,7 +32,7 @@ test('dense mixed chords, percussion, hidden bars and all sound settings survive
     let song = editSong(createSong('pixel'), { type: 'tempo', value: 30 + random(571) });
     song.drumSounds = Array.from({ length: 4 }, () => drums[random(drums.length)]);
     song.synth = sounds[random(sounds.length)];
-    for (const key of Object.keys(song.sound)) song.sound[key] = random(101);
+    for (const sound of Object.values(song.sounds)) for (const key of Object.keys(sound)) sound[key] = random(101);
     song.drums = song.drums.map(row => row.map(() => Boolean(random(2))));
     song.noteSounds = song.noteSounds.map(row => row.map(() => random(3) ? sounds[random(sounds.length)] : null));
     song.melody = song.noteSounds.map(row => row.flatMap((value, pitch) => value ? [pitch] : []));
@@ -64,14 +64,14 @@ test('future versions and invalid musical fields are rejected even with a valid 
   const original = Buffer.from(encodeSong(createSong()), 'base64url');
   const resign = bytes => {
     let crc = 0xffffffff;
-    for (const byte of bytes.subarray(0, 57)) {
+    for (const byte of bytes.subarray(0, 69)) {
       crc ^= byte;
       for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
     }
-    bytes.writeUInt32BE((crc ^ 0xffffffff) >>> 0, 57);
+    bytes.writeUInt32BE((crc ^ 0xffffffff) >>> 0, 69);
     return bytes.toString('base64url');
   };
-  for (const [offset, value] of [[0, 99], [1, 99], [2, 3], [3, 255], [5, 8], [9, 5], [10, 101], [21, 7]]) {
+  for (const [offset, value] of [[0, 99], [1, 99], [2, 3], [3, 255], [5, 8], [9, 5], [10, 101], [21, 7], [57, 101], [68, 101]]) {
     const bad = Buffer.from(original); bad[offset] = value;
     assert.equal(decodeSong(resign(bad)), null, `invalid field ${offset}`);
   }

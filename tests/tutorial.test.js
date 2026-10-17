@@ -122,7 +122,7 @@ test('tutorial pictures show the actual beat, chord notes and sound settings', (
   assert.match(loop, /class="tutorial-pill[^"\n]* current"/);
   const chord = tutorialPicture('chord', song);
   assert.equal((chord.match(/class="tutorial-pill on[^"\n]*"/g) || []).length, song.melody.slice(0, 4).reduce((sum, notes) => sum + notes.length, 0));
-  const bright = tutorialPicture('wave', { ...song, sound: { ...song.sound, brightness: 100 } });
+  const bright = tutorialPicture('wave', { ...song, sounds: { ...song.sounds, [song.synth]: { ...song.sounds[song.synth], brightness: 100 } } });
   assert.notEqual(bright, tutorialPicture('wave', song));
   assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 3);
   assert.ok(TUTORIAL_STEPS.at(-1).done);
@@ -150,7 +150,7 @@ test('musical lesson playback isolates the edited instrument and preserves chord
     const solo = tutorialPlaybackSong(original, kind);
     assert.ok(solo.drums.every(row => row.every(hit => !hit)));
     assert.deepEqual(solo.melody, original.melody);
-    assert.deepEqual(solo.sound, original.sound);
+    assert.deepEqual(solo.sounds, original.sounds);
   }
   assert.deepEqual(original, before);
 });

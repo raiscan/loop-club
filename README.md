@@ -13,8 +13,8 @@ Pick a song or start with **Clear**, then try the three pages:
 - **Drums:** tap boxes to add beats. Tap ↻ beside a drum to change its sound.
 - **Tunes:** pick an instrument and paint notes. Stack notes in one column for
   a chord. Tap a note with the same instrument to erase it.
-- **Sounds:** change brightness, note length and wobble. These shape all the
-  instruments in your tune.
+- **Sounds:** change brightness, note length and wobble. Each instrument keeps
+  its own settings. Pick one at the top to change it.
 
 Each box is one beat. Small, Medium and Large loops have 4, 8 and 16 boxes:
 1, 2 and 4 bars in 4/4. Shrinking a loop hides later bars without deleting them.
@@ -95,7 +95,7 @@ For browser checks, serve the project and click **Let's play** once. Run these
 in the console of a test tab, awaiting each call:
 
 ```js
-const checks = await import('./tests/browser-checks.js?v=28');
+const checks = await import('./tests/browser-checks.js?v=31');
 await checks.runBrowserChecks();
 checks.runLayoutChecks();
 await checks.runShareStartupChecks();

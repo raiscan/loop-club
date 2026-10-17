@@ -1,5 +1,5 @@
-import { NOTES, DRUM_COLORS, clearSong } from './model.js?v=28';
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=28';
+import { NOTES, DRUM_COLORS, clearSong } from './model.js?v=31';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=31';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -404,7 +404,7 @@ export function tutorialPicture(kind, song, playhead = -1) {
     if (kind === 'chord') art += '<rect x="85" y="0" width="48" height="55" rx="7" fill="none" class="tutorial-chord" stroke-width="3"/>';
   } else {
     label = 'Soft ↔ Bright';
-    const brightness = song.sound.brightness / 100;
+    const brightness = song.sounds[song.synth].brightness / 100;
     const points = Array.from({ length: 101 }, (_, i) => {
       const phase = i / 100 * Math.PI * 6;
       const y = 28 - (Math.sin(phase) + brightness * Math.sin(phase * 3) * 0.32) * 19;

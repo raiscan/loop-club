@@ -912,3 +912,24 @@ and native device share-sheet delivery are not claimed.
   on each side and the shade retains the viewport's 2560×1440 coordinates.
 - Development `node --test`: all 61 tests passed; syntax and whitespace checks
   passed. The browser-suite limitation recorded above remains.
+
+## Per-instrument sound settings — 17 October 2026
+
+- Base `83d8e10`: 61 Node tests passed. Development: the same 61 identities
+  pass, plus 4 new tests for independent instrument settings, migration,
+  validation, saved slots, sharing and undo. Syntax and whitespace checks pass.
+- Chrome focused checks: 19 instrument-setting/audio checks, 15 sharing,
+  16 song-slot, 42 audio-render, 11 chord, 4 lesson-audio and 3 shared-startup
+  checks passed. Mixed chords match separate renders using each instrument's
+  settings. Changing Bass changes its rendered audio while leaving Chime
+  unchanged within a 1e-6 sample tolerance.
+- Layout checks passed at 360×800, 800×1280, 1920×940 and 2560×1440
+  (8 each); all 40 tutorial-theme checks passed at each size.
+- The canonical full browser suite stops on both unchanged base and development
+  at `the test flash observes the selected delay`. The previously recorded
+  browser timing/controller automation limits remain; no clean full-browser
+  suite or physical-device verification is claimed.
+- Song schema 7 stores settings for all five instruments. Schemas 1–6 copy
+  their global settings to each instrument without changing existing music.
+  Share version 2 retains all five settings in 98 characters; version 1 links
+  still decode with their original sound settings.
