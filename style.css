@@ -681,3 +681,15 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 /* Preset lengths use the same four-beat rows as the size choices. */
 .groove-label { display: grid; gap: 6px; min-width: 0; }
 .groove-label .loop-size-dots { justify-content: start; }
+
+.app-footer { flex-wrap: wrap; gap: 12px 20px; }
+.footer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+.credits-dialog { width: min(540px, calc(100vw - 32px)); padding: 24px; background: var(--surface); border: 3px solid var(--border); }
+.credits-dialog h2 { margin: 0; font-size: 32px; letter-spacing: 0; }
+#credits-close { min-width: 48px; min-height: 48px; border: 2px solid var(--border); border-radius: 50%; background: var(--control); color: var(--ink); font-size: 30px; }
+.credits-dialog p { font-size: 18px; line-height: 1.5; }
+.credits-list { display: grid; gap: 12px; list-style: none; padding: 0; margin: 22px 0; }
+.credits-list li { display: grid; gap: 5px; padding: 16px; background: var(--panel); border-radius: 14px; }
+.credits-list strong { font-size: 24px; overflow-wrap: anywhere; }
+.credits-list span { font-size: 18px; color: var(--muted); }
+#credits-done { font-size: 22px; color: var(--action-ink); }

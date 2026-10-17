@@ -7,8 +7,8 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=23">
-  <script type="module" src="app.js?v=23"></script>
+  <link rel="stylesheet" href="style.css?v=24">
+  <script type="module" src="app.js?v=24"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -70,7 +70,7 @@
         <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span><span aria-hidden="true">🐢 </span>Slow</span><span>Fast<span aria-hidden="true"> 🐇</span></span></span><input id="tempo" type="range" min="30" max="600" value="164" data-nav="transport"></label><div class="transport-actions"><button id="play" aria-keyshortcuts="Space" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button><button id="clear" class="machine-button" data-nav="transport"><svg class="icon"><use href="#i-clear"/></svg><span>Clear</span></button></div></div>
       </section>
       <section class="groove-picker" aria-label="Starting grooves"></section>
-      <footer class="app-footer"><span class="discovery"><span aria-hidden="true">✳</span> Make it yours!</span><button id="controller-help"><svg class="icon"><use href="#i-pad"/></svg><span id="controller-status">Xbox help</span></button></footer>
+      <footer class="app-footer"><span class="discovery"><span aria-hidden="true">✳</span> Make it yours!</span><div class="footer-actions"><button id="credits-open" aria-haspopup="dialog" aria-controls="credits-dialog">Credits</button><button id="controller-help"><svg class="icon"><use href="#i-pad"/></svg><span id="controller-status">Xbox help</span></button></div></footer>
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>
     </main>
   </div>
@@ -82,6 +82,17 @@
     <figure id="tutorial-picture" class="tutorial-picture"></figure>
     <div class="tutorial-actions"><button id="tutorial-repeat">Say it ↻</button><button id="tutorial-voice" aria-pressed="true">Voice on</button><button id="tutorial-next" hidden disabled>Next →</button><button id="tutorial-done" hidden>Keep it ✓</button></div>
   </section>
+  <dialog id="credits-dialog" class="credits-dialog" aria-labelledby="credits-title">
+    <div class="dialog-heading"><h2 id="credits-title">Credits</h2><button id="credits-close" aria-label="Close credits" autofocus>×</button></div>
+    <p class="credits-intro">Made for little music makers.</p>
+    <ul class="credits-list">
+      <li><strong>Farrell Hayman</strong><span>Idea &amp; direction</span></li>
+      <li><strong>ZM</strong><span>Play tester</span></li>
+      <li><strong>OpenAI Codex</strong><span>Developer · GPT-6.1</span></li>
+    </ul>
+    <p class="credits-note">The sounds are made in your browser with Web Audio. The tour uses a recorded AI voice.</p>
+    <button id="credits-done" class="play-button">Done ✓</button>
+  </dialog>
   <dialog id="theme-dialog" class="theme-dialog" aria-labelledby="theme-title">
     <div class="dialog-heading"><h2 id="theme-title">Pick a look!</h2><button id="theme-close" aria-label="Close looks">×</button></div>
     <div id="theme-choices" class="theme-choices" role="group" aria-label="Looks"></div>

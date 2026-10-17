@@ -730,3 +730,21 @@ playback, with unchanged localStorage and scroll position. Focused checks also
 cover slider focus, repeats, startup cancellation, modifiers, text fields, help
 and the tour. Syntax, build and diff checks pass. No audio scheduler, mouse,
 touch or controller behavior changed.
+
+## Footer credits — 17 October 2026
+
+Sites fetched clean main `3c96965`. Baseline and development each passed all
+45 Node tests and 551 browser checks, with no failures. Credits now opens a
+native modal from the footer, listing Farrell Hayman (idea and direction),
+ZM (play tester), and OpenAI Codex GPT-6.1 (developer), plus a brief note about
+browser-generated audio and recorded AI narration. It follows all five Looks.
+
+Focused browser checks confirmed open/initial focus, requested names, native
+Space behavior inside the modal, Done/close focus restoration, actual Escape
+closure, and simulated Xbox A/B open/close. Native Tab returns to the modal's
+close control; browser chrome remains available as with existing native dialogs.
+The 360×800 Space screenshot was inspected: all names fit, buttons fit and
+the modal has no horizontal overflow. At 800×360 it scrolls within the viewport
+without horizontal overflow. Theme inspection confirmed each Look supplies its
+text and card colours. Footer buttons remain large and wrap on narrow screens.
+Syntax, build and diff checks pass. No physical Xbox or tablet was tested.

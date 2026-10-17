@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=23';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=23';
-import { GamepadReader } from './gamepad.js?v=23';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=23';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=24';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=24';
+import { GamepadReader } from './gamepad.js?v=24';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=24';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -437,6 +437,15 @@ $('#hear-synth').addEventListener('click', () => engine.audition('note', 0));
 
 const dialog = $('#help-dialog'), themeDialog = $('#theme-dialog');
 const activeDialog = () => document.querySelector('dialog[open]');
+const creditsDialog = $('#credits-dialog');
+$('#credits-open').addEventListener('click', () => {
+  if (tutorial?.active) tutorial.stop(false);
+  creditsDialog.showModal(); focusControl($('#credits-close'));
+});
+$('#credits-close').addEventListener('click', () => creditsDialog.close());
+$('#credits-done').addEventListener('click', () => creditsDialog.close());
+creditsDialog.addEventListener('close', () => focusControl($('#credits-open')));
+
 $('#theme-open').addEventListener('click', () => {
   if (tutorial?.active) tutorial.stop(false);
   themeDialog.showModal(); focusControl($(`[data-theme-choice="${theme}"]`));
