@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=27';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=28';
 
 const noiseBuffers = new WeakMap();
 

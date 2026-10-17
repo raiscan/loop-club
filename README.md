@@ -102,6 +102,15 @@ currently targeted at PC. No tablet/controller pairing is required.
   Previous single-song autosaves migrate to Last when they contain changed music.
   Tutorial practice writes no slot unless Keep it is pressed; then it updates the
   selected Me slot or Current. Undo includes song selections and slot edits.
+- **Share** opens a link to the loaded music. Copy it, or use **Send** when the
+  device offers a share sheet. A link captures the full song, including hidden
+  bars, chords, painted instruments, tempo and sound settings. It does not include
+  names, save-slot identities, volume, speaker sync or the chosen Look.
+  Opening one creates a stopped **Shared** preview and preserves existing saves.
+  Undo restores the previous song. Editing adopts the preview as Current/Last;
+  choosing a Me slot opens that slot's own saved music. Broken links leave music
+  untouched. Links are snapshots, so later edits need a new Share link.
+  The versioned [link format](docs/share-links.md) is documented for maintainers.
 
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
@@ -206,15 +215,19 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=27')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=28')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=27')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=28')).runLayoutChecks()
 ```
+
+Run `runShareStartupChecks()` separately with its promise awaited to verify a
+fresh shared-link page while preserving the recipient's local songs. Some
+automation hosts pause embedded document loads in background scripts.
 
 The interaction checks restore the saved song in storage when done; reload
 once afterward to restore that song in the interface. Run these in a test tab:
@@ -226,6 +239,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 ## Structure and scope
 
 - `model.js`: starter patterns, validated saved songs, edits and undo.
+- `share.js`: fixed-size song packing, checksum validation and URL helpers.
 - `audio.js`: Web Audio voices, compressor/master output and look-ahead clock.
 - `tutorial.js`: guided tasks, live diagrams, recorded prompts and speech fallback.
 - `tutorial-voice.js`, `assets/tutorial-voice/`: clip mapping, generated audio and provenance.
@@ -235,11 +249,11 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=27`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=28`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
-This first playable prototype has no recording, export, MIDI, pattern chaining or a backend. It grew from the archived UH-16
+This first playable prototype has no audio recording/export, MIDI, pattern chaining or a backend. It grew from the archived UH-16
 Pocket Transmitter. UncleHerbert remains the user's separate music identity;
 Loop Club is not presented as an UncleHerbert portfolio. The source is available
 under the [MIT licence](LICENSE), copyright 2026 Farrell Hayman.
@@ -255,7 +269,7 @@ tracked in `.openai/hosting.json`; reuse that project ID for future updates.
 node scripts/build-site.mjs
 ```
 
-This prepares nine app assets and thirty-one MP3 clips in ignored `dist/`. The original
+This prepares ten app assets and thirty-one MP3 clips in ignored `dist/`. The original
 reference site, tests, source history and local state are not part of the
 served bundle. The script preserves unexpected files in `dist/` by stopping
 instead of deleting them. Use the Sites skill's source/package helper from

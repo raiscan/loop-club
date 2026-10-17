@@ -1,7 +1,8 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, SONG_BOOK_KEY, SONG_SLOTS, createSlotSong, restoreSongBook, saveSlotSong, openSlotSong, editedSlotSong, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=27';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=27';
-import { GamepadReader } from './gamepad.js?v=27';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=27';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, SONG_BOOK_KEY, SONG_SLOTS, createSlotSong, restoreSongBook, saveSlotSong, openSlotSong, editedSlotSong, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=28';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=28';
+import { GamepadReader } from './gamepad.js?v=28';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=28';
+import { decodeSong, songShareURL, sharedSongCode } from './share.js?v=28';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -51,6 +52,7 @@ try {
   if (saved && !saved.slot && JSON.stringify(saved) !== JSON.stringify(createSong(saved.preset))) saved.slot = 'last';
 } catch { /* Saving remains optional; the instrument can still play. */ }
 let history = new SongHistory(saved || createSong());
+let sharedPreview = false, invalidShare = false;
 let section = 'drums', page = 0, visibleSteps = stepCount();
 let renderedSteps = 0;
 let currentStep = -1, controllerMode = false, connectedPad = null;
@@ -95,6 +97,7 @@ function refreshSongBook() {
 
 function saveSong() {
   if (tutorial?.active) return;
+  if (sharedPreview) { $('#save-status span').textContent = 'Shared'; return; }
   refreshSongBook();
   songBook = saveSlotSong(songBook, history.song);
   try {
@@ -106,12 +109,38 @@ function saveSong() {
   }
 }
 
+function leaveSharedPreview() {
+  sharedPreview = false;
+  const url = new URL(location.href), hash = new URLSearchParams(url.hash.slice(1));
+  if (!hash.has('song') && !url.searchParams.has('song')) return;
+  hash.delete('song'); url.searchParams.delete('song'); url.hash = hash.toString();
+  window.history.replaceState(null, '', url.href);
+}
+
+function loadSharedSong(render = true) {
+  const code = sharedSongCode(location.href);
+  if (code === null) return false;
+  const song = decodeSong(code);
+  if (!song) { invalidShare = true; if (render) message('That music link did not work. Your music is safe.'); return false; }
+  if (tutorial?.active) tutorial.stop(false);
+  engine.stop(); history.end(); history.commit({ ...song, slot: 'last' });
+  sharedPreview = true;
+  if (render) { buildGrids(); setSection('drums'); saveSong(); message("Shared music! Tap Let's play."); }
+  return true;
+}
+window.addEventListener('hashchange', () => loadSharedSong());
+
 function commit(next, { selecting = false } = {}) {
+  const wasShared = sharedPreview;
   const resized = next.melody.length !== history.song.melody.length;
   const resume = resized && (engine.playing || engine.pending), previewKind = lessonPreview;
   if (resized) { if (lessonPreview) stopLessonPreview(); else engine.stop(); }
   if (!selecting && !tutorial?.active) next = editedSlotSong(history.song, next);
-  if (!history.commit(next)) return;
+  if (!history.commit(next)) {
+    if (selecting && wasShared && !tutorial?.active) { leaveSharedPreview(); saveSong(); updateSong(); }
+    return;
+  }
+  if (!tutorial?.active) leaveSharedPreview();
   saveSong(); updateSong();
   if (resume) { if (previewKind) playLessonPreview(previewKind, true); else engine.start(); }
 }
@@ -120,7 +149,7 @@ function undo() {
   if (!history.canUndo) return;
   const previousSteps = history.song.melody.length;
   const wasPlaying = engine.playing || engine.pending;
-  history.undo(); saveSong(); updateSong();
+  history.undo(); if (!tutorial?.active) leaveSharedPreview(); saveSong(); updateSong();
   if (previousSteps !== history.song.melody.length) { engine.stop(); if (wasPlaying) engine.start(); }
   message('Try again!');
   if (document.activeElement === $('#undo') && $('#undo').disabled) focusControl($(`#tab-${section}`));
@@ -290,9 +319,9 @@ function updateSong() {
   const song = history.song;
   if (renderedSteps !== song.melody.length || visibleSteps !== stepCount()) { buildGrids(); return; }
   $$('[data-loop-bars]').forEach(button => button.setAttribute('aria-pressed', Number(button.dataset.loopBars) === song.bars));
-  $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', !song.slot && button.dataset.preset === song.preset));
+  $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', !sharedPreview && !song.slot && button.dataset.preset === song.preset));
   $$('[data-song-slot]').forEach(button => {
-    const slot = button.dataset.songSlot, active = song.slot === slot;
+    const slot = button.dataset.songSlot, active = !sharedPreview && song.slot === slot;
     const stored = active ? song : songBook.slots[slot];
     const name = slot === 'last' ? active ? 'Current' : 'Last' : `Me ${slot.slice(-1)}`;
     button.disabled = slot === 'last' && !stored;
@@ -300,7 +329,7 @@ function updateSong() {
     button.setAttribute('aria-label', `${name}, ${stored ? `${stored.bars * STEPS} beats` : slot === 'last' ? 'no song yet' : 'empty song'}`);
     button.innerHTML = `<strong>${name}</strong><span class="loop-size-dots" aria-hidden="true">${'<i></i>'.repeat((stored?.bars || 1) * STEPS)}</span>`;
   });
-  $('.machine-name').textContent = song.slot === 'last' ? 'Current' : song.slot ? `Me ${song.slot.slice(-1)}` : 'My music';
+  $('.machine-name').textContent = sharedPreview ? 'Shared' : song.slot === 'last' ? 'Current' : song.slot ? `Me ${song.slot.slice(-1)}` : 'My music';
   $$('[data-drum]').forEach(button => button.setAttribute('aria-pressed', song.drums[button.dataset.drum][button.dataset.step]));
   $$('[data-drum-pad]').forEach(pad => {
     const row = Number(pad.dataset.drumPad), drum = DRUM_SOUNDS[song.drumSounds[row]];
@@ -482,6 +511,38 @@ $('#hear-synth').addEventListener('click', () => engine.audition('note', 0));
 
 const dialog = $('#help-dialog'), themeDialog = $('#theme-dialog');
 const activeDialog = () => document.querySelector('dialog[open]');
+const shareDialog = $('#share-dialog');
+let shareReturn, shareGeneration = 0;
+$('#share-open').addEventListener('click', () => {
+  if (tutorial?.active) tutorial.stop(false);
+  shareReturn = document.activeElement; shareGeneration++;
+  $('#share-link').value = songShareURL(history.song, location.href);
+  $('#share-status').textContent = 'Copy the link. Let them play!';
+  $('#share-copy').disabled = false;
+  $('#share-send').hidden = typeof navigator.share !== 'function';
+  shareDialog.showModal(); focusControl($('#share-copy'));
+});
+$('#share-copy').addEventListener('click', async () => {
+  const generation = shareGeneration;
+  $('#share-copy').disabled = true;
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText($('#share-link').value);
+    if (generation === shareGeneration && shareDialog.open) $('#share-status').textContent = 'Copied! Send it to a friend.';
+  } catch {
+    if (generation === shareGeneration && shareDialog.open) {
+      $('#share-link').focus(); $('#share-link').select();
+      $('#share-status').textContent = 'Select the link, then copy it.';
+    }
+  } finally { if (generation === shareGeneration) $('#share-copy').disabled = false; }
+});
+$('#share-send').addEventListener('click', async () => {
+  const generation = shareGeneration;
+  try { await navigator.share({ title: 'Loop Club', text: 'Hear my music!', url: $('#share-link').value }); }
+  catch (error) { if (error.name !== 'AbortError' && generation === shareGeneration && shareDialog.open) $('#share-status').textContent = 'Try Copy link instead.'; }
+});
+for (const id of ['share-close', 'share-done']) $(`#${id}`).addEventListener('click', () => shareDialog.close());
+shareDialog.addEventListener('close', () => { shareGeneration++; $('#share-copy').disabled = false; focusControl(shareReturn || $('#share-open')); });
 const creditsDialog = $('#credits-dialog');
 $('#credits-open').addEventListener('click', () => {
   if (tutorial?.active) tutorial.stop(false);
@@ -711,7 +772,7 @@ for (const [id, synth] of Object.entries(SYNTH_SOUNDS)) {
   });
   $('#synth-picker').append(button);
 }
-buildGrids(); saveSong();
+loadSharedSong(false); buildGrids(); saveSong();
 tutorial = new ZachTutorial({
   getSong: () => history.song,
   getStep: () => currentStep,
@@ -722,7 +783,7 @@ tutorial = new ZachTutorial({
     engine.stop();
     const made = history.song;
     history = originalHistory || history; originalHistory = null;
-    if (keepSong) { history.commit(editedSlotSong(history.song, made)); saveSong(); }
+    if (keepSong) { history.commit(editedSlotSong(history.song, made)); leaveSharedPreview(); saveSong(); }
     buildGrids(); setSection('drums');
   },
   speech: new TutorialSpeech({ volume: () => engine.volume * 0.65, duck: value => engine.setDucked(value) }),
@@ -750,6 +811,7 @@ tutorial = new ZachTutorial({
   }
 });
 if (invalidSave) message('That saved groove could not be opened. Here’s a fresh one to play with.');
+if (invalidShare) message('That music link did not work. Your music is safe.');
 requestAnimationFrame(pollController);
 
 const wideLayout = matchMedia('(min-width: 1400px)');

@@ -2,10 +2,11 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=27';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, SONG_BOOK_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=27';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=27';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=27';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=28';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, SONG_BOOK_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=28';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=28';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=28';
+import { encodeSong, decodeSong, songShareURL } from '../share.js?v=28';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -242,9 +243,93 @@ export async function runBrowserChecks() {
   const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
   try {
   input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
-  const checks = [...await runSongSlotChecks(), ...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialSkipChecks(), ...await runTutorialListeningChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runShareChecks(), ...await runSongSlotChecks(), ...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialSkipChecks(), ...await runTutorialListeningChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
   } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
+}
+
+export async function runShareChecks() {
+  const results = [], saved = localStorage.getItem(SAVE_KEY), book = localStorage.getItem(SONG_BOOK_KEY), url = location.href;
+  const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard'), share = Object.getOwnPropertyDescriptor(navigator, 'share');
+  const music = song => { const value = structuredClone(song); delete value.slot; return value; };
+  let copied, sent;
+  try {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async value => { copied = value; } } });
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async value => { sent = value; } });
+    if (!$('#tutorial-card').hidden) $('#tutorial-exit').click();
+    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
+    $('[data-preset="pixel"]').click(); const song = readSong();
+    $('#share-open').focus(); $('#share-open').click();
+    check($('#share-dialog').open && document.activeElement === $('#share-copy'), 'Share opens a modal with Copy link ready', results);
+    const link = new URL($('#share-link').value), code = new URLSearchParams(link.hash.slice(1)).get('song');
+    check(code.length === 82 && link.search === '' && same(decodeSong(code), music(song)), 'Share captures the complete loaded song in a short URL without personal parameters', results);
+    check(!$('#share-send').hidden, 'a supported device exposes its share sheet button', results);
+    $('#share-copy').click(); await wait(30);
+    check(copied === link.href && $('#share-status').textContent.includes('Copied'), 'Copy writes the snapshot URL and confirms it', results);
+    navigator.clipboard.writeText = async () => { throw new Error('Denied'); };
+    $('#share-copy').click(); await wait(30);
+    check(document.activeElement === $('#share-link') && $('#share-link').selectionEnd === link.href.length && $('#share-status').textContent.includes('Select'), 'clipboard denial leaves a selected link for manual copying', results);
+    $('#share-send').click(); await wait(30);
+    check(sent.url === link.href && sent.title === 'Loop Club', 'Send passes the song URL to the device share sheet', results);
+    const status = $('#share-status').textContent;
+    navigator.share = async () => { throw new DOMException('Cancelled', 'AbortError'); };
+    $('#share-send').click(); await wait(30);
+    check($('#share-status').textContent === status, 'cancelling a device share is quiet', results);
+    navigator.share = async () => { throw new Error('Unavailable'); };
+    $('#share-send').click(); await wait(30);
+    check($('#share-status').textContent.includes('Copy link'), 'a failed device share offers copying instead', results);
+    $('#share-done').click(); await wait(40);
+    check(!$('#share-dialog').open && document.activeElement === $('#share-open'), 'Done returns focus to Share', results);
+    navigator.share = undefined;
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    $('#share-open').click(); $('#share-copy').click(); await wait(30);
+    check($('#share-send').hidden && document.activeElement === $('#share-link'), 'browsers without sharing or clipboard APIs still offer a selectable link', results);
+    $('#share-done').click(); await wait(30);
+    $('[data-song-slot="me1"]').click(); $('[data-loop-bars="1"]').click(); $('#tab-drums').click(); $('[data-drum="0"][data-step="0"]').click();
+    const beforeSong = localStorage.getItem(SAVE_KEY), beforeBook = localStorage.getItem(SONG_BOOK_KEY);
+    const inbound = editSong(createSong('cloud'), { type: 'bars', value: 1 });
+    location.hash = `song=${encodeSong(inbound)}`; await wait(60);
+    check($('.machine-name').textContent === 'Shared' && localStorage.getItem(SAVE_KEY) === beforeSong, 'same-page share links also open without overwriting saves', results);
+    $('#undo').click();
+    check(localStorage.getItem(SAVE_KEY) === beforeSong && !location.hash.includes('song='), 'Undo returns to the recipient’s loaded song and clears the shared link', results);
+    location.hash = `song=${encodeSong(inbound)}`; await wait(60);
+    $('#tab-drums').click(); $('[data-drum="0"][data-step="0"]').click();
+    check(readSong().slot === 'last' && $('.machine-name').textContent === 'Current' && !location.hash.includes('song='), 'editing a shared song adopts it as Current and removes the import URL', results);
+    check(same(JSON.parse(localStorage.getItem(SONG_BOOK_KEY)).slots.me1, JSON.parse(beforeBook).slots.me1), 'adopting shared music never writes into the sender’s or recipient’s Me slot', results);
+    const current = localStorage.getItem(SAVE_KEY);
+    location.hash = 'song=broken'; await wait(60);
+    check(localStorage.getItem(SAVE_KEY) === current && $('#message').textContent.includes('Your music is safe'), 'a broken share link leaves existing music untouched and explains the failure', results);
+  } finally {
+    if ($('#share-dialog').open) $('#share-dialog').close();
+    for (const [key, descriptor] of [['clipboard', clipboard], ['share', share]]) {
+      if (descriptor) Object.defineProperty(navigator, key, descriptor); else delete navigator[key];
+    }
+    window.history.replaceState(null, '', url);
+    for (const [key, value] of [[SAVE_KEY, saved], [SONG_BOOK_KEY, book]]) { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); }
+  }
+  return results;
+}
+
+// Run this awaited, separately from a background suite: some automation hosts
+// pause document responses when an iframe navigates after its tool call returns.
+export async function runShareStartupChecks() {
+  const results = [], song = localStorage.getItem(SAVE_KEY), book = localStorage.getItem(SONG_BOOK_KEY);
+  const inbound = editSong(createSong('cloud'), { type: 'bars', value: 1 });
+  const frame = document.createElement('iframe'); frame.title = 'Shared song startup check';
+  try {
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Shared song frame did not load')), 5000);
+      frame.onload = () => { clearTimeout(timeout); resolve(); };
+      frame.src = songShareURL(inbound, location.href); document.body.append(frame);
+    });
+    const doc = frame.contentDocument;
+    check(doc.querySelector('.machine-name').textContent === 'Shared' && doc.querySelector('#play').getAttribute('aria-pressed') === 'false', 'a direct share URL opens a stopped Shared preview', results);
+    doc.querySelector('#share-open').click();
+    const code = new URLSearchParams(new URL(doc.querySelector('#share-link').value).hash.slice(1)).get('song');
+    check(same(decodeSong(code), inbound), 'direct startup restores the entire song, including hidden bars and sounds', results);
+    check(localStorage.getItem(SAVE_KEY) === song && localStorage.getItem(SONG_BOOK_KEY) === book, 'opening a shared song preserves the recipient’s current save, Last and all Me slots', results);
+  } finally { frame.remove(); }
+  return results;
 }
 
 export async function runRecordedVoiceChecks() {

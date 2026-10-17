@@ -698,6 +698,12 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .credits-dialog h2 { margin: 0; font-size: 32px; letter-spacing: 0; }
 #credits-close { min-width: 48px; min-height: 48px; border: 2px solid var(--border); border-radius: 50%; background: var(--control); color: var(--ink); font-size: 30px; }
 .credits-dialog p { font-size: 18px; line-height: 1.5; }
+.share-dialog p { font-size: 22px; }
+.share-dialog #share-link { width: 100%; min-width: 0; min-height: 56px; padding: 12px; font-size: 18px; color: var(--ink); background: var(--panel); border: 2px solid var(--border); border-radius: 12px; }
+.share-dialog button { min-width: 48px; min-height: 48px; padding: 10px 12px; font-size: 22px; font-weight: 700; border: 2px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--ink); }
+.share-dialog #share-close { padding: 0; font-size: 30px; border-radius: 50%; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.share-actions #share-copy { background: var(--action); color: var(--action-ink); border-color: var(--action-border); }
 .credits-list { display: grid; gap: 12px; list-style: none; padding: 0; margin: 22px 0; }
 .credits-list li { display: grid; gap: 5px; padding: 16px; background: var(--panel); border-radius: 14px; }
 .credits-list strong { font-size: 24px; overflow-wrap: anywhere; }

@@ -6,7 +6,7 @@ import { TUTORIAL_NARRATIONS } from '../tutorial.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = join(root, 'dist');
-const assets = ['index.html', 'style.css', 'app.js', 'model.js', 'audio.js', 'gamepad.js', 'tutorial.js', 'tutorial-voice.js', 'icon.svg'];
+const assets = ['index.html', 'style.css', 'app.js', 'model.js', 'audio.js', 'gamepad.js', 'tutorial.js', 'tutorial-voice.js', 'share.js', 'icon.svg'];
 const clips = TUTORIAL_NARRATIONS.map(step => {
   const clip = TUTORIAL_RECORDINGS[step.audio];
   const expected = `./assets/tutorial-voice/${step.audio}.mp3`;

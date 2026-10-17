@@ -10,6 +10,6 @@
   "scripts": {
     "build:site": "node scripts/build-site.mjs",
     "test": "node --test tests/*.test.js",
-    "check": "node --check app.js && node --check model.js && node --check audio.js && node --check gamepad.js && node --check tutorial.js && node --check tutorial-voice.js"
+    "check": "node --check app.js && node --check model.js && node --check audio.js && node --check gamepad.js && node --check tutorial.js && node --check tutorial-voice.js && node --check share.js"
   }
 }

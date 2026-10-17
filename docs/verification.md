@@ -847,3 +847,42 @@ JavaScript syntax, build and diff checks passed. The T3 preview host had previou
 timed out twice; release browser checks used the foreground Chrome fallback.
 No physical Win11, Android tablet, Xbox or Bluetooth speaker was available, so
 hardware connection and perceived loudness on those speakers are not claimed.
+
+## Compact song links — 17 October 2026
+
+GitHub and Sites synchronized clean main `822e429`. Baseline: 54 Node tests and
+674 browser/audio checks passed, with no failures. Development: 61 Node tests
+and 689 browser/audio checks passed, plus three separately awaited startup
+checks. No baseline failures or worsened behavior remain.
+
+Share captures the loaded song in a versioned 61-byte packet: metadata, four
+sixteen-beat drum patterns, six pitches of per-note instruments across sixteen
+beats, and CRC32. It encodes to 82 base64url characters in `#song=`. This includes
+hidden bars, chords, tempo and sound settings. It excludes local slot identity,
+names, Looks, volume and speaker compensation. Query-form song links also load.
+There is no compression library, compression API, account or server storage.
+The permanent wire format is documented in `docs/share-links.md`.
+
+Seven codec tests cover every preset and size, one hundred generated dense mixed
+patterns, a fixed version-one fixture, every single-byte corruption, malformed
+and oversized input, noncanonical encoding, future versions and invalid musical
+fields with valid checksums. Independent Python packing and zlib CRC32 matched
+the JavaScript output byte for byte.
+
+Fifteen browser sharing checks cover Copy link, denial/manual selection,
+unsupported APIs, native share arguments, cancellation/failure, focus restoration,
+same-page imports, Undo, adopting an edit as Current, retained Me songs and invalid
+links. Clipboard and native sharing boundaries are mocked; tests neither change
+the system clipboard nor send messages. Three additional direct-startup checks
+verify the full decoded song and stopped playback while preserving the recipient's
+current autosave, Last and all Me slots. A background iframe navigation paused the
+automation host's document response; running startup separately with its promise
+awaited avoids that host limitation. The product behavior was unchanged.
+
+The modal passed viewport bounds, no horizontal overflow, 44px target and theme
+checks in all five Looks at 360×800 and 800×360. The narrow Space screenshot was
+inspected. The machine and sidebar still fit 1920×940 with a Large Tunes grid;
+Share remains a 44px footer target. Syntax, diff and build checks pass. Static
+output now includes ten runtime assets and the unchanged thirty-one voice clips.
+Runtime asset queries advance together to `v=28`. Physical Android/Xbox testing
+and native device share-sheet delivery are not claimed.
