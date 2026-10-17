@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=21';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=21';
-import { GamepadReader } from './gamepad.js?v=21';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=21';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=22';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=22';
+import { GamepadReader } from './gamepad.js?v=22';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=22';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -380,7 +380,9 @@ for (const [id, preset] of Object.entries(PRESETS)) {
   button.className = `groove-card groove-${id}`;
   button.dataset.preset = id; button.dataset.nav = 'presets';
   button.setAttribute('aria-pressed', 'false');
-  button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><strong>${songNames[id]}</strong><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
+  button.setAttribute('aria-label', `${songNames[id]}, ${preset.bars * STEPS} beats, ${preset.bars} ${preset.bars === 1 ? 'bar' : 'bars'}`);
+  const dots = `<span class="loop-size-dots" aria-hidden="true">${'<i></i>'.repeat(preset.bars * STEPS)}</span>`;
+  button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><span class="groove-label"><strong>${songNames[id]}</strong>${dots}</span><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
   button.addEventListener('click', () => {
     history.end(); commit(createSong(id));
   });

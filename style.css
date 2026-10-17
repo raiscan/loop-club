@@ -677,3 +677,7 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .sync-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .sync-actions button { min-height: 48px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 12px; background: var(--control); color: var(--ink); font-size: 19px; font-weight: 700; }
 #sync-test[aria-pressed=true] { background: var(--action); color: var(--action-ink); }
+
+/* Preset lengths use the same four-beat rows as the size choices. */
+.groove-label { display: grid; gap: 6px; min-width: 0; }
+.groove-label .loop-size-dots { justify-content: start; }

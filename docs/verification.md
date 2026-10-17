@@ -695,3 +695,18 @@ its controls fit with at least 44px heights. The Space panel screenshot was
 inspected; all five themes supply their own panel/text colours. Syntax, build
 and diff checks pass. No physical Bluetooth speaker, Win11, Android or Xbox
 hardware was tested; speaker calibration must be matched by ear on that device.
+
+## Preset length pills — 17 October 2026
+
+Sites fetched clean main `f62a73a`. Baseline and development each passed all
+45 Node tests and 542 browser checks, with no failures. Each of the nine song
+cards now shows its authored length as 4, 8 or 16 pills, using the same themed
+four-column pattern as the loop-size buttons. Accessible names include beats
+and bars; the visible song names remain short.
+
+Direct DOM checks matched every card's pill count to its preset size. Pills
+fit inside all cards at 1920×1080 (sidebar) and 360×800 (below the machine);
+the narrow layout had no page overflow. The narrow Space screenshot was
+inspected. Existing preset loading, Undo, reading, tour and controller checks
+pass. Syntax, build and diff checks pass. This presentation change adds no
+audio or input behavior.

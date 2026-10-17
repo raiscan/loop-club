@@ -84,7 +84,8 @@ currently targeted at PC. No tablet/controller pairing is required.
   beats, with its own loop size and painted sounds. Jump is Small; Robot, Moon,
   Ants and Dance are Medium; River, Skate, Game and Cloud are Large. Longer
   phrases mix bass, chords, game sounds and chimes. Choosing one loads its size;
-  **Undo** restores your previous music and size.
+  **Undo** restores your previous music and size. Each song card shows its own
+  4, 8 or 16 beat pills beneath its name, in rows of four like the size buttons.
 - **Drums:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
   cowbell. Tap a numbered sound selector to cycle instruments; it previews
@@ -178,14 +179,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=21')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=22')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=21')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=22')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
