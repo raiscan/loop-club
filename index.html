@@ -7,7 +7,7 @@
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
   <script type="module" src="app.js?v=17"></script>
 </head>
 <body>
@@ -45,7 +45,6 @@
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title"><div><h1 id="page-title">Let’s make music<span>!</span></h1><p class="intro-copy">Pick a song. Tap a box.</p></div><span id="theme-mascot" class="look-mascot" aria-hidden="true">☀️</span></section>
-      <section class="groove-picker" aria-label="Starting grooves"></section>
       <section class="machine" aria-label="Music machine">
         <div class="machine-top"><span class="machine-name">My music</span><span id="play-state" class="play-state"><i></i><span>Ready?</span></span></div>
         <div class="workspace-bar"><div class="tabs" role="tablist" aria-label="Make music"><button id="tab-drums" class="tab" role="tab" aria-selected="true" aria-controls="panel-drums" data-tab="drums"><svg class="icon"><use href="#i-drum"/></svg>Drums</button><button id="tab-melody" class="tab" role="tab" aria-selected="false" aria-controls="panel-melody" tabindex="-1" data-tab="melody"><svg class="icon"><use href="#i-notes"/></svg>Tunes</button><button id="tab-sound" class="tab" role="tab" aria-selected="false" aria-controls="panel-sound" tabindex="-1" data-tab="sound"><svg class="icon"><use href="#i-wave"/></svg>Sounds</button></div><button id="undo" class="machine-button" data-nav="tools" disabled><svg class="icon"><use href="#i-undo"/></svg><span>Undo</span></button></div>
@@ -67,6 +66,7 @@
         <div class="volume-section"><div class="volume-control"><button id="mute" type="button" aria-label="Mute" aria-pressed="false" data-nav="transport"><svg class="icon" aria-hidden="true"><use href="#i-volume"/></svg></button><input id="volume" aria-label="Volume" type="range" min="0" max="100" value="55" data-nav="transport"></div></div>
         <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span><span aria-hidden="true">🐢 </span>Slow</span><span>Fast<span aria-hidden="true"> 🐇</span></span></span><input id="tempo" type="range" min="30" max="300" value="164" data-nav="transport"></label><div class="transport-actions"><button id="play" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button></div></div>
       </section>
+      <section class="groove-picker" aria-label="Starting grooves"></section>
       <footer class="app-footer"><span class="discovery"><span aria-hidden="true">✳</span> Make it yours!</span><button id="controller-help"><svg class="icon"><use href="#i-pad"/></svg><span id="controller-status">Xbox help</span></button></footer>
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>
     </main>

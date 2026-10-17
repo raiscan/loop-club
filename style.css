@@ -628,3 +628,6 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .melody-grid .step { display: grid; place-items: center; padding: 3px; }
 .melody-grid .step[aria-pressed=true]::after { display: none; }
 .melody-grid .step .icon { width: 30px; height: 30px; color: var(--pad-ink); pointer-events: none; stroke-width: 2.3; }
+
+/* Keep the music machine first, then offer another song to try. */
+.machine + .groove-picker { margin-top: 28px; margin-bottom: 0; }

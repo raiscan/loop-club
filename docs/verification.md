@@ -577,3 +577,19 @@ preview tab accepted the Play click after explicit instant scrolling and was
 used for the full rerun; no controller implementation was changed.
 Full development rerun: 468 browser checks passed, including all 40 new theme
 assertions. No unresolved test failures remain.
+
+## Presets below the music machine — 17 October 2026
+
+The Sites source helper confirmed clean base main `8e4e690` was current.
+Baseline Node suite: 41 passed. The initial browser run failed `Xbox A selects
+a loop size` after a native Play click timed out; preview snapshot also timed
+out. Reopening the preview restored animation frames and the Play click, and
+the unchanged baseline then passed all 468 checks. No input code was changed.
+
+The preset section now follows the music machine in DOM and reading order,
+with a 28px gap. Its existing responsive grid, selection, sounds and Undo are
+retained. Development Node tests: 41 passed. Syntax, build, diff and unchanged
+original-site checks passed.
+Full development browser suite: 468 passed. All 80 theme/layout/reading checks
+passed at both 360×800 and 1280×800. DOM order and a measured 28px gap confirm
+presets follow the machine; the desktop spacing screenshot was inspected.
