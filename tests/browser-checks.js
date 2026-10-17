@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=20';
-import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=20';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=20';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=20';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=21';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=21';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=21';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=21';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,8 +235,12 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
+  try {
+  input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
+  const checks = [...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
+  } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
 }
 
 export async function runRecordedVoiceChecks() {
@@ -812,5 +816,66 @@ export async function runTutorialThemeChecks() {
       check(getComputedStyle(fixture.querySelector('.tutorial-wave')).stroke === colour(palette.getPropertyValue('--wave')) && getComputedStyle(fixture.querySelector('.tutorial-axis')).stroke === colour(palette.getPropertyValue('--border')), `${theme}: tutorial wave and axis follow theme`, results);
     }
   } finally { fixture.remove(); if (original) document.documentElement.dataset.theme = original; else delete document.documentElement.dataset.theme; }
+  return results;
+}
+
+export async function runSpeakerSyncChecks() {
+  const results=[],key='loop-club.visual-delay.v1',stored=localStorage.getItem(key),song=localStorage.getItem(SAVE_KEY),input=$('#visual-delay'),original=Number(input.value);
+  const set=value=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));};
+  try {
+    $('#help').click();set(300);
+    check($('#sync-value').textContent==='300 ms'&&localStorage.getItem(key)==='300','speaker sync saves and displays its visual delay',results);
+    check(localStorage.getItem(SAVE_KEY)===song,'speaker sync leaves the song untouched',results);
+    const start=performance.now();$('#sync-test').click();await wait(100);
+    check($('#sync-test').getAttribute('aria-pressed')==='true'&&!$('#sync-lights .on'),'calibration starts sound before the compensated flash',results);
+    for(let i=0;i<80&&!$('#sync-lights .on');i++)await wait(10);
+    check(!!$('#sync-lights .on')&&performance.now()-start>=270,'the test flash observes the selected delay',results);
+    set(600);check($('#sync-test').getAttribute('aria-pressed')==='true','delay can be tuned while the test keeps playing',results);
+    $('#sync-reset').click();check(input.value==='0'&&localStorage.getItem(key)==='0','Reset restores zero visual delay',results);
+    $('#close-help').click();await wait(650);
+    check($('#sync-test').getAttribute('aria-pressed')==='false'&&!$('#sync-lights .on'),'closing help cancels the test and delayed flashes',results);
+    check(localStorage.getItem(SAVE_KEY)===song,'calibration neither edits music nor creates a song save',results);
+    $('#help').click();const write=Storage.prototype.setItem;Storage.prototype.setItem=()=>{throw new Error('Unavailable');};
+    try{set(20);check($('#sync-status').textContent.includes('unavailable')&&input.value==='20','visual compensation works without writable storage',results);}finally{Storage.prototype.setItem=write;}
+    set(0);
+    const originalGetPads = Object.getOwnPropertyDescriptor(navigator, 'getGamepads');
+    const makePad = (pressed = []) => ({ connected: true, mapping: 'standard', id: 'Xbox sync fixture', index: 0, axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: pressed.includes(i), value: pressed.includes(i) ? 1 : 0 })) });
+    let pad = makePad();
+    const press = async button => { pad = makePad([button]); await wait(65); pad = makePad(); await wait(65); };
+    try {
+      Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad] }); await wait(80);
+      input.focus(); await press(15);
+      check(input.value === '10' && localStorage.getItem(key) === '10', 'Xbox D-pad tunes speaker sync in ten-millisecond steps', results);
+      $('#sync-test').focus(); await press(0); await wait(100);
+      check($('#sync-test').getAttribute('aria-pressed') === 'true', 'Xbox A starts the calibration test', results);
+      await press(1); await wait(40);
+      check(!$('#help-dialog').open && $('#sync-test').getAttribute('aria-pressed') === 'false', 'Xbox B closes help and stops calibration', results);
+    } finally {
+      if (originalGetPads) Object.defineProperty(navigator, 'getGamepads', originalGetPads); else delete navigator.getGamepads;
+    }
+  } finally {
+    if($('#help-dialog').open)$('#close-help').click();set(original);
+    if(stored===null)localStorage.removeItem(key);else localStorage.setItem(key,stored);
+  }
+  const songData=clearSong(createSong());songData.tempo=600;songData.drums[0].fill(true);
+  const visits=[],states=[],errors=[],audioStarts=[];
+  let start=0;
+  const engine=new AudioEngine(()=>songData,step=>{if(step>=0)visits.push({step,at:performance.now()-start});},state=>states.push(state),error=>errors.push(error));engine.setVolume(0);
+  try{
+    await engine.ready();const create=engine.context.createOscillator.bind(engine.context);
+    engine.context.createOscillator=()=>{const node=create(),originalStart=node.start.bind(node);node.start=at=>{audioStarts.push(at);originalStart(at);};return node;};
+    engine.setVisualDelay(300);const audioNow=engine.context.currentTime;start=performance.now();await engine.start({cycles:1});await wait(550);
+    check(engine.playing&&engine.voices.size===0,'finite audio ends on time while delayed visual playback drains',results);
+    await wait(320);
+    check(!errors.length&&same(visits.map(v=>v.step),[0,1,2,3])&&!engine.playing,'compensated finite playback shows every final beat and stops',results);
+    check(visits[0].at>=270&&visits[0].at<650,'sequencer step callbacks use the visual correction',results);
+    check(audioStarts.length===4&&audioStarts[0]-audioNow<0.13&&audioStarts.slice(1).every((time,i)=>Math.abs(time-audioStarts[i]-.1)<1e-6),'visual correction never shifts or slows scheduled audio',results);
+    check(engine.visuals.size===0&&engine.visualEvents.size===0,'finite completion releases visual timers',results);
+    engine.setVisualDelay(800);await engine.start();await wait(130);const generation=engine.generation,clock=engine.clock.nextTime;
+    engine.setVisualDelay(0);await wait(180);
+    check(engine.playing&&engine.generation===generation&&engine.clock.nextTime>=clock,'live correction reschedules lights without restarting the audio clock',results);
+    engine.setVisualDelay(1000);engine.stop();const count=visits.length;await wait(1050);
+    check(visits.length===count&&!engine.visuals.size&&!engine.visualEvents.size,'Stop cancels even one-second delayed visual callbacks',results);
+  }finally{engine.stop();await engine.context?.close();}
   return results;
 }

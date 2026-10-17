@@ -669,3 +669,29 @@ needed. Physical Android, Windows and Xbox hardware were not tested.
 Final development full browser suite at 1920×1080: 523 passed, including sidebar
 Loop size and the corrected fixtures. All 44 Node tests, syntax, build and diff
 checks pass. The archived original site remains unchanged.
+
+## Bluetooth speaker visual correction — 17 October 2026
+
+Sites source helper fetched and confirmed clean main `33f8a97`. Baseline:
+44 Node tests and 523 browser checks passed, with no failures.
+
+Grown-up help now has Speaker sync: a repeating four-click/four-flash test,
+0–1,000 ms visual delay in 10 ms slider steps, and Reset to 0. The correction
+is stored separately from music, per browser/origin. Calibration leaves song
+data and Undo untouched. Closing help, stopping, leaving the page or controller
+disconnection cancels calibration and queued flashes. Grid, map and tutorial
+playback share the corrected visual callbacks. Audio stays on its original
+clock, including the end of finite tutorial demos; their final delayed lights
+finish before the visual playback state clears. Live adjustment reschedules
+pending lights without restarting audio; reducing delay collapses expired
+steps to the latest beat.
+
+Development: 45 Node tests and the full 542 browser checks passed. All 19
+focused sync checks passed, including actual Web Audio scheduling, four final beat callbacks,
+voice release, timer cancellation, live adjustment, unavailable storage, and
+Xbox D-pad/A/B controls. An actual reload restored 370 ms in the slider and
+output. At 360×800 and 800×360, the help panel had no horizontal overflow and
+its controls fit with at least 44px heights. The Space panel screenshot was
+inspected; all five themes supply their own panel/text colours. Syntax, build
+and diff checks pass. No physical Bluetooth speaker, Win11, Android or Xbox
+hardware was tested; speaker calibration must be matched by ear on that device.

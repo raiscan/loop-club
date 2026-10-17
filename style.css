@@ -664,3 +664,16 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
   .music-sidebar .loop-size-choices { grid-template-columns: 1fr; width: 100%; }
   .music-sidebar .loop-size-choices button { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
 }
+
+.speaker-sync { margin: 22px 0; padding: 18px; border: 2px solid var(--border); border-radius: 18px; background: var(--panel); }
+.speaker-sync h3 { margin: 0 0 10px; font-size: 25px; }
+.speaker-sync p { font-size: 18px; line-height: 1.4; }
+.sync-lights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0; }
+.sync-lights i { height: 48px; border: 3px solid var(--border); border-radius: 14px; background: var(--control); }
+.sync-lights i.on { background: var(--action); border-color: var(--ink); box-shadow: 0 0 0 3px var(--action); }
+.sync-control { display: block; font-size: 22px; font-weight: 700; }
+.sync-control > span { display: flex; justify-content: space-between; gap: 12px; }
+.sync-control input { display: block; width: 100%; --track-color: var(--wave); }
+.sync-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.sync-actions button { min-height: 48px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 12px; background: var(--control); color: var(--ink); font-size: 19px; font-weight: 700; }
+#sync-test[aria-pressed=true] { background: var(--action); color: var(--action-ink); }

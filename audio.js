@@ -1,6 +1,9 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=20';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=21';
 
 const noiseBuffers = new WeakMap();
+
+export const normaliseVisualDelay = value => Number.isFinite(value) ? Math.max(0, Math.min(1000, Math.round(value))) : 0;
+export const visualWait = (time, currentTime, delay = 0) => Math.max(0, (time - currentTime) * 1000 + normaliseVisualDelay(delay));
 
 export function scheduledSteps(clock, now, tempo, steps = STEPS) {
   const length = steps === 4 || LOOP_BARS.includes(steps / STEPS) ? steps : STEPS;
@@ -183,7 +186,7 @@ export class AudioEngine {
     this.getSong = getSong; this.onStep = onStep; this.onState = onState; this.onError = onError;
     this.context = null; this.playing = false; this.pending = false;
     this.generation = 0; this.timer = null; this.visuals = new Set(); this.voices = new Set();
-    this.previewChord = null;
+    this.previewChord = null; this.visualDelayMs = 0; this.visualEvents = new Set();
     this.volume = 0.55; this.ducked = false;
   }
 
@@ -256,24 +259,51 @@ export class AudioEngine {
       this.stepsLeft--;
       song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
       if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth, song.noteSounds?.[step]));
-      const timer = setTimeout(() => {
-        this.visuals.delete(timer);
-        if (this.playing) this.onStep(step);
-      }, Math.max(0, (time - this.context.currentTime) * 1000));
-      this.visuals.add(timer);
+      this.queueVisual({ kind: 'step', step, time });
       if (this.stepsLeft === 0) {
-        const end = setTimeout(() => { this.visuals.delete(end); this.stop(); },
-          Math.max(0, (time + 60 / song.tempo - this.context.currentTime) * 1000));
-        this.visuals.add(end);
+        const endTime = time + 60 / song.tempo;
+        // End audio on its original clock. Let delayed visuals finish afterwards.
+        this.bus.gain.setTargetAtTime(0, endTime, 0.008);
+        for (const handle of this.voices) handle.stop(endTime + 0.025);
+        this.queueVisual({ kind: 'end', time: endTime });
       }
     }
+  }
+
+  queueVisual(event) {
+    const generation = this.generation;
+    const timer = setTimeout(() => {
+      this.visuals.delete(timer); this.visualEvents.delete(event);
+      if (!this.playing || generation !== this.generation) return;
+      if (event.kind === 'end') this.stop(); else this.onStep(event.step);
+    }, visualWait(event.time, this.context.currentTime, this.visualDelayMs));
+    event.timer = timer; this.visuals.add(timer); this.visualEvents.add(event);
+  }
+
+  setVisualDelay(value) {
+    const next = normaliseVisualDelay(value);
+    if (next === this.visualDelayMs) return;
+    this.visualDelayMs = next;
+    if (!this.context || !this.playing) return;
+    const pending = [...this.visualEvents].sort((a, b) => a.time - b.time);
+    for (const timer of this.visuals) clearTimeout(timer);
+    this.visuals.clear(); this.visualEvents.clear();
+    let latest = null;
+    for (const event of pending) {
+      if (visualWait(event.time, this.context.currentTime, next) === 0) {
+        if (event.kind === 'end') { this.stop(); return; }
+        latest = event;
+      } else this.queueVisual(event);
+    }
+    // Reducing lag can expire several queued beats: show only the latest one.
+    this.onStep(latest ? latest.step : -1);
   }
 
   stop() {
     ++this.generation; this.pending = false; this.playing = false;
     clearInterval(this.timer); this.timer = null;
     for (const timer of this.visuals) clearTimeout(timer);
-    this.visuals.clear();
+    this.visuals.clear(); this.visualEvents.clear();
     if (this.context) {
       const now = this.context.currentTime;
       this.bus.gain.cancelScheduledValues(now);

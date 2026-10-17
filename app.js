@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=20';
-import { AudioEngine } from './audio.js?v=20';
-import { GamepadReader } from './gamepad.js?v=20';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=20';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=21';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=21';
+import { GamepadReader } from './gamepad.js?v=21';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=21';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -54,7 +54,27 @@ let currentStep = -1, controllerMode = false, connectedPad = null;
 let messageTimer, previewTimer, groupTimer;
 const reader = new GamepadReader();
 let tutorial = null, originalHistory = null, lessonPreview = null;
-const engine = new AudioEngine(() => lessonPreview ? tutorialPlaybackSong(history.song, lessonPreview) : history.song, showStep, showPlayback, message);
+const syncSong = clearSong(createSong()); syncSong.tempo = 120; syncSong.drums[0].fill(true); syncSong.drumSounds[0] = 'cowbell';
+let syncTesting = false, syncFlashTimer = null;
+const engine = new AudioEngine(() => syncTesting ? syncSong : lessonPreview ? tutorialPlaybackSong(history.song, lessonPreview) : history.song, showStep, showPlayback, message);
+
+const SYNC_KEY = 'loop-club.visual-delay.v1';
+let visualDelay = 0;
+try { visualDelay = normaliseVisualDelay(Number(localStorage.getItem(SYNC_KEY))); } catch { /* Optional local preference. */ }
+function applyVisualDelay(value, save = true) {
+  visualDelay = normaliseVisualDelay(value); engine.setVisualDelay(visualDelay);
+  $('#visual-delay').value = visualDelay; updateRange($('#visual-delay')); $('#visual-delay').setAttribute('aria-valuetext', `${visualDelay} milliseconds`); $('#sync-value').textContent = `${visualDelay} ms`;
+  if (save) { try { localStorage.setItem(SYNC_KEY, String(visualDelay)); $('#sync-status').textContent = 'Saved on this browser.'; } catch { $('#sync-status').textContent = 'Used for this visit. Saving is unavailable.'; } }
+}
+applyVisualDelay(visualDelay, false);
+$('#visual-delay').addEventListener('input', event => applyVisualDelay(Number(event.target.value)));
+$('#sync-reset').addEventListener('click', () => applyVisualDelay(0));
+$('#sync-test').addEventListener('click', () => {
+  if (syncTesting) { engine.stop(); return; }
+  engine.stop(); syncTesting = true;
+  $('#sync-test').textContent = 'Stop test'; $('#sync-test').setAttribute('aria-pressed', 'true');
+  engine.start({ steps: 4 });
+});
 
 function message(text) {
   clearTimeout(messageTimer);
@@ -298,6 +318,12 @@ function drawWave() {
 }
 
 function showStep(step) {
+  if (syncTesting) {
+    clearTimeout(syncFlashTimer);
+    $$('#sync-lights i').forEach((light, index) => light.classList.toggle('on', index === step));
+    if (step >= 0) syncFlashTimer = setTimeout(() => $$('#sync-lights i').forEach(light => light.classList.remove('on')), 140);
+    return;
+  }
   currentStep = step;
   $$('[data-step]').forEach(element => element.classList.toggle('current', Number(element.dataset.step) === step));
   $$('[data-page]').forEach(button => {
@@ -318,6 +344,11 @@ function playLessonPreview(kind, restart = false) {
 }
 
 function showPlayback(state) {
+  if (state === 'stopped' && syncTesting) {
+    syncTesting = false; clearTimeout(syncFlashTimer);
+    $$('#sync-lights i').forEach(light => light.classList.remove('on'));
+    $('#sync-test').textContent = 'Test sound and lights'; $('#sync-test').setAttribute('aria-pressed', 'false');
+  }
   const active = state === 'playing', starting = state === 'starting';
   $('#play').setAttribute('aria-pressed', active || starting);
   $('#play').innerHTML = `${icon(active || starting ? 'stop' : 'play')}<span>${starting ? 'Starting…' : active ? 'Stop' : "Let's play"}</span>`;
@@ -328,6 +359,7 @@ function showPlayback(state) {
 }
 
 function togglePlay() {
+  if (syncTesting) { engine.stop(); return; }
   clearTimeout(previewTimer);
   if (engine.playing || engine.pending) engine.stop(); else engine.start();
 }
@@ -422,7 +454,7 @@ $('#help').addEventListener('click', openHelp);
 $('#controller-help').addEventListener('click', openHelp);
 $('#close-help').addEventListener('click', closeHelp);
 $('#help-done').addEventListener('click', closeHelp);
-dialog.addEventListener('close', () => focusControl(helpReturn || $('#help')));
+dialog.addEventListener('close', () => { if (syncTesting) engine.stop(); focusControl(helpReturn || $('#help')); });
 
 document.addEventListener('pointerdown', () => {
   controllerMode = false;
@@ -455,8 +487,8 @@ function moveFocus(direction) {
   const horizontal = direction === 'left' || direction === 'right';
   const sign = direction === 'left' || direction === 'up' ? -1 : 1;
   if (horizontal && current.matches('input[type=range]')) {
-    if (current.id !== 'volume') history.begin();
-    current.value = Number(current.value) + sign * 5;
+    if (!['volume', 'visual-delay'].includes(current.id)) history.begin();
+    current.value = Number(current.value) + sign * (current.id === 'visual-delay' ? 10 : 5);
     current.dispatchEvent(new Event('input', { bubbles: true }));
     clearTimeout(groupTimer); groupTimer = setTimeout(() => history.end(), 250);
     return;

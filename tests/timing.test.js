@@ -55,3 +55,15 @@ test('two- and four-bar loops visit every step before wrapping', () => {
     assert.equal(scheduledSteps(clock, 0.5, 120, length)[0].step, 0);
   }
 });
+
+test('speaker sync delays visual deadlines without changing audio beat times', async () => {
+  const { visualWait, normaliseVisualDelay } = await import('../audio.js');
+  assert.ok(Math.abs(visualWait(1.1, 1, 300)-400)<1e-8);
+  assert.equal(visualWait(1.1,1.5,300),0);
+  assert.equal(normaliseVisualDelay(9999),1000);
+  assert.equal(normaliseVisualDelay(-30),0);
+  assert.equal(normaliseVisualDelay(NaN),0);
+  const a={nextTime:1.04,step:0},b={...a};
+  visualWait(1.04,1,700);
+  assert.deepEqual(scheduledSteps(a,1,600),scheduledSteps(b,1,600));
+});

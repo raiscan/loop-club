@@ -18,6 +18,16 @@ Use a web server rather than opening `index.html` directly: the app uses
 JavaScript modules. Sound starts only after an interaction. Playback stops
 when the window loses focus, the page is hidden or the controller disconnects.
 
+## Bluetooth speaker timing
+
+Open **?** (grown-up help), then **Speaker sync**. Press **Test sound and
+lights** and adjust **Delay lights** until the flashes match the clicks.
+The 0–1,000 ms correction is saved on that browser and applies to the grid,
+loop map and tutorial's moving lights. It changes visual timing only; the
+music keeps its original tempo and timing. Reset to 0 for an undelayed output,
+and recalibrate after changing speakers or the connection. The test does not
+edit your song. Closing help or leaving the page stops it.
+
 ## Try it on an Android tablet
 
 On the PC, use this command instead:
@@ -168,14 +178,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=20')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=21')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=20')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=21')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
