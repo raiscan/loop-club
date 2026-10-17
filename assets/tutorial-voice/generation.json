@@ -1,73 +1,73 @@
 {
-  "model": "google/gemini-3.1-flash-tts-preview",
+  "model": "google/gemini-3.8-flash-tts",
   "voice": "Sulafat",
-  "instructions": "You are a warm, friendly female guide with a clear standard British English accent. Speak gently and naturally to a five-year-old, with a smile in your voice. Use a relaxed, easy-to-follow pace and short pauses between sentences. Be encouraging without a baby voice. Pronounce Zach as Zak. Read only the supplied words, exactly as written. No extra introduction, music or sound effects.",
+  "instructions": "A friendly woman from Edinburgh speaking gentle, conversational Scottish English. A light, natural everyday Scottish accent, relaxed and understated. Calm, warm and reassuring, like speaking one-to-one with a five-year-old. Use an unhurried, clear pace and small pauses. Keep the delivery soft and matter-of-fact, without theatrical emphasis, a sing-song teaching voice, or exaggerated R sounds. Pronounce Zach as Zak. Read only the supplied words exactly. No music, sound effects or extra words.",
   "clips": {
     "hello": {
-      "text": "Hi Zach! Let’s make some music. Tap Play. The light goes round and round.",
-      "seconds": 6.68,
-      "sha256": "0be426614419108fdbcd78da8edb4650a43bb8bbb7cabdc181bfb33787dde689",
-      "generation_id": "gen-tts-1792239140-Vbryxre7lhtHngKC5UT9"
+      "text": "Hi Zach! Let’s make some music. Tap the Let's play button.",
+      "seconds": 5.4,
+      "sha256": "0d43e18f871a28547ba656e05640c39f035aa8804dc3f4786daaa577e93bd9d3",
+      "generation_id": "gen-tts-1792242035-2AIJ0TOUoC0SlZp88Wso"
     },
     "stop": {
-      "text": "Hear that beat? The light moves as it plays. Tap Stop.",
-      "seconds": 5.28,
-      "sha256": "9fce056566a9f6ecd53bedb37585c41e72bef2a4b628755bf5c70afedf171c26",
-      "generation_id": "gen-tts-1792239184-vsFGmfPfOp20NEv6Prpb"
+      "text": "Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.",
+      "seconds": 9.44,
+      "sha256": "caf01fcec949d3b422af7654cf4a067725829f11f59c71f3a9d297df4c4c9389",
+      "generation_id": "gen-tts-1792242038-47Oi37JP201fgXa8Dr1I"
     },
     "drum": {
       "text": "Tap this drum. Give it a go!",
-      "seconds": 2.72,
-      "sha256": "953ce03aaea1037f50f8e0820a30ced3c3d5f28849eb3969d6ca7354715f24d7",
-      "generation_id": "gen-tts-1792239189-u16pOJ95jAjrVMbgOU4Y"
+      "seconds": 2.88,
+      "sha256": "a58528caeaffd7674986e2256eb5ff69dcc73fd4fd42e9b08435be67500eb3e1",
+      "generation_id": "gen-tts-1792242042-KeO0aVfY1ZeZkmUXwwOf"
     },
     "beat": {
       "text": "Tap this box. A lit box makes a beat. A dark box is a rest.",
-      "seconds": 5.64,
-      "sha256": "cbc14de5cb9d5c21e088e2c86a2c2b4c1fd6b123d7342cd27b1f0bcc3640b51f",
-      "generation_id": "gen-tts-1792239191-1uJh6Xc3NmwrrjyqeG8W"
+      "seconds": 6.2,
+      "sha256": "a96f7475fb8f7b9ddfe41758dc5b57982b0c710ffe7a2b27a3802442f3ae51ee",
+      "generation_id": "gen-tts-1792242045-NbmPatYw1TPbCh9ie6rU"
     },
     "tunes": {
       "text": "Let’s make a tune. Tap Tunes.",
-      "seconds": 3.2,
-      "sha256": "61c6573e53cb8b69460fcc48caef58f195e141d889eb71740e31684cf69d0095",
-      "generation_id": "gen-tts-1792239197-r4II4Zpq3PMUm0t9eCyW"
+      "seconds": 3.12,
+      "sha256": "4894fce73647894318b959af2d1328fe3350280d363d45463e6cbb6b37051cb7",
+      "generation_id": "gen-tts-1792242048-lg2DzgGqx8BRRsaMKm3J"
     },
     "note": {
       "text": "Tap this box. Notes at the top sound high. Notes at the base sound low.",
-      "seconds": 6.68,
-      "sha256": "5396b14951140a02ca68224e988521c2b1d1ce41e10ffdd4561985b2b7a08a66",
-      "generation_id": "gen-tts-1792239200-z5Pc7vClTVCZ5vT46u5O"
+      "seconds": 7.68,
+      "sha256": "0d5ecee6963a4bea3326bf82b220a86aa5a8ee1527bb50297dda5d7b45c2bb5b",
+      "generation_id": "gen-tts-1792242050-YOBLfrq79kzl3Dpck8SM"
     },
     "chord": {
       "text": "Add one more note in the same stack. They play at once. That is a chord!",
-      "seconds": 6.08,
-      "sha256": "6d46b9fa78140dc27663c0b4edaf331b3c22025fbc8252ce7f5503f33784d1c5",
-      "generation_id": "gen-tts-1792239205-puG7x1yN9FClwZY70Bn6"
+      "seconds": 7.6,
+      "sha256": "a6ff4ad7e70610f0a69f8493d65580b15e8e84bb6a7c78448cac80d5d91fdd9a",
+      "generation_id": "gen-tts-1792242053-WDZHlBU4v1myFdRdo4sv"
     },
     "sounds": {
       "text": "Try a new sound. Tap Sounds.",
-      "seconds": 3.88,
-      "sha256": "fa21cbd760bed4b6f56e27b710735b101ee1ed92b0f2fee5da1d92902aac63e1",
-      "generation_id": "gen-tts-1792239209-AeJJBzHxokti5wHvnJmT"
+      "seconds": 3.76,
+      "sha256": "33341dc3f0c050d32db2348df4f13bf7a05fcc4e339f8194add6c7d84aad26f4",
+      "generation_id": "gen-tts-1792242057-Nf9PxOK8u9rOMEO3b35F"
     },
     "slide": {
       "text": "Slide this. The shape and the sound change. Try soft, then bright.",
-      "seconds": 6.2,
-      "sha256": "027a5001f655ef8bc20550f4b02a8afc45ba0faafb2b915b53ffd80d549bec0c",
-      "generation_id": "gen-tts-1792239212-9VNjBB2M5rlTMsqgwjxV"
+      "seconds": 8.12,
+      "sha256": "e38137a98028213c72f331439793c5735822d6c1dc8994698b178a6b5be298ad",
+      "generation_id": "gen-tts-1792242059-aM1pkMVOWOoET3fsS90Y"
     },
     "play": {
-      "text": "Your tune! Tap Play.",
-      "seconds": 2.76,
-      "sha256": "e46518f0a7b03342205a3fc866211d1f07029a959d9a43874ea184fc16414757",
-      "generation_id": "gen-tts-1792239216-RRnpzuqubfXD6md5h7eI"
+      "text": "Now hear your tune. Tap the Let's play button.",
+      "seconds": 4.96,
+      "sha256": "382144e03150b9040e77e435458287da4262a847f679022aa85cd523d9a7bfd1",
+      "generation_id": "gen-tts-1792242381-a5tXW2Uq7g70c6kLQsdn"
     },
     "done": {
       "text": "You made music! Have fun, Zach.",
-      "seconds": 3.52,
-      "sha256": "92448c87dfb64a22ae7b8b3bf66b027cd072879a57df8e9540f60b39213f1867",
-      "generation_id": "gen-tts-1792239218-49LP6QeCdqQkwM3PQnLk"
+      "seconds": 3.8,
+      "sha256": "5354ebca00c57a289264ca33fcbfd45c331df0ebd9d75450fee00fcbee5bc8b8",
+      "generation_id": "gen-tts-1792242263-63E7l14rNvTHf6u8jIF8"
     }
   }
 }

@@ -33,13 +33,16 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 ## Play
 
+- The main screen uses Arial, short labels and large pictures. Visible words
+  and numbers stay at least 18px, with larger action labels. Song cards use
+  one-word names; genre names and synth terms are in grown-up help.
 - **Help Zach** opens the hands-on tutorial. Ten short tasks use large Arial /
   sans-serif text and a gold ring around the next real control. Each lesson
   includes a diagram of the beat, loop, notes, chord stack or sound shape.
-  Diagrams reflect the actual song and playhead. Press the highlighted control
-  to move on; the slider lesson waits until the movement settles.
+  Diagrams reflect the actual song and playhead. The screen dims around the highlighted control and helper;
+  press the bright control to move on; the slider lesson waits until the movement settles.
 - A soft chime marks each action. Eleven bundled MP3 prompts use one friendly
-  British female AI voice, generated once through OpenRouter. Windows 11,
+  soft Scottish female AI voice, generated once through OpenRouter. Windows 11,
   Android and other devices play the same files without installing a voice.
   Device speech is a fallback if a clip fails to load or play. **Say it** reads
   one prompt, even with automatic speech off; **Voice on/off** toggles narration.
@@ -53,7 +56,7 @@ currently targeted at PC. No tablet/controller pairing is required.
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
   and **Cloud chords**. The new loops explore different instruments and chords.
   Choosing one replaces the current groove, and **Undo** brings it back.
-- **Beats:** tap steps to switch drums on or off. Four lanes can each use any
+- **Drums:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
   cowbell. Tap a numbered sound selector to cycle instruments; it previews
   the new sound and keeps the pattern. The large drum pads play individual sounds. A loop always has 16 steps. Narrower screens show
@@ -61,7 +64,7 @@ currently targeted at PC. No tablet/controller pairing is required.
 - **Tunes:** tap a coloured square to add a note. Stack several notes in the same
   column to play a chord; tap a note again to remove only that note.
   While stopped, editing a column previews the whole resulting chord. The six keys use C minor pentatonic notes and play individually.
-  Choose Bass, Pluck, Arcade or Bell above the grid; the same selection appears
+  Choose Bass, Pluck, Game or Bell above the grid; the same selection appears
   in Sounds. The white outlined column follows playback in both grids.
 - **Sounds:** brightness changes the synth filter, note length changes its
   envelope, and wobble moves its filter in tempo. The drawing illustrates
@@ -92,7 +95,7 @@ selected drum sound or selects a synth voice; X undoes either change.
 | A | Activate the highlighted control or play a pad/key |
 | B | Return to the active section tab; close help |
 | X | Undo |
-| LB / RB | Switch Beats, Tunes and Sounds |
+| LB / RB | Switch Drums, Tunes and Sounds |
 | Menu | Play / stop |
 
 Moving right past the last step opens the next page. Moving left past the
@@ -121,14 +124,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=9')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=10')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=9')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=10')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -150,7 +153,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=9`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=10`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
@@ -191,8 +194,9 @@ Node 22+, ffmpeg and ffprobe, reading the authorized OpenRouter key from
 node scripts/generate-tutorial-voice.mjs
 ```
 
-The current bank uses Gemini 3.1 Flash TTS Preview, voice Sulafat, with warm
-female British English delivery instructions. `generation.json` records the
+The current bank uses Gemini 3.8 Flash TTS, voice Sulafat, with warm
+female Scottish English delivery instructions, using the softer sample
+approved for Zach. `generation.json` records the
 transcripts, voice settings, durations, hashes and generation IDs. Generation
 skips unchanged, intact clips and preserves existing files when they differ.
 Archive a changed clip before regenerating it. The build rejects missing or

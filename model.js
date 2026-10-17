@@ -13,7 +13,7 @@ export const DRUM_SOUNDS = {
 };
 export const SYNTH_SOUNDS = {
   bass: { name: 'Bass', icon: 'wave' }, pluck: { name: 'Pluck', icon: 'notes' },
-  arcade: { name: 'Arcade', icon: 'robot' }, bell: { name: 'Bell', icon: 'bell' }
+  arcade: { name: 'Game', icon: 'robot' }, bell: { name: 'Bell', icon: 'bell' }
 };
 export const NOTES = [
   { name: 'C', frequency: 130.8128, color: '#c9e77b' },

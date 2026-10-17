@@ -266,6 +266,9 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
 .tutorial-picture figcaption { font-size: 20px; font-weight: 700; text-align: center; margin-top: 4px; }
 .tutorial-actions #tutorial-done { background: var(--lime); border-color: #94ad58; margin-left: auto; }
 #tutorial-ring { position: fixed; z-index: 35; pointer-events: none; border: 5px solid #f4cf54; outline: 3px solid #233029; border-radius: 15px; box-shadow: 0 0 0 6px #fffdf3, 0 4px 22px #0006; }
+#tutorial-shade { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
+#tutorial-shade svg { width: 100%; height: 100%; display: block; }
+#tutorial-shade path { fill: #08120f; fill-opacity: .76; pointer-events: visiblePainted; }
 .tutorial-open .message { display: none; }
 @media (max-width: 800px) {
   .header-tools { gap: 12px; }
@@ -286,4 +289,84 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .tutorial-picture { margin-bottom: 6px; }
   .tutorial-picture svg { height: 36px; }
   .tutorial-picture figcaption { font-size: 18px; }
+}
+
+/* Big, short labels for early readers. Music terms live in grown-up help. */
+:root { font-family: Arial, Helvetica, system-ui, sans-serif; }
+body { font-size: 20px; }
+.intro-copy { font-size: 22px; color: #4e5b47; line-height: 1.4; }
+h1 { letter-spacing: -1px; }
+.save-status { font-size: 18px; }
+.groove-card { min-height: 96px; gap: 16px; padding: 16px; }
+.groove-card[aria-pressed=true] { padding: 15.5px; }
+.groove-card strong { font-size: 26px; letter-spacing: 0; }
+.groove-art { width: 56px; height: 56px; }
+.groove-art .icon { width: 34px; height: 34px; }
+.machine-name, .play-state { font: 700 18px Arial, sans-serif; letter-spacing: 0; color: #d3dfc8; }
+.tab { font-size: 23px; min-height: 64px; }
+.tab .icon { width: 28px; height: 28px; }
+.machine-button { font-size: 20px; min-height: 56px; color: #e1e8d9; }
+.machine-button .icon { width: 24px; height: 24px; }
+.pattern-controls h2 { font-size: 28px; letter-spacing: 0; }
+.pattern-controls p, .grid-tip { font-size: 20px; color: #d5dfcc; line-height: 1.4; }
+.page-picker button { font-size: 18px; min-height: 52px; padding: 9px; }
+.sequence-grid { grid-template-columns: 90px repeat(var(--visible-steps), minmax(0, 1fr)); }
+.step-number { font: 700 18px Arial, sans-serif; height: 26px; color: #c1cdb7; }
+.drum-pad { font-size: 18px; padding: 8px 4px; overflow-wrap: anywhere; }
+.drum-pad .icon { width: 32px; height: 32px; }
+.note-key { font-size: 20px; }
+.instrument-caption { font: 700 20px Arial, sans-serif; letter-spacing: 0; }
+.instrument-picker button { font-size: 22px; min-height: 64px; gap: 10px; }
+.instrument-picker small { font: 700 18px Arial, sans-serif; letter-spacing: 0; }
+.instrument-picker .icon { width: 28px; height: 28px; }
+.beat-ruler > span { font: 700 18px Arial, sans-serif; letter-spacing: 0; }
+.loop-light { height: 8px; }
+.scope-label { font: 700 20px Arial, sans-serif; letter-spacing: 0; }
+.hear-button { font-size: 22px; min-height: 56px; }
+.hear-button .icon { width: 26px; height: 26px; }
+.sound-control { font-size: 26px; }
+.sound-control > span, .range-labels { font-size: 20px; color: #c4d4b9; }
+input[type=range] { height: 56px; }
+input[type=range]::-webkit-slider-thumb { width: 32px; height: 32px; margin-top: -13px; }
+input[type=range]::-moz-range-thumb { width: 25px; height: 25px; }
+.tempo-control > span:first-child, .volume-control > span { font-size: 23px; }
+.tempo-control small { font: 700 20px Arial, sans-serif; letter-spacing: 0; }
+.transport { flex-wrap: wrap; gap: 22px; }
+.tempo-control { min-width: 160px; }
+.volume-control { width: 150px; }
+.transport-actions .play-button { font-size: 24px; min-height: 64px; padding: 14px 20px; }
+.transport-actions .play-button .icon { width: 28px; height: 28px; }
+.transport-actions .reset-button { font-size: 22px; min-height: 64px; }
+.discovery, .app-footer button, .message { font-size: 20px; }
+.app-footer button { max-width: none; }
+@media (max-width: 850px) {
+  .groove-card { gap: 10px; padding: 12px; }
+  .groove-card[aria-pressed=true] { padding: 11.5px; }
+  .groove-card strong { font-size: 23px; }
+  .groove-art { width: 44px; height: 44px; }
+  .groove-art .icon { width: 30px; height: 30px; }
+  .instrument-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tab { padding: 12px; }
+}
+@media (max-width: 620px) {
+  .intro-copy { font-size: 20px; max-width: none; }
+  .groove-card { flex-direction: row; align-items: center; min-height: 88px; }
+  .groove-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .groove-card { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .groove-card strong { font-size: 20px; }
+  .groove-art { width: 40px; height: 40px; }
+  .chosen { top: 6px; right: 6px; }
+  .workspace-bar { align-items: stretch; }
+  .tab { flex-direction: column; gap: 5px; font-size: 20px; padding: 9px 5px; }
+  .tab .icon { width: 26px; height: 26px; }
+  .workspace-bar > .machine-button { flex-direction: column; font-size: 18px; padding: 8px; }
+  .workspace-bar > .machine-button span { display: block; }
+  .sequence-grid { grid-template-columns: 78px repeat(var(--visible-steps), minmax(0, 1fr)); }
+  .page-picker button { font-size: 18px; }
+  .transport { gap: 16px; }
+  .tempo-control { flex-basis: 100%; }
+  .volume-control { max-width: none; }
+  .transport-actions { gap: 10px; }
+  .transport-actions .play-button { font-size: 22px; padding: 12px; }
+  .transport-actions .reset-button { font-size: 20px; padding: 12px; }
 }

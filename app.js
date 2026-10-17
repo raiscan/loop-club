@@ -1,12 +1,14 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=9';
-import { AudioEngine } from './audio.js?v=9';
-import { GamepadReader } from './gamepad.js?v=9';
-import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=9';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=10';
+import { AudioEngine } from './audio.js?v=10';
+import { GamepadReader } from './gamepad.js?v=10';
+import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=10';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const sections = ['drums', 'melody', 'sound'];
+const songIcons = { breaks: 'jump', roller: 'skate', acid: 'ant', cloud: 'cloud' };
+const songNames = { breaks: 'Jump', club: 'Robot', float: 'Moon', liquid: 'River', roller: 'Skate', acid: 'Ants', disco: 'Dance', pixel: 'Game', cloud: 'Cloud' };
 let saved = null, invalidSave = false;
 try {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -31,9 +33,9 @@ function message(text) {
 function saveSong() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(history.song));
-    $('#save-status span').textContent = 'Saved on this device';
+    $('#save-status span').textContent = 'Saved';
   } catch {
-    $('#save-status span').textContent = 'Saving unavailable in this browser';
+    $('#save-status span').textContent = 'Not saved';
   }
 }
 
@@ -45,7 +47,7 @@ function commit(next) {
 function undo() {
   if (!history.canUndo) return;
   history.undo(); saveSong(); updateSong();
-  message('Undone. Keep exploring.');
+  message('Try again!');
   if (document.activeElement === $('#undo') && $('#undo').disabled) focusControl($(`#tab-${section}`));
 }
 
@@ -170,9 +172,9 @@ function setSection(next, focusTab = false) {
   $('#page-picker').hidden = section === 'sound';
   $('#synth-picker').hidden = section === 'drums';
   const titles = {
-    drums: ['Tap a square. Make a beat.', 'Try the big drums, too.'],
-    melody: ['Draw a tune. Stack a chord.', 'Put notes in the same column to play them together.'],
-    sound: ['What does your synth sound like?', 'Three little changes. Lots of new sounds.']
+    drums: ['Tap a box.', 'Make a beat!'],
+    melody: ['Tap a note.', 'Make a tune!'],
+    sound: ['Try a sound.', 'Slide and listen.']
   };
   $('#workspace-title').textContent = titles[section][0];
   $('#workspace-hint').textContent = titles[section][1];
@@ -195,12 +197,12 @@ function updateSong() {
   $$('[data-drum]').forEach(button => button.setAttribute('aria-label', `${DRUM_SOUNDS[song.drumSounds[button.dataset.drum]].name}, drum ${Number(button.dataset.drum) + 1}, step ${Number(button.dataset.step) + 1}`));
   $$('[data-drum-choice]').forEach(button => {
     const row = Number(button.dataset.drumChoice), drum = DRUM_SOUNDS[song.drumSounds[row]];
-    button.innerHTML = `${icon(drum.icon)}<span><small>DRUM ${row + 1}</small>${drum.name}</span><span class="switch-icon" aria-hidden="true">↻</span>`;
+    button.innerHTML = `${icon(drum.icon)}<span><small>${row + 1}</small>${drum.name}</span><span class="switch-icon" aria-hidden="true">↻</span>`;
     button.setAttribute('aria-label', `Change drum ${row + 1} sound, ${drum.name}`);
   });
   $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
   $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step].includes(Number(button.dataset.note))));
-  $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo} BPM`;
+  $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo}`;
   $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
   $$('input[type=range]').forEach(updateRange);
   $('#undo').disabled = !history.canUndo;
@@ -238,7 +240,7 @@ function showPlayback(state) {
   $('#play').setAttribute('aria-pressed', active || starting);
   $('#play').innerHTML = `${icon(active || starting ? 'stop' : 'play')}<span>${starting ? 'Starting…' : active ? 'Stop' : "Let's play"}</span>`;
   $('#play-state').classList.toggle('playing', active);
-  $('#play-state span').textContent = starting ? 'WAKING UP…' : active ? 'MAKING MUSIC' : 'READY TO PLAY';
+  $('#play-state span').textContent = starting ? 'Wait…' : active ? 'Playing!' : 'Ready?';
   tutorial?.playback(state);
 }
 
@@ -251,14 +253,15 @@ $('#play').addEventListener('click', togglePlay);
 $('#undo').addEventListener('click', undo);
 $('#reset').addEventListener('click', () => {
   history.end(); commit(createSong(history.song.preset));
-  message('Back to the starting groove. Undo can bring yours back.');
+  message('Back to the start. Undo brings yours back.');
 });
+$('#song-details').textContent = Object.entries(PRESETS).map(([id, preset]) => `${songNames[id]}: ${preset.name} (${preset.genre.toLowerCase()})`).join('; ') + '.';
 for (const [id, preset] of Object.entries(PRESETS)) {
   const button = document.createElement('button');
   button.className = `groove-card groove-${id}`;
   button.dataset.preset = id; button.dataset.nav = 'presets';
   button.setAttribute('aria-pressed', 'false');
-  button.innerHTML = `<span class="groove-art">${icon(preset.icon)}</span><span><small>${preset.genre}</small><strong>${preset.name}</strong></span><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
+  button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><strong>${songNames[id]}</strong><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
   button.addEventListener('click', () => {
     history.end(); commit(createSong(id));
   });
@@ -333,7 +336,8 @@ document.addEventListener('keydown', event => {
 
 function controls() {
   return [...(dialog.open ? dialog : document).querySelectorAll('button, input[type=range]')]
-    .filter(element => !element.disabled && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+    .filter(element => !element.disabled && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden')
+    .filter(element => !tutorial?.active || element === tutorial.target || tutorial.card.contains(element));
 }
 
 function moveFocus(direction) {
@@ -349,7 +353,7 @@ function moveFocus(direction) {
     clearTimeout(groupTimer); groupTimer = setTimeout(() => history.end(), 250);
     return;
   }
-  if (current.hasAttribute('data-grid-row')) {
+  if (!tutorial?.active && current.hasAttribute('data-grid-row')) {
     const row = Number(current.dataset.gridRow), col = Number(current.dataset.gridCol);
     const root = current.closest('.sequence-grid');
     const nextRow = horizontal ? row : row + sign, nextCol = horizontal ? col + sign : col;
@@ -383,8 +387,9 @@ function moveFocus(direction) {
 function controllerAction(action) {
   controllerMode = true;
   if (tutorial?.active && action === 'back') { tutorial.stop(); return; }
+  if (tutorial?.active && ['next-section', 'previous-section'].includes(action)) { tutorial.refresh(true); return; }
   const available = controls();
-  if (!available.includes(document.activeElement)) focusControl(dialog.open ? $('#close-help') : $('#play'));
+  if (!available.includes(document.activeElement)) focusControl(tutorial?.active ? tutorial.target || available[0] : dialog.open ? $('#close-help') : $('#play'));
   else focusControl(document.activeElement);
   if (['up', 'down', 'left', 'right'].includes(action)) moveFocus(action);
   else if (action === 'activate') document.activeElement.click();
@@ -406,18 +411,18 @@ function pollController(now) {
     if (!document.hidden && document.hasFocus()) {
       const pads = [...(navigator.getGamepads?.() || [])].filter(item => item?.connected);
       pad = pads.find(item => item.index === connectedPad && item.mapping === 'standard') || pads.find(item => item.mapping === 'standard');
-      if (!pad && pads.length) $('#controller-status').textContent = 'Controller mapping unavailable · touch / mouse ready';
+      if (!pad && pads.length) $('#controller-status').textContent = 'Use touch or mouse';
     }
-  } catch { $('#controller-status').textContent = 'Controller unavailable here · touch / mouse ready'; }
+  } catch { $('#controller-status').textContent = 'Use touch or mouse'; }
   if (pad) {
     if (connectedPad !== pad.index) {
       connectedPad = pad.index;
-      $('#controller-status').textContent = 'Xbox ready · A select · X undo · LB/RB sections · ☰ play';
+      $('#controller-status').textContent = 'Xbox ready';
     }
   } else if (connectedPad !== null) {
     connectedPad = null; engine.stop();
-    $('#controller-status').textContent = 'Xbox on PC · press a button to connect';
-    if (!document.hidden && document.hasFocus()) message('Controller disconnected. Your groove is still here.');
+    $('#controller-status').textContent = 'Xbox help';
+    if (!document.hidden && document.hasFocus()) message('Xbox left. Your song is here.');
     controllerMode = false;
     $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
   }

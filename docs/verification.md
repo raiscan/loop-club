@@ -265,3 +265,48 @@ project .env was preserved. No key is stored in this repo, in generation
 metadata, in browser code or in the static bundle. The Site package includes
 only nine runtime app assets and eleven MP3s; model-generation tools, provenance,
 tests and source history are excluded.
+
+
+## Tutorial spotlight and softer Scottish voice — 2026-10-17
+
+The updated base was clean main at a8c8fa6: 30 Node tests passed, with no
+baseline failures. The tutorial now names the actual “Let's play” button,
+dims the screen around its target and helper, and keeps keyboard/Xbox
+navigation within those bright controls. The loop explanation follows the
+initial Play action: “Watch the light move along. When it goes back to the
+start, the tune plays again.” The live diagram says “It plays again.”
+
+The user auditioned and approved the softer Scottish sample. All eleven
+bundled prompts were generated using its unchanged Gemini 3.8 Flash TTS /
+Sulafat settings. An automated transcription review caught altered wording
+in two clips; those were replaced and checked again. This does not replace
+the user's assessment of the sample's tone or accent.
+
+The T3 preview passed 67 focused tour checks at 1280×800, 800×1280,
+360×800 and 800×360, including hit testing through every spotlight opening,
+background blocking, helper/target visibility, Tab focus and exit cleanup.
+Subsequent native clicks timed out twice, so final browser checks used the
+Chrome connector. Browser checks require a real initial Play gesture for
+audio activation and a foreground page for the simulated gamepad.
+
+Physical Windows 11, Android and Xbox hardware testing is still unclaimed.
+Narration is bundled audio and needs no device voice installation. Release
+queries advance to v=10, with individual clip URLs keyed by content hash.
+
+The child-facing interface was also simplified: one-word pictured song cards,
+Drums / Tunes / Sounds, short prompts, and large Arial labels. Filter/envelope
+and genre details moved into grown-up help. Tempo still spans 30–300 BPM,
+and notes, chords, presets, sound editing, saves and Undo retain their behavior.
+
+Final development verification:
+
+- `node --test`: 31 passed, 0 failed; no baseline failure was introduced.
+- Syntax checks passed for all runtime modules, browser checks and generation tool.
+- Chrome `runBrowserChecks()` at 800×1280: 254 passed, including MP3 decoding,
+  actual media playback without device speech, controller actions and spotlight hit testing.
+- At 360×800, 800×1280, 800×360 and 1280×800: 67 focused tour checks,
+  eight layout checks and seven reading checks passed at each size. All visible
+  main-screen words/numbers are at least 18px; control targets remain at least
+  44px and the page has no horizontal overflow.
+- Build: nine runtime assets and eleven voice MP3s only. `git diff --check`
+  passed; the original site reference is unchanged.

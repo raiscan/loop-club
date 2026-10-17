@@ -1,10 +1,12 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=9';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=10';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
   const british = voice => /^en[-_]GB$/i.test(voice.lang);
   const female = voice => /female|Sonia|Libby|Hazel|Susan|Serena|Martha|\bKate\b/i.test(voice.name);
-  return voices.find(voice => british(voice) && female(voice)) || voices.find(british)
+  const scottish = voice => /^en\b/i.test(voice.lang) && /scottish|scotland/i.test(`${voice.name} ${voice.lang}`);
+  return voices.find(voice => scottish(voice) && female(voice)) || voices.find(scottish)
+    || voices.find(voice => british(voice) && female(voice)) || voices.find(british)
     || voices.find(voice => /^en\b/i.test(voice.lang)) || voices.find(voice => voice.default) || voices[0] || null;
 }
 
@@ -89,8 +91,8 @@ export class TutorialSpeech {
 }
 
 export const TUTORIAL_STEPS = [
-  { audio: 'hello', title: 'Hi Zach!', copy: 'Tap Play.', spoken: 'Hi Zach! Let’s make some music. Tap Play. The light goes round and round.', target: '#play', action: 'playing', picture: 'loop' },
-  { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? The light moves as it plays. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
+  { audio: 'hello', title: 'Hi Zach!', copy: 'Tap “Let\'s play”.', spoken: "Hi Zach! Let’s make some music. Tap the Let's play button.", target: '#play', action: 'playing', picture: 'loop' },
+  { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
   { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat' },
   { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="1"]', section: 'drums', picture: 'beat' },
   { audio: 'tunes', title: 'Let’s make a tune.', copy: 'Tap Tunes.', target: '#tab-melody', section: 'drums', picture: 'notes' },
@@ -98,15 +100,23 @@ export const TUTORIAL_STEPS = [
   { audio: 'chord', title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord' },
   { audio: 'sounds', title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
   { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave' },
-  { audio: 'play', title: 'Your tune!', copy: 'Tap Play.', target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
+  { audio: 'play', title: 'Your tune!', copy: 'Tap “Let\'s play”.', spoken: "Now hear your tune. Tap the Let's play button.", target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
   { audio: 'done', title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
 ];
+
+export function spotlightPath(rect, width, height) {
+  const screen = `M0 0H${width}V${height}H0Z`;
+  if (!rect || rect.width <= 0 || rect.height <= 0) return screen;
+  const left = rect.left - 7, top = rect.top - 7;
+  const right = rect.right + 7, bottom = rect.bottom + 7, radius = 12;
+  return `${screen} M${left + radius} ${top}H${right - radius}Q${right} ${top} ${right} ${top + radius}V${bottom - radius}Q${right} ${bottom} ${right - radius} ${bottom}H${left + radius}Q${left} ${bottom} ${left} ${bottom - radius}V${top + radius}Q${left} ${top} ${left + radius} ${top}Z`;
+}
 
 export function tutorialPicture(kind, song, playhead = -1) {
   let art = '', label;
   const box = (x, y, on, current = false, width = 32, height = 32) => `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="${on ? '#91b943' : '#e0e3d7'}" stroke="${current ? '#27302e' : '#b7c0aa'}" stroke-width="${current ? 3 : 1}"/>`;
   if (kind === 'loop' || kind === 'beat') {
-    label = kind === 'loop' ? 'Round and round' : 'Lit = beat. Dark = rest.';
+    label = kind === 'loop' ? 'It plays again.' : 'Lit = beat. Dark = rest.';
     const count = kind === 'loop' ? 16 : 8, spacing = kind === 'loop' ? 19 : 38;
     for (let i = 0; i < count; i++) art += box(6 + i * spacing, 4, song.drums[0][i], playhead === i, spacing - 5, 28);
     art += kind === 'loop' ? '<path d="M299 37v8H12v-8m0 8 6-5m-6 5 6 5" fill="none" stroke="#637747" stroke-width="2"/>' : '';
@@ -133,6 +143,7 @@ export class ZachTutorial {
     this.prepare = prepare; this.focus = focus; this.cue = cue; this.speech = speech; this.onStart = onStart;
     this.getSong = getSong; this.getStep = getStep;
     this.card = document.querySelector('#tutorial-card'); this.ring = document.querySelector('#tutorial-ring');
+    this.shade = document.querySelector('#tutorial-shade');
     this.active = false; this.index = 0;
     document.querySelector('#tutorial-start').addEventListener('click', () => this.start());
     document.querySelector('#tutorial-exit').addEventListener('click', () => this.stop());
@@ -163,6 +174,12 @@ export class ZachTutorial {
     }, true);
     document.addEventListener('keydown', event => {
       if (this.active && event.key === 'Escape') { event.preventDefault(); this.stop(); }
+      if (this.active && event.key === 'Tab') {
+        event.preventDefault();
+        const controls = [this.target, ...this.card.querySelectorAll('button')].filter(node => node && !node.hidden && !node.disabled);
+        const index = controls.indexOf(document.activeElement);
+        this.focus(controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]);
+      }
     });
     window.addEventListener('scroll', () => this.position(), { passive: true });
     window.addEventListener('resize', () => requestAnimationFrame(() => this.refresh()));
@@ -171,6 +188,7 @@ export class ZachTutorial {
   start() {
     this.stop(false); this.onStart(); this.active = true; this.index = 0;
     this.card.hidden = false; document.body.classList.add('tutorial-open');
+    this.shade.hidden = false;
     document.querySelector('#tutorial-start').setAttribute('aria-expanded', 'true');
     this.show();
   }
@@ -180,10 +198,12 @@ export class ZachTutorial {
       else this.target.setAttribute('aria-describedby', this.description);
     }
     this.target = null; this.ring.hidden = true;
+    this.setShade(null);
   }
   stop(returnFocus = true) {
     this.active = false; clearTimeout(this.inputTimer);
     this.speech.stop(); this.clearTarget(); this.card.hidden = true;
+    this.shade.hidden = true;
     document.body.classList.remove('tutorial-open');
     document.querySelector('#tutorial-start').setAttribute('aria-expanded', 'false');
     if (returnFocus) this.focus(document.querySelector('#tutorial-start'));
@@ -226,7 +246,7 @@ export class ZachTutorial {
     this.position();
   }
   position() {
-    if (!this.active || !this.target?.isConnected) { this.ring.hidden = true; return; }
+    if (!this.active || !this.target?.isConnected) { this.ring.hidden = true; this.setShade(null); return; }
     let rect = this.target.getBoundingClientRect();
     this.card.classList.toggle('tutorial-left', innerWidth >= 700 && innerHeight < 500 && rect.left + rect.width / 2 > innerWidth / 2);
     const card = this.card.getBoundingClientRect();
@@ -244,5 +264,10 @@ export class ZachTutorial {
     }
     this.ring.hidden = rect.width === 0;
     Object.assign(this.ring.style, { left: `${rect.left - 7}px`, top: `${rect.top - 7}px`, width: `${rect.width + 14}px`, height: `${rect.height + 14}px` });
+    this.setShade(rect);
+  }
+  setShade(rect) {
+    this.shade.querySelector('svg').setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);
+    this.shade.querySelector('path').setAttribute('d', spotlightPath(rect, innerWidth, innerHeight));
   }
 }

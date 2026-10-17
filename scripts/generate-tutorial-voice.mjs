@@ -10,9 +10,9 @@ import { TUTORIAL_STEPS } from '../tutorial.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const folder = join(root, 'assets/tutorial-voice');
-const model = 'google/gemini-3.1-flash-tts-preview';
+const model = 'google/gemini-3.8-flash-tts';
 const voice = 'Sulafat';
-const instructions = 'You are a warm, friendly female guide with a clear standard British English accent. Speak gently and naturally to a five-year-old, with a smile in your voice. Use a relaxed, easy-to-follow pace and short pauses between sentences. Be encouraging without a baby voice. Pronounce Zach as Zak. Read only the supplied words, exactly as written. No extra introduction, music or sound effects.';
+const instructions = 'A friendly woman from Edinburgh speaking gentle, conversational Scottish English. A light, natural everyday Scottish accent, relaxed and understated. Calm, warm and reassuring, like speaking one-to-one with a five-year-old. Use an unhurried, clear pace and small pauses. Keep the delivery soft and matter-of-fact, without theatrical emphasis, a sing-song teaching voice, or exaggerated R sounds. Pronounce Zach as Zak. Read only the supplied words exactly. No music, sound effects or extra words.';
 const key = readFileSync(join(homedir(), '.config/openrouter/api-key'), 'utf8').trim();
 if (!key.startsWith('sk-or-')) throw new Error('A valid shared OpenRouter key is required.');
 const only = process.argv[2];

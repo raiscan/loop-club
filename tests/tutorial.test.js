@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseTutorialVoice, TutorialSpeech, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js';
+import { chooseTutorialVoice, TutorialSpeech, tutorialPicture, TUTORIAL_STEPS, spotlightPath } from '../tutorial.js';
 import { createSong } from '../model.js';
 import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js';
 import { readFileSync } from 'node:fs';
@@ -67,14 +67,28 @@ test('all tutorial prompts have matching, intact bundled MP3 recordings', () => 
   }
 });
 
-test('voice selection prefers British female voices, then British or another usable voice', () => {
+test('voice selection prefers Scottish voices, then British female or another usable voice', () => {
   const us = { name: 'Google US English', lang: 'en-US', default: true };
   const male = { name: 'Google UK English Male', lang: 'en-GB' };
   const female = { name: 'Google UK English Female', lang: 'en-GB' };
+  const scottish = { name: 'Scottish Female', lang: 'en-GB-scotland' };
+  assert.equal(chooseTutorialVoice([us, male, female, scottish]), scottish);
   assert.equal(chooseTutorialVoice([us, male, female]), female);
   assert.equal(chooseTutorialVoice([us, male]), male);
   assert.equal(chooseTutorialVoice([us]), us);
   assert.equal(chooseTutorialVoice([]), null);
+});
+
+test('spotlight keeps the viewport shaded with a rounded opening around the real target', () => {
+  const full = spotlightPath(null, 800, 600);
+  assert.equal(full, 'M0 0H800V600H0Z');
+  const path = spotlightPath({ left: 200, top: 100, right: 300, bottom: 150, width: 100, height: 50 }, 800, 600);
+  assert.ok(path.startsWith(full)); assert.match(path, /M205 93H295Q307 93/);
+  assert.equal(spotlightPath({ width: 0, height: 0 }, 800, 600), full);
+  for (const step of TUTORIAL_STEPS.filter(step => step.action === 'playing')) {
+    assert.ok(step.copy.includes("Let's play"));
+    assert.ok(step.spoken.includes("Let's play button"));
+  }
 });
 
 test('spoken prompts replace prior speech, respect mute and volume, and release music ducking', () => {

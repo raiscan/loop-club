@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=9';
+import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=10';
 
 const noiseBuffers = new WeakMap();
 

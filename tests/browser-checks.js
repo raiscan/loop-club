@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=9';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=9';
-import { TutorialSpeech } from '../tutorial.js?v=9';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=9';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=10';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=10';
+import { TutorialSpeech } from '../tutorial.js?v=10';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=10';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -146,7 +146,7 @@ export async function runInteractionChecks() {
     Storage.prototype.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); };
     try {
       slider.value = 25; slider.dispatchEvent(new Event('input', { bubbles: true }));
-      check($('#save-status').textContent.includes('unavailable'), 'unavailable storage is reported without breaking controls', results);
+      check($('#save-status').textContent.includes('Not saved'), 'unavailable storage is reported without breaking controls', results);
     } finally { Storage.prototype.setItem = storedWrite; }
     $('#undo').click();
     check($('#save-status').textContent.includes('Saved'), 'saving recovers when storage becomes available', results);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -289,6 +289,13 @@ export async function runTutorialControllerChecks() {
     // Put focus back on the target after toggling speech, as a user can do with the D-pad.
     $('[aria-describedby~="tutorial-title"]').focus();
     for (let step = 0; step < 8; step++) {
+      if (step === 3) {
+        const target = $('[aria-describedby~="tutorial-title"]');
+        await press(15);
+        check(document.activeElement === target || card.contains(document.activeElement), 'Xbox navigation stays in the bright tutorial controls', results);
+        target.focus(); await press(5);
+        check(card.dataset.tutorialStep === '3' && document.activeElement === target, 'Xbox shoulder buttons keep the current tutorial target', results);
+      }
       await press(0);
       check(Number($('#tutorial-card').dataset.tutorialStep) === step + 1, `Xbox A advances tutorial action ${step + 1}`, results);
     }
@@ -337,6 +344,9 @@ export async function runTutorialChecks() {
       const overlap = rect.left < prompt.right && rect.right > prompt.left && rect.top < prompt.bottom && rect.bottom > prompt.top;
       check(!overlap && rect.top >= 0 && rect.bottom <= innerHeight && prompt.top >= 0 && prompt.bottom <= innerHeight,
         `${innerWidth}px tutorial ${index}: prompt and target remain visible without overlap`, results);
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      check(!$('#tutorial-shade').hidden && (hit === target || target.contains(hit)) && document.elementFromPoint(2, 2) === $('#tutorial-shade path'),
+        `${innerWidth}px tutorial ${index}: screen is dimmed and the target opening remains clickable`, results);
       check(parseFloat(getComputedStyle($('#tutorial-title')).fontSize) >= 28 && parseFloat(getComputedStyle($('#tutorial-copy')).fontSize) >= 23 && getComputedStyle(card).fontFamily.includes('sans-serif'),
         `${innerWidth}px tutorial ${index}: large sans-serif words`, results);
       check(Boolean($('#tutorial-picture svg')) && [...card.querySelectorAll('button')].filter(node => !node.hidden).every(node => node.getBoundingClientRect().height >= 44),
@@ -352,10 +362,12 @@ export async function runTutorialChecks() {
     }
     check(!$('#tutorial-done').hidden && $('#tutorial-ring').hidden, 'tutorial ends with a clear Done button', results);
     $('#tutorial-done').click();
-    check(card.hidden && !$('[aria-describedby~="tutorial-title"]'), 'Done clears the prompt and target description', results);
+    check(card.hidden && $('#tutorial-shade').hidden && !$('[aria-describedby~="tutorial-title"]'), 'Done clears the prompt, dimming and target description', results);
     $('#tutorial-start').click();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    check(card.contains(document.activeElement), 'Tab moves from the bright target into the helper', results);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    check(card.hidden && $('#tutorial-ring').hidden, 'Escape leaves the tutorial and removes the ring', results);
+    check(card.hidden && $('#tutorial-ring').hidden && $('#tutorial-shade').hidden, 'Escape leaves the tutorial and removes the ring and dimming', results);
   } finally {
     if (!card.hidden) $('#tutorial-exit').click();
     if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
@@ -509,5 +521,24 @@ export async function runPlayheadChecks() {
     $('#tab-drums').click();
     check([...document.querySelectorAll('#drum-grid .step.current')].every(cell => getComputedStyle(cell).boxShadow.includes('inset')), 'Beats retains its outlined playhead after switching tabs', results);
   } finally { if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click(); }
+  return results;
+}
+
+export function runReadingChecks() {
+  const results = [];
+  check([...document.querySelectorAll('[data-preset]')].every(node => node.textContent.trim().split(/\s+/).length === 1), 'song cards use one short name and a picture', results);
+  for (const section of ['drums', 'melody', 'sound']) {
+    $(`#tab-${section}`).click();
+    const text = document.createTreeWalker(document.querySelector('main'), NodeFilter.SHOW_TEXT);
+    const tooSmall = [];
+    while (text.nextNode()) {
+      const node = text.currentNode, parent = node.parentElement;
+      if (!node.textContent.trim() || parent.closest('svg') || !parent.getClientRects().length) continue;
+      if (parseFloat(getComputedStyle(parent).fontSize) < 18) tooSmall.push(node.textContent.trim());
+    }
+    check(tooSmall.length === 0, `${innerWidth}px ${section}: all visible words and numbers are at least 18px: ${tooSmall.join(', ')}`, results);
+    check(!/envelope|filter|brightness|BPM|LC–01|column/i.test($('.machine').innerText), `${section}: detailed synth terms stay in grown-up help`, results);
+  }
+  $('#tab-drums').click();
   return results;
 }
