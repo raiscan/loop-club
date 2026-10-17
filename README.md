@@ -1,6 +1,6 @@
 # Loop Club
 
-[Play Loop Club](https://loop-club-kidsynth.auroraacorn4.chatgpt.site) · [MIT licence](LICENSE)
+[Play Loop Club](https://loopclub.bluetoaster.net) · [MIT licence](LICENSE)
 
 A browser music toy built for a five-year-old who likes drum and bass and techno.
 Make drum loops, paint tunes, stack chords and change the sounds. Use touch,
