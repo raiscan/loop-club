@@ -748,3 +748,26 @@ the modal has no horizontal overflow. At 800×360 it scrolls within the viewport
 without horizontal overflow. Theme inspection confirmed each Look supplies its
 text and card colours. Footer buttons remain large and wrap on narrow screens.
 Syntax, build and diff checks pass. No physical Xbox or tablet was tested.
+
+## Drum sound cycling in the sequencer — 17 October 2026
+
+Sites fetched clean main `d591e9e`. Baseline: 45 Node tests and 551 browser
+checks passed, with no failures. A focused placement assertion failed before
+implementation. Development: 45 Node tests and 554 browser checks passed.
+
+The detached “New drum?” caption and numbered picker are removed. Each drum
+row now groups its audition pad and a separate large ↻ button beside its
+beats. Cycling retains its sound preview, autosave, Undo and eight sounds,
+without editing patterns. The tour's existing sound lesson now highlights the
+in-row button and says “A new sound. Tap ↻.” Its approved generic recording
+still matches the action and is unchanged. Controller navigation reaches the
+cycle button from the first beat and the audition pad with another left press.
+Negative grid columns retain focus through responsive grid rebuilds.
+
+Existing checks cover all eight sounds, pattern preservation, Undo, controller
+focus and repeatable tour exploration. Added checks cover placement and D-pad
+access to both controls. Layout and tour checks passed 8/120 assertions at both
+360×800 and 800×360. A narrow Space screenshot was inspected; cycle buttons
+use 44px CSS targets and themed surfaces. A real responsive rebuild preserved
+audition-pad focus across the eight-to-four-column change. Syntax, build and
+diff checks pass. No physical tablet or Xbox hardware was tested.

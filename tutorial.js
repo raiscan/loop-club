@@ -1,5 +1,5 @@
-import { NOTES, DRUM_COLORS } from './model.js?v=24';
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=24';
+import { NOTES, DRUM_COLORS } from './model.js?v=25';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=25';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -166,8 +166,8 @@ export const TUTORIAL_STEPS = [
   {
     "id": "drum-sound",
     "audio": "tour2-drum-sound",
-    "title": "A new drum.",
-    "copy": "Tap here.",
+    "title": "A new sound.",
+    "copy": "Tap ↻.",
     "spoken": "Tap here to change the drum sound. Your beat stays.",
     "target": "[data-drum-choice=\"0\"]",
     "section": "drums",

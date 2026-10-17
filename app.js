@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=24';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=24';
-import { GamepadReader } from './gamepad.js?v=24';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=24';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=25';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=25';
+import { GamepadReader } from './gamepad.js?v=25';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=25';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -158,14 +158,25 @@ function buildGrids() {
   for (let row = 0; row < DRUM_TRACKS; row++) {
     const drum = DRUM_SOUNDS[history.song.drumSounds[row]];
     const color = DRUM_COLORS[row];
+    const lane = document.createElement('div');
+    lane.className = 'drum-lane'; lane.style.setProperty('--row-color', color);
     const pad = document.createElement('button');
     pad.className = 'drum-pad'; pad.style.setProperty('--row-color', color);
     pad.dataset.drumPad = row;
     pad.innerHTML = `${icon(drum.icon)}<span>${drum.name}</span>`;
     pad.setAttribute('aria-label', `Play ${drum.name}`);
-    gridMetadata(pad, row, -1);
+    gridMetadata(pad, row, -2);
     pad.addEventListener('click', () => { flash(pad); engine.audition('drum', row); });
-    drumGrid.append(pad);
+    const cycle = document.createElement('button');
+    cycle.className = 'drum-cycle'; cycle.dataset.drumChoice = row;
+    gridMetadata(cycle, row, -1);
+    cycle.addEventListener('click', () => {
+      history.end();
+      const choices = Object.keys(DRUM_SOUNDS), index = choices.indexOf(history.song.drumSounds[row]);
+      commit(editSong(history.song, { type: 'drumSound', row, value: choices[(index + 1) % choices.length] }));
+      engine.audition('drum', row);
+    });
+    lane.append(pad, cycle); drumGrid.append(lane);
     for (let col = 0; col < visibleSteps; col++) {
       const step = page * visibleSteps + col;
       const button = document.createElement('button');
@@ -275,7 +286,7 @@ function updateSong() {
   $$('[data-drum]').forEach(button => button.setAttribute('aria-label', `${DRUM_SOUNDS[song.drumSounds[button.dataset.drum]].name}, drum ${Number(button.dataset.drum) + 1}, bar ${Math.floor(Number(button.dataset.step) / STEPS) + 1}, step ${Number(button.dataset.step) % STEPS + 1}`));
   $$('[data-drum-choice]').forEach(button => {
     const row = Number(button.dataset.drumChoice), drum = DRUM_SOUNDS[song.drumSounds[row]];
-    button.innerHTML = `${icon(drum.icon)}<span><small>${row + 1}</small>${drum.name}</span><span class="switch-icon" aria-hidden="true">↻</span>`;
+    button.innerHTML = '<span aria-hidden="true">↻</span>';
     button.setAttribute('aria-label', `Change drum ${row + 1} sound, ${drum.name}`);
   });
   $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
@@ -607,23 +618,11 @@ window.addEventListener('resize', () => {
   visibleSteps = next; page = Math.floor(selectedStep / next);
   buildGrids();
   if (row !== undefined) {
-    const nextCol = Number(col) === -1 ? -1 : selectedStep % next;
+    const nextCol = Number(col) < 0 ? Number(col) : selectedStep % next;
     focusControl($(`#panel-${section} [data-grid-row="${row}"][data-grid-col="${nextCol}"]`));
   }
 });
 
-for (let row = 0; row < DRUM_TRACKS; row++) {
-  const button = document.createElement('button');
-  button.dataset.drumChoice = row;
-  button.style.setProperty('--instrument-color', DRUM_COLORS[row]);
-  button.addEventListener('click', () => {
-    history.end();
-    const choices = Object.keys(DRUM_SOUNDS), index = choices.indexOf(history.song.drumSounds[row]);
-    commit(editSong(history.song, { type: 'drumSound', row, value: choices[(index + 1) % choices.length] }));
-    engine.audition('drum', row);
-  });
-  $('#drum-picker').append(button);
-}
 for (const [id, synth] of Object.entries(SYNTH_SOUNDS)) {
   const button = document.createElement('button');
   button.dataset.synthChoice = id;

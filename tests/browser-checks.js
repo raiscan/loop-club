@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=24';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=24';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=24';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=24';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=25';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=25';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=25';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=25';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -180,6 +180,10 @@ export async function runInteractionChecks() {
     controllerStep.focus();
     await press(15);
     check(document.activeElement.dataset.step === '1' && document.activeElement.dataset.drum === '0', 'D-pad moves to the neighbouring step', results);
+    await press(14); await press(14);
+    check(document.activeElement.matches('[data-drum-choice="0"]'), 'D-pad reaches sound cycling directly from the first beat', results);
+    await press(14);
+    check(document.activeElement.matches('[data-drum-pad="0"]'), 'D-pad reaches the separate drum audition pad', results);
     const columns = document.querySelectorAll('#drum-grid [data-drum="0"]').length;
     if (columns < readSong().melody.length) {
       $(`[data-drum="0"][data-step="${columns - 1}"]`).focus();
@@ -420,6 +424,7 @@ export async function runInstrumentChecks() {
     $('#tab-drums').click(); $('[data-preset=club]').click(); $('[data-preset=breaks]').click(); $('#reset').click();
     const firstPage = $('[data-page="0"]'); if (firstPage) firstPage.click();
     check(document.querySelectorAll('[data-drum-pad]').length === 4, 'four drum lanes are available', results);
+    check([...document.querySelectorAll('[data-drum-pad]')].every(pad => pad.parentElement.closest('#drum-grid') && pad.parentElement.querySelector(`[data-drum-choice="${pad.dataset.drumPad}"]`)), 'each sequencer drum has its own adjacent sound-cycle button', results);
     const extra = $('[data-drum="3"][data-step="0"]'); extra.click();
     check(readSong().drums[3][0] && extra.getAttribute('aria-pressed') === 'true', 'fourth drum lane can be sequenced', results);
     const before = readSong(), choices = new Set();

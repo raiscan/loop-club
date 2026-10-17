@@ -94,7 +94,7 @@ currently targeted at PC. No tablet/controller pairing is required.
   4, 8 or 16 beat pills beneath its name, in rows of four like the size buttons.
 - **Drums:** tap steps to switch drums on or off. Four lanes can each use any
   of eight percussion sounds: kick, snare, hat, clap, tom, shaker, open hat or
-  cowbell. Tap a numbered sound selector to cycle instruments; it previews
+  cowbell. Tap ↻ beside a drum in the sequencer to cycle instruments; it previews
   the new sound and keeps the pattern. The large drum pads play individual sounds.
 - **Loop size:** Small is 1 bar (4 beat boxes), Medium is 2 bars (8 boxes),
   and Large is 4 bars (16 boxes). The choices show 4/8/16 pills instead of bar
@@ -185,14 +185,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=24')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=25')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=24')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=25')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
