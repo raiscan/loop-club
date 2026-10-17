@@ -1,7 +1,7 @@
-import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=26';
-import { AudioEngine, normaliseVisualDelay } from './audio.js?v=26';
-import { GamepadReader } from './gamepad.js?v=26';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=26';
+import { createSong, editSong, clearSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, SONG_BOOK_KEY, SONG_SLOTS, createSlotSong, restoreSongBook, saveSlotSong, openSlotSong, editedSlotSong, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=27';
+import { AudioEngine, normaliseVisualDelay } from './audio.js?v=27';
+import { GamepadReader } from './gamepad.js?v=27';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPlayer } from './tutorial.js?v=27';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -41,11 +41,14 @@ for (const [id, look] of Object.entries(THEMES)) {
   $('#theme-choices').append(button);
 }
 applyTheme(theme, false);
-let saved = null, invalidSave = false;
+let saved = null, invalidSave = false, songBook = restoreSongBook(null);
 try {
   const raw = localStorage.getItem(SAVE_KEY);
   saved = restoreSong(raw);
   invalidSave = raw !== null && saved === null;
+  songBook = restoreSongBook(localStorage.getItem(SONG_BOOK_KEY));
+  // Recover the old single autosave as Last without changing its music.
+  if (saved && !saved.slot && JSON.stringify(saved) !== JSON.stringify(createSong(saved.preset))) saved.slot = 'last';
 } catch { /* Saving remains optional; the instrument can still play. */ }
 let history = new SongHistory(saved || createSong());
 let section = 'drums', page = 0, visibleSteps = stepCount();
@@ -83,20 +86,31 @@ function message(text) {
   messageTimer = setTimeout(() => { $('#message').hidden = true; }, 6500);
 }
 
+function refreshSongBook() {
+  try {
+    const stored = localStorage.getItem(SONG_BOOK_KEY);
+    if (stored !== null) songBook = restoreSongBook(stored);
+  } catch { /* Keep the in-memory songs when storage is unavailable. */ }
+}
+
 function saveSong() {
   if (tutorial?.active) return;
+  refreshSongBook();
+  songBook = saveSlotSong(songBook, history.song);
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(history.song));
+    localStorage.setItem(SONG_BOOK_KEY, JSON.stringify(songBook));
     $('#save-status span').textContent = 'Saved';
   } catch {
     $('#save-status span').textContent = 'Not saved';
   }
 }
 
-function commit(next) {
+function commit(next, { selecting = false } = {}) {
   const resized = next.melody.length !== history.song.melody.length;
   const resume = resized && (engine.playing || engine.pending), previewKind = lessonPreview;
   if (resized) { if (lessonPreview) stopLessonPreview(); else engine.stop(); }
+  if (!selecting && !tutorial?.active) next = editedSlotSong(history.song, next);
   if (!history.commit(next)) return;
   saveSong(); updateSong();
   if (resume) { if (previewKind) playLessonPreview(previewKind, true); else engine.start(); }
@@ -276,7 +290,17 @@ function updateSong() {
   const song = history.song;
   if (renderedSteps !== song.melody.length || visibleSteps !== stepCount()) { buildGrids(); return; }
   $$('[data-loop-bars]').forEach(button => button.setAttribute('aria-pressed', Number(button.dataset.loopBars) === song.bars));
-  $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', button.dataset.preset === song.preset));
+  $$('[data-preset]').forEach(button => button.setAttribute('aria-pressed', !song.slot && button.dataset.preset === song.preset));
+  $$('[data-song-slot]').forEach(button => {
+    const slot = button.dataset.songSlot, active = song.slot === slot;
+    const stored = active ? song : songBook.slots[slot];
+    const name = slot === 'last' ? active ? 'Current' : 'Last' : `Me ${slot.slice(-1)}`;
+    button.disabled = slot === 'last' && !stored;
+    button.setAttribute('aria-pressed', active);
+    button.setAttribute('aria-label', `${name}, ${stored ? `${stored.bars * STEPS} beats` : slot === 'last' ? 'no song yet' : 'empty song'}`);
+    button.innerHTML = `<strong>${name}</strong><span class="loop-size-dots" aria-hidden="true">${'<i></i>'.repeat((stored?.bars || 1) * STEPS)}</span>`;
+  });
+  $('.machine-name').textContent = song.slot === 'last' ? 'Current' : song.slot ? `Me ${song.slot.slice(-1)}` : 'My music';
   $$('[data-drum]').forEach(button => button.setAttribute('aria-pressed', song.drums[button.dataset.drum][button.dataset.step]));
   $$('[data-drum-pad]').forEach(pad => {
     const row = Number(pad.dataset.drumPad), drum = DRUM_SOUNDS[song.drumSounds[row]];
@@ -351,7 +375,7 @@ function playLessonPreview(kind, restart = false) {
   if (!restart && lessonPreview === kind && (engine.playing || engine.pending)) return;
   lessonPreview = null; engine.stop(); lessonPreview = kind;
   const steps = ['song', 'size', 'whole'].includes(kind) ? history.song.melody.length : 4;
-  engine.start({ steps, cycles: 2 });
+  engine.start({ steps, cycles: 2, onCycle: () => tutorial?.previewLooped() });
 }
 
 function showPlayback(state) {
@@ -382,7 +406,8 @@ $$('[data-loop-bars]').forEach(button => button.addEventListener('click', () => 
 }));
 $('#clear').addEventListener('click', () => { history.end(); commit(clearSong(history.song)); message('All clear. Undo brings it back.'); });
 $('#reset').addEventListener('click', () => {
-  history.end(); commit(editSong(createSong(history.song.preset), { type: 'bars', value: history.song.bars }));
+  const start = history.song.slot?.startsWith('me') ? createSlotSong(history.song.slot) : createSong(history.song.preset);
+  history.end(); commit(editSong(start, { type: 'bars', value: history.song.bars }));
   message('Back to the start. Undo brings yours back.');
 });
 $('#song-details').textContent = Object.entries(PRESETS).map(([id, preset]) => `${songNames[id]}: ${preset.name} (${preset.genre.toLowerCase()})`).join('; ') + '.';
@@ -395,10 +420,19 @@ for (const [id, preset] of Object.entries(PRESETS)) {
   const dots = `<span class="loop-size-dots" aria-hidden="true">${'<i></i>'.repeat(preset.bars * STEPS)}</span>`;
   button.innerHTML = `<span class="groove-art">${icon(songIcons[id] || preset.icon)}</span><span class="groove-label"><strong>${songNames[id]}</strong>${dots}</span><span class="chosen" aria-hidden="true">${icon('check')}</span>`;
   button.addEventListener('click', () => {
-    history.end(); commit(createSong(id));
+    history.end(); commit(createSong(id), { selecting: true });
   });
   $('.groove-picker').append(button);
 }
+const songSlots = document.createElement('div');
+songSlots.className = 'song-slots'; songSlots.setAttribute('role', 'group'); songSlots.setAttribute('aria-label', 'My songs');
+for (const slot of SONG_SLOTS) {
+  const button = document.createElement('button'); button.type = 'button';
+  button.className = 'song-slot'; button.dataset.songSlot = slot; button.dataset.nav = 'presets';
+  button.addEventListener('click', () => { refreshSongBook(); history.end(); commit(openSlotSong(songBook, slot), { selecting: true }); });
+  songSlots.append(button);
+}
+$('.groove-picker').append(songSlots);
 $$('[data-tab]').forEach(button => {
   button.addEventListener('click', () => setSection(button.dataset.tab));
   button.addEventListener('keydown', event => {
@@ -688,10 +722,10 @@ tutorial = new ZachTutorial({
     engine.stop();
     const made = history.song;
     history = originalHistory || history; originalHistory = null;
-    if (keepSong) { history.commit(made); saveSong(); }
+    if (keepSong) { history.commit(editedSlotSong(history.song, made)); saveSong(); }
     buildGrids(); setSection('drums');
   },
-  speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
+  speech: new TutorialSpeech({ volume: () => engine.volume * 0.65, duck: value => engine.setDucked(value) }),
   onStart() {
     if (activeDialog()) activeDialog().close();
     clearTimeout(previewTimer); engine.stop(); history.end();

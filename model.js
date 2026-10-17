@@ -3,6 +3,8 @@ export const LOOP_BARS = [1, 2, 4];
 export const TEMPO_MIN = 30;
 export const TEMPO_MAX = 600;
 export const SAVE_KEY = 'loop-club.song.v1';
+export const SONG_BOOK_KEY = 'loop-club.songs.v1';
+export const SONG_SLOTS = ['me1', 'me2', 'me3', 'last'];
 // Retain the storage key so earlier songs migrate in place.
 export const DRUM_TRACKS = 4;
 export const DRUM_COLORS = ['#c9e77b', '#f29c80', '#8fd3cb', '#b7a8e7'];
@@ -95,19 +97,49 @@ export const PRESETS = {
 const clone = value => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Math.round(value)));
 const index = (value, length) => Number.isInteger(value) && value >= 0 && value < length;
+const MAX_STEPS = STEPS * LOOP_BARS.at(-1);
+const blankPattern = length => ({
+  drums: Array.from({ length: DRUM_TRACKS }, () => Array(length).fill(false)),
+  melody: Array.from({ length }, () => []),
+  noteSounds: Array.from({ length }, () => Array(NOTES.length).fill(null))
+});
+function initialHidden(song) {
+  const length = MAX_STEPS - song.melody.length;
+  if (song.bars !== 1) return blankPattern(length);
+  return {
+    drums: song.drums.map(row => Array.from({ length }, (_, step) => row[step % STEPS])),
+    melody: Array.from({ length }, (_, step) => [...song.melody[step % STEPS]]),
+    noteSounds: Array.from({ length }, (_, step) => [...song.noteSounds[step % STEPS]])
+  };
+}
+function validHidden(pattern, length) {
+  return pattern && Array.isArray(pattern.drums) && pattern.drums.length === DRUM_TRACKS &&
+    pattern.drums.every(row => Array.isArray(row) && row.length === length && row.every(hit => typeof hit === 'boolean')) &&
+    Array.isArray(pattern.melody) && pattern.melody.length === length && pattern.melody.every(notes =>
+      Array.isArray(notes) && notes.length <= NOTES.length && notes.every(note => index(note, NOTES.length)) && new Set(notes).size === notes.length) &&
+    Array.isArray(pattern.noteSounds) && pattern.noteSounds.length === length && pattern.noteSounds.every((row, step) =>
+      Array.isArray(row) && row.length === NOTES.length && row.every((id, pitch) => pattern.melody[step].includes(pitch)
+        ? typeof id === 'string' && Object.hasOwn(SYNTH_SOUNDS, id) : id === null));
+}
+function copyHidden(pattern) {
+  return { drums: pattern.drums.map(row => [...row]), melody: pattern.melody.map(notes => [...notes].sort((a,b) => a-b)), noteSounds: pattern.noteSounds.map(row => [...row]) };
+}
+
 
 export function createSong(preset = 'breaks') {
   if (!Object.hasOwn(PRESETS, preset)) preset = 'breaks';
   const source = PRESETS[preset];
   const synth = source.synth || 'bass';
   const melody = source.melody.map(column => column ? Object.keys(column).map(Number).sort((a, b) => a - b) : []);
-  return {
-    version: 5, bars: source.bars, preset, tempo: source.tempo,
+  const song = {
+    version: 6, bars: source.bars, preset, tempo: source.tempo,
     drums: source.drums.map(row => [...row].map(hit => hit === '1')),
     drumSounds: [...source.drumSounds], synth, melody,
     noteSounds: source.melody.map(column => NOTES.map((_, pitch) => column?.[pitch] || null)),
     sound: { ...source.sound }
   };
+  song.hidden = initialHidden(song);
+  return song;
 }
 
 export function restoreSong(raw) {
@@ -115,7 +147,7 @@ export function restoreSong(raw) {
     const song = JSON.parse(raw);
     const bars = song?.version >= 4 ? song.bars : 4;
     const steps = bars * STEPS;
-    if (!song || ![1, 2, 3, 4, 5].includes(song.version) || !LOOP_BARS.includes(bars) || !Object.hasOwn(PRESETS, song.preset) ||
+    if (!song || ![1, 2, 3, 4, 5, 6].includes(song.version) || !LOOP_BARS.includes(bars) || !Object.hasOwn(PRESETS, song.preset) ||
       !Number.isInteger(song.tempo) || song.tempo < TEMPO_MIN || song.tempo > TEMPO_MAX ||
       !Array.isArray(song.drums) || song.drums.length !== (song.version === 1 ? 3 : DRUM_TRACKS) ||
       !song.drums.every(row => Array.isArray(row) && row.length === steps && row.every(value => typeof value === 'boolean')) ||
@@ -128,18 +160,23 @@ export function restoreSong(raw) {
       !song.drumSounds.every(id => typeof id === 'string' && Object.hasOwn(DRUM_SOUNDS, id)) || typeof song.synth !== 'string' || !Object.hasOwn(SYNTH_SOUNDS, song.synth))) return null;
     const melody = song.melody.map(notes => song.version < 3 ? notes === null ? [] : [notes] : [...notes].sort((a, b) => a - b));
     const synth = song.version === 1 ? 'bass' : song.synth;
-    if (song.version === 5 && (!Array.isArray(song.noteSounds) || song.noteSounds.length !== steps ||
+    if (song.version >= 5 && (!Array.isArray(song.noteSounds) || song.noteSounds.length !== steps ||
       !song.noteSounds.every((row, step) => Array.isArray(row) && row.length === NOTES.length && row.every((id, pitch) =>
         melody[step].includes(pitch) ? typeof id === 'string' && Object.hasOwn(SYNTH_SOUNDS, id) : id === null)))) return null;
+    if (song.version === 6 && !validHidden(song.hidden, MAX_STEPS - steps)) return null;
+    if (song.slot !== undefined && !SONG_SLOTS.includes(song.slot)) return null;
     // Select only known fields; saved data never supplies interface or audio objects.
-    return {
-      version: 5, bars, preset: song.preset, tempo: song.tempo,
+    const restored = {
+      version: 6, bars, preset: song.preset, tempo: song.tempo,
       drums: song.version === 1 ? [...song.drums.map(row => [...row]), Array(16).fill(false)] : song.drums.map(row => [...row]),
       drumSounds: song.version === 1 ? ['kick', 'snare', 'hat', 'clap'] : [...song.drumSounds],
       synth, melody,
-      noteSounds: song.version === 5 ? song.noteSounds.map(row => [...row]) : melody.map(notes => NOTES.map((_, pitch) => notes.includes(pitch) ? synth : null)),
+      noteSounds: song.version >= 5 ? song.noteSounds.map(row => [...row]) : melody.map(notes => NOTES.map((_, pitch) => notes.includes(pitch) ? synth : null)),
       sound: { brightness: song.sound.brightness, length: song.sound.length, wobble: song.sound.wobble }
     };
+    restored.hidden = song.version === 6 ? copyHidden(song.hidden) : initialHidden(restored);
+    if (song.slot !== undefined) restored.slot = song.slot;
+    return restored;
   } catch { return null; }
 }
 
@@ -148,7 +185,40 @@ export function clearSong(song) {
   empty.drums = empty.drums.map(row => row.map(() => false));
   empty.melody = empty.melody.map(() => []);
   empty.noteSounds = empty.noteSounds.map(row => row.map(() => null));
+  empty.hidden = blankPattern(MAX_STEPS - empty.melody.length);
   return empty;
+}
+
+export function createSlotSong(slot) {
+  if (!SONG_SLOTS.includes(slot)) throw new Error('Unknown song slot');
+  return { ...clearSong(createSong()), tempo: 120, slot };
+}
+
+export function restoreSongBook(raw) {
+  const book = { version: 1, slots: {} };
+  try {
+    const saved = JSON.parse(raw);
+    if (saved?.version !== 1 || !saved.slots || typeof saved.slots !== 'object') return book;
+    for (const slot of SONG_SLOTS) {
+      const song = restoreSong(JSON.stringify(saved.slots[slot]));
+      if (song) book.slots[slot] = { ...song, slot };
+    }
+  } catch { /* A damaged slot never prevents opening the instrument. */ }
+  return book;
+}
+
+export function saveSlotSong(book, song) {
+  if (!SONG_SLOTS.includes(song.slot)) return book;
+  return { version: 1, slots: { ...book.slots, [song.slot]: clone(song) } };
+}
+
+export function openSlotSong(book, slot) {
+  if (!SONG_SLOTS.includes(slot)) throw new Error('Unknown song slot');
+  return book.slots[slot] ? clone(book.slots[slot]) : createSlotSong(slot);
+}
+
+export function editedSlotSong(before, after) {
+  return JSON.stringify(before) === JSON.stringify(after) ? after : { ...after, slot: before.slot || 'last' };
 }
 
 export function editSong(song, edit) {
@@ -156,10 +226,16 @@ export function editSong(song, edit) {
   const steps = song.bars * STEPS;
   if (edit.type === 'bars' && LOOP_BARS.includes(edit.value)) {
     const length = edit.value * STEPS;
+    const full = {
+      drums: song.drums.map((row, index) => [...row, ...song.hidden.drums[index]]),
+      melody: [...song.melody, ...song.hidden.melody].map(notes => [...notes]),
+      noteSounds: [...song.noteSounds, ...song.hidden.noteSounds].map(row => [...row])
+    };
     next.bars = edit.value;
-    next.drums = song.drums.map(row => Array.from({ length }, (_, step) => row[step % steps]));
-    next.melody = Array.from({ length }, (_, step) => [...song.melody[step % steps]]);
-    next.noteSounds = Array.from({ length }, (_, step) => [...song.noteSounds[step % steps]]);
+    next.drums = full.drums.map(row => row.slice(0, length));
+    next.melody = full.melody.slice(0, length);
+    next.noteSounds = full.noteSounds.slice(0, length);
+    next.hidden = { drums: full.drums.map(row => row.slice(length)), melody: full.melody.slice(length), noteSounds: full.noteSounds.slice(length) };
   } else if (edit.type === 'drum' && index(edit.row, DRUM_TRACKS) && index(edit.step, steps)) {
     next.drums[edit.row][edit.step] = !next.drums[edit.row][edit.step];
   } else if (edit.type === 'note' && index(edit.step, steps) && index(edit.note, NOTES.length)) {

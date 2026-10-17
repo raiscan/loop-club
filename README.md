@@ -49,7 +49,7 @@ currently targeted at PC. No tablet/controller pairing is required.
 - **Credits**, at the bottom beside Xbox help, lists Farrell Hayman (idea and
   direction), ZM (play tester), and OpenAI Codex (development), with a short
   note about browser-made sounds and the recorded AI tutorial voice. Hover,
-  focus or tap **voice** to see Sulafat, the generation model, exact delivery
+  focus or tap **voice** to see Sulafat, the generation model, delivery
   prompt and audio settings. Escape dismisses these details before Credits.
 - **Look** opens five pictured themes: Sunny (the original), Pink, Space
   (dark and starry), Dino (green), and Race (blue/red with a chequered stripe).
@@ -64,9 +64,13 @@ currently targeted at PC. No tablet/controller pairing is required.
   chords, loop sizes and sound shaping. Large sans-serif words and live diagrams
   accompany spotlights on the actual controls. Practice starts blank at 120 BPM.
 - Musical actions respond immediately and loop the demonstrated section twice.
-  A brief spoken response runs once on the first action. Further taps and slides
-  update or replay the music without stopping or restarting speech. **Next** is
-  ready immediately, so each feature stays open to play until the child moves on.
+  The first complete loop plays at normal volume before a brief spoken response.
+  Further taps and slides replay the music and stop any speech, without repeating
+  the response. Narration follows the volume slider, with its base gain reduced to match music.
+  **Next** is
+  always ready on every lesson, even before trying the action or while speech
+  or a demo is playing. Moving on cancels the previous voice and demo; each
+  feature stays open to play until the child moves on.
   **Hear again** repeats music; it never repeats an instruction. Final playback
   includes drums and tunes, loops twice, then returns to Drums.
 - Thirty-one bundled MP3 prompts use the approved soft Scottish female voice.
@@ -85,6 +89,17 @@ currently targeted at PC. No tablet/controller pairing is required.
 - From 1400px wide, section tabs, Loop size and songs share a sticky left sidebar.
   Smaller screens keep section tabs on the machine and songs beneath it. There
   is one set of controls, moved between layouts to preserve focus and state.
+  Desktop spacing keeps the machine and sidebar visible at 1920×940, allowing
+  room for browser chrome on a 1080p screen, with control targets at least 44px.
+- **Me 1**, **Me 2** and **Me 3** are independent song slots, saved automatically
+  in this browser. Empty slots start blank at 120 BPM. Each retains its instruments,
+  sound settings, loop size and hidden bars. Start over resets a Me song to blank;
+  Undo restores it. These saves are local to this browser and device.
+- Editing an example selects **Current**, a separate scratch song. Switching away
+  leaves it as **Last**; selecting Last resumes it. Me edits leave Last untouched.
+  Previous single-song autosaves migrate to Last when they contain changed music.
+  Tutorial practice writes no slot unless Keep it is pressed; then it updates the
+  selected Me slot or Current. Undo includes song selections and slot edits.
 
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
@@ -102,9 +117,11 @@ currently targeted at PC. No tablet/controller pairing is required.
   and Large is 4 bars (16 boxes). The choices show 4/8/16 pills instead of bar
   counts, while screen readers get the beat and bar counts. Every box is one quarter-note beat: four
   beats per bar in 4/4. Small shows only four boxes, widened to fill the grid.
-  Growing repeats the current pattern into extra bars, with independently
-  editable drums and chords. Shrinking keeps the first bars; Undo restores
-  removed music and size. Presets load their authored size; Start over keeps your selected size.
+  Shrinking hides the later bars without deleting their drums, chords or painted
+  sounds. Growing restores them, including after saving/reloading. Small presets
+  start with repeated hidden bars; Medium presets start with blank extra bars.
+  Each bar stays independently editable. Clear wipes visible and hidden music;
+  Undo restores the music and size. Presets load their authored size; Start over keeps your selected size.
   Resizing during playback restarts at the beginning. Tablets show up to eight
   boxes and narrower screens four; the loop map below the grid highlights the part being edited. Tap another
   part of that map to reveal it without shrinking targets. D-pad navigation crosses pages. The moving lights show the whole loop.
@@ -130,15 +147,15 @@ currently targeted at PC. No tablet/controller pairing is required.
   again to restore the last nonzero level. Raising the slider also unmutes.
 - The latest groove, tempo and synth settings save automatically in this
   browser's local storage, including each painted note's instrument and the
-  active brush. Version-5 saves store one instrument per occupied square.
+  active brush. Version-6 saves also keep hidden bars and an optional song-slot identity.
   Older saves upgrade automatically, keeping every existing note and step
   with its previous synth sound.
   Earlier 16-step saves become Large four-bar loops so every hit and note is retained.
   Playback now gives each box a full beat, so those old sequences play more slowly
   at the same BPM than the former sixteenth-note grid. The remade examples are
   authored directly for whole beats; fast dance examples use double-time tempos. Single notes become one-note chords; three-drum saves also gain an empty
-  fourth lane. It is one current song per browser/origin, not a
-  library or cloud account. Volume starts at a moderate default each visit.
+  fourth lane. The three Me slots and Last form a local song library per browser/origin;
+  there is no cloud account or device sync. Volume starts at a moderate default each visit.
   If storage is unavailable, the instrument still works and reports that saving
   is unavailable. Invalid/incompatible saves fall back to a fresh groove.
 - **Undo** keeps up to 40 edits in memory, including whole slider gestures,
@@ -187,14 +204,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=26')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=27')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=26')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=27')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -216,12 +233,11 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=16`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=27`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
-This first playable prototype has no recording, export, MIDI, song library,
-pattern chaining or a backend. It grew from the archived UH-16
+This first playable prototype has no recording, export, MIDI, pattern chaining or a backend. It grew from the archived UH-16
 Pocket Transmitter. UncleHerbert remains the user's separate music identity;
 Loop Club is not presented as an UncleHerbert portfolio. No licence has been
 selected. Sites source synchronization uses a short-lived native credential;

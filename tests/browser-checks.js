@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=26';
-import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=26';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=26';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=26';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=27';
+import { createSong, editSong, clearSong, PRESETS, SAVE_KEY, SONG_BOOK_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=27';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture, TUTORIAL_STEPS } from '../tutorial.js?v=27';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=27';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -242,7 +242,7 @@ export async function runBrowserChecks() {
   const input = $('#visual-delay'), value = input.value, key = 'loop-club.visual-delay.v1', stored = localStorage.getItem(key);
   try {
   input.value = 0; input.dispatchEvent(new Event('input', { bubbles: true }));
-  const checks = [...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runSongSlotChecks(), ...await runCreditsVoiceChecks(), ...await runKeyboardChecks(), ...await runSpeakerSyncChecks(), ...await runLoopSizeChecks(), ...await runClearAndSidebarChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialSkipChecks(), ...await runTutorialListeningChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
   } finally { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); if (stored === null) localStorage.removeItem(key); else localStorage.setItem(key, stored); }
 }
@@ -314,10 +314,12 @@ export async function runTutorialChecks() {
       if(step.reward){
         check(card.dataset.tutorialPhase==='try'&&!$('#tutorial-next').disabled,`${step.id}: Next is ready immediately`,results);
         check($('#play').getAttribute('aria-pressed')==='true',`${step.id}: musical demo starts immediately`,results);
-        const response=$('audio[data-tutorial-narration]');check(response?.getAttribute('src')?.includes(`tour2-reward-${step.reward}`),`${step.id}: response starts before demo ends`,results);
+        check(!$('audio[data-tutorial-narration]'),`${step.id}: music starts without narration over it`,results);
+        for(let i=0;i<220&&!$('audio[data-tutorial-narration]');i++)await wait(55);
+        const response=$('audio[data-tutorial-narration]');check(response?.getAttribute('src')?.includes(`tour2-reward-${step.reward}`),`${step.id}: response follows a complete loop`,results);
         if(step.id==='beat'){
-          const time=response.currentTime;for(const beat of [1,2,3]){$(`[data-drum="0"][data-step="${beat}"]`).click();await wait(25);}
-          check($('audio[data-tutorial-narration]')===response&&response.currentTime>=time,'rapid taps neither cancel nor restart response voice',results);
+          for(const beat of [1,2,3]){$(`[data-drum="0"][data-step="${beat}"]`).click();await wait(25);}
+          check(!$('audio[data-tutorial-narration]'),'more play clears speech without restarting the response',results);
           const visited=[];let last=-1;for(let i=0;i<88&&$('#play').getAttribute('aria-pressed')==='true';i++){const now=Number($('.loop-light.current')?.dataset.step??-1);if(now>=0&&now!==last){visited.push(now);last=now;}await wait(55);}
           check(visited.filter(step=>step===0).length>=2&&$('#play').getAttribute('aria-pressed')==='false','short demo loops twice and then stops',results);
           const audio=$('audio[data-tutorial-narration]');$('#tutorial-repeat').click();await wait(80);check($('#play').getAttribute('aria-pressed')==='true'&&$('audio[data-tutorial-narration]')===audio,'Hear again replays music without restarting speech',results);
@@ -335,6 +337,127 @@ export async function runTutorialChecks() {
     $('#undo').click();check(same(readSong(),before),'Undo restores previous song and size',results);
     $('#tutorial-start').click();document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));check(card.hidden&&same(readSong(),before),'Escape preserves saved music',results);
   }finally{if(!card.hidden)$('#tutorial-exit').click();if($('#play').getAttribute('aria-pressed')==='true')$('#play').click();if(original===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,original);}
+  return results;
+}
+
+export async function runTutorialSkipChecks() {
+  const results = [], card = $('#tutorial-card'), before = localStorage.getItem(SAVE_KEY);
+  try {
+    if (!card.hidden) $('#tutorial-exit').click();
+    $('#tutorial-start').click();
+    if ($('#tutorial-voice').getAttribute('aria-pressed') !== 'true') $('#tutorial-voice').click();
+    for (const [index, step] of TUTORIAL_STEPS.entries()) {
+      check(card.dataset.tutorialLesson === step.id, `Next without an action reaches ${step.id}`, results);
+      if (step.done) break;
+      const next = $('#tutorial-next');
+      check(!next.hidden && !next.disabled, `${step.id}: Next is available before any action or voice completion`, results);
+      const voice = $('audio[data-tutorial-narration]');
+      next.click();
+      check(card.dataset.tutorialLesson === TUTORIAL_STEPS[index + 1].id, `${step.id}: Next advances immediately`, results);
+      check(!voice || !voice.isConnected, `${step.id}: Next releases the old narration`, results);
+    }
+    check(!$('#tutorial-done').hidden, 'skipping every action reaches Keep it', results);
+    $('#tutorial-exit').click();
+    $('#tutorial-start').click();
+    while (card.dataset.tutorialLesson !== 'beat') $('#tutorial-next').click();
+    $('[aria-describedby~="tutorial-title"]').click(); await wait(60);
+    check(card.dataset.tutorialPhase === 'try' && $('#play').getAttribute('aria-pressed') === 'true', 'beat demo starts before skipping', results);
+    $('#tutorial-next').click(); await wait(120);
+    check(card.dataset.tutorialLesson === 'drum-sound' && $('#play').getAttribute('aria-pressed') === 'false', 'Next cancels an active demo and stays on the next lesson', results);
+    check(localStorage.getItem(SAVE_KEY) === before, 'skipping leaves saved music untouched', results);
+  } finally { if (!card.hidden) $('#tutorial-exit').click(); }
+  return results;
+}
+
+export async function runTutorialListeningChecks() {
+  const results = [], card = $('#tutorial-card'), slider = $('#volume');
+  const originalVolume = slider.value, before = localStorage.getItem(SAVE_KEY);
+  const volume = value => { slider.value = value; slider.dispatchEvent(new Event('input', { bubbles: true })); };
+  try {
+    if (!card.hidden) $('#tutorial-exit').click();
+    $('#tutorial-start').click();
+    if ($('#tutorial-voice').getAttribute('aria-pressed') !== 'true') $('#tutorial-voice').click();
+    while (card.dataset.tutorialLesson !== 'beat') $('#tutorial-next').click();
+    volume(64);
+    const start = performance.now();
+    $('[aria-describedby~="tutorial-title"]').click(); await wait(100);
+    check($('#play').getAttribute('aria-pressed') === 'true' && !$('audio[data-tutorial-narration]'), 'a new beat starts immediately and cancels the instruction', results);
+    await wait(1500);
+    check(!$('audio[data-tutorial-narration]'), 'the first four-beat loop is free of speech', results);
+    for (let i = 0; i < 100 && !$('audio[data-tutorial-narration]'); i++) await wait(50);
+    const response = $('audio[data-tutorial-narration]');
+    check(response?.getAttribute('src')?.includes('tour2-reward-beat') && performance.now() - start >= 1950, 'the response starts only after the full two-second loop', results);
+    check(Math.abs(response.volume - 0.64 * 0.65) < 0.001, 'narration uses the chosen volume and matching base gain', results);
+    volume(20); check(Math.abs(response.volume - 0.2 * 0.65) < 0.001, 'changing volume immediately changes active recorded speech', results);
+    volume(0); check(response.volume === 0, 'zero volume also silences the narrator', results);
+    volume(64);
+    $('[data-drum="0"][data-step="1"]').click(); await wait(60);
+    check(!$('audio[data-tutorial-narration]') && $('#play').getAttribute('aria-pressed') === 'true', 'another tap gives music priority over the response', results);
+    await wait(2200);
+    check(!$('audio[data-tutorial-narration]') && card.dataset.tutorialLesson === 'beat', 'another loop never restarts the once-only voice response', results);
+    $('#tutorial-next').click(); $('#tutorial-next').click(); $('#tutorial-next').click();
+    check(card.dataset.tutorialLesson === 'note', 'Next remains available through instruction steps', results);
+    $('[aria-describedby~="tutorial-title"]').click(); await wait(80);
+    check(!$('audio[data-tutorial-narration]'), 'a new tune also gets uninterrupted listening time', results);
+    $('#tutorial-next').click(); const nextVoice = $('audio[data-tutorial-narration]');
+    await wait(2200);
+    check(card.dataset.tutorialLesson === 'brush' && (!nextVoice || !$('audio[data-tutorial-narration]') || $('audio[data-tutorial-narration]') === nextVoice), 'Next cancels the pending musical response without stale narration', results);
+    check(localStorage.getItem(SAVE_KEY) === before, 'listening practice preserves saved music', results);
+  } finally {
+    if (!card.hidden) $('#tutorial-exit').click();
+    volume(originalVolume);
+  }
+  return results;
+}
+
+export async function runSongSlotChecks() {
+  const results = [], saved = localStorage.getItem(SAVE_KEY), book = localStorage.getItem(SONG_BOOK_KEY);
+  const slot = id => $(`[data-song-slot="${id}"]`);
+  try {
+    if (!$('#tutorial-card').hidden) $('#tutorial-exit').click();
+    if ($('#play').getAttribute('aria-pressed') === 'true') $('#play').click();
+    $('#tab-drums').click(); $('[data-preset="breaks"]').click();
+    $('[data-drum="0"][data-step="0"]').click();
+    const current = readSong();
+    check(current.slot === 'last' && slot('last').textContent === 'Current' && slot('last').getAttribute('aria-pressed') === 'true', 'editing an example selects Current', results);
+    check(!document.querySelector('[data-preset][aria-pressed=true]'), 'an edited song no longer highlights the unchanged example', results);
+    $('[data-preset="club"]').click();
+    check(slot('last').textContent === 'Last' && !slot('last').disabled, 'switching songs leaves the scratch song as Last', results);
+    slot('last').click(); check(same(readSong(), current), 'Last restores the complete scratch song', results);
+    slot('me1').click(); $('#clear').click(); $('[data-loop-bars="4"]').click();
+    const lastPage = Math.floor(15 / (document.querySelectorAll('#drum-grid .step').length / 4));
+    $(`[data-page="${lastPage}"]`)?.click();
+    $('[data-drum="0"][data-step="15"]').click(); $('#tab-melody').click();
+    $('[data-synth-choice="chime"]').click(); $('[data-note="5"][data-step="15"]').click();
+    $('[data-loop-bars="1"]').click(); const one = readSong();
+    slot('me2').click(); $('#clear').click(); $('#tab-drums').click();
+    $('[data-drum="1"][data-step="1"]').click(); const two = readSong();
+    slot('me3').click(); $('#clear').click(); $('[data-drum="2"][data-step="2"]').click(); const three = readSong();
+    for (const [id, expected] of [['me1', one], ['me2', two], ['me3', three]]) {
+      slot(id).click(); check(same(readSong(), expected), `${id}: switching restores its independent music and settings`, results);
+      check(slot(id).getAttribute('aria-pressed') === 'true', `${id}: selected slot is visible`, results);
+    }
+    check(same(JSON.parse(localStorage.getItem(SONG_BOOK_KEY)).slots.last, current), 'editing Me songs never overwrites Last', results);
+    $('#undo').click(); check(same(readSong(), two), 'Undo restores the previous selected slot', results);
+    slot('me1').click(); $('[data-loop-bars="4"]').click();
+    check(readSong().drums[0][15] && readSong().noteSounds[15][5] === 'chime', 'Me slots preserve hidden bars and painted notes', results);
+    const savedBook = localStorage.getItem(SONG_BOOK_KEY), savedSong = localStorage.getItem(SAVE_KEY);
+    $('#tutorial-start').click(); while ($('#tutorial-card').dataset.tutorialLesson !== 'beat') $('#tutorial-next').click();
+    $('[aria-describedby~="tutorial-title"]').click(); await wait(60); $('#tutorial-exit').click();
+    check(localStorage.getItem(SONG_BOOK_KEY) === savedBook && localStorage.getItem(SAVE_KEY) === savedSong, 'leaving tutorial practice cannot overwrite Me slots or Last', results);
+    $('#tutorial-start').click();
+    while ($('#tutorial-card').dataset.tutorialLesson !== 'song') $('#tutorial-next').click();
+    $('[data-preset="float"]').click(); await wait(50); $('#tutorial-next').click();
+    while ($('#tutorial-card').dataset.tutorialLesson !== 'done') $('#tutorial-next').click();
+    $('#tutorial-done').click();
+    check(readSong().slot === 'me1' && same(JSON.parse(localStorage.getItem(SONG_BOOK_KEY)).slots.last, current), 'Keep it saves practice into the original Me slot without replacing Last', results);
+    $('#undo').click(); check(localStorage.getItem(SAVE_KEY) === savedSong, 'Undo restores the Me song from before Keep it', results);
+  } finally {
+    if (!$('#tutorial-card').hidden) $('#tutorial-exit').click();
+    for (const [key, value] of [[SAVE_KEY, saved], [SONG_BOOK_KEY, book]]) {
+      if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value);
+    }
+  }
   return results;
 }
 
@@ -625,7 +748,8 @@ export async function runLoopSizeChecks() {
     for (const bars of [2,4]) {
       $(`[data-loop-bars="${bars}"]`).click();
       check(readSong().bars === bars && readSong().melody.length === bars * 4, `${bars} bars: loop contains four beats per bar`, results);
-      check(same(readSong().melody.slice(4,8), small.melody), `${bars} bars: new bars begin with the original pattern`, results);
+      check(same(readSong().melody.slice(4,8), createSong('club').melody.slice(4)), `${bars} bars: growing restores the preset's second bar`, results);
+      if (bars === 4) check(readSong().melody.slice(8).every(notes => !notes.length) && readSong().drums.every(row => row.slice(8).every(hit => !hit)), 'Medium presets start with blank hidden bars three and four', results);
     }
     const largeColumns = columns();
     check(largeColumns >= 4 && largeColumns <= 16 && $('#drum-grid .step').getBoundingClientRect().width <= smallWidth, 'larger loops use more columns where there is room; Small pads fill the available width', results);
@@ -639,7 +763,9 @@ export async function runLoopSizeChecks() {
     const large = readSong(); $('[data-loop-bars="1"]').click();
     check(readSong().bars === 1 && document.querySelectorAll('#page-picker button').length === 1 && $('#melody-grid [data-step="0"]'), 'shrinking from a late bar returns to the one-bar grid', results);
     check(columns() === 4 && [...document.querySelectorAll('.sequence-grid [data-step], #loop-lights [data-step]')].every(cell => Number(cell.dataset.step) < 4), 'Small renders only four beats with no leftover boxes or lights', results);
-    $('#undo').click(); check(same(readSong(),large) && $('[data-loop-bars="4"]').getAttribute('aria-pressed') === 'true', 'Undo restores removed bars, chords and the size choice', results);
+    $('[data-loop-bars="4"]').click(); check(same(readSong(), large), 'growing restores hidden custom drums, chords and painted instruments', results);
+    $('#undo').click(); check(readSong().bars === 1, 'Undo returns to the smaller loop without losing hidden notes', results);
+    $('#undo').click(); check(same(readSong(),large) && $('[data-loop-bars="4"]').getAttribute('aria-pressed') === 'true', 'Undo restores hidden bars, chords and the size choice', results);
     $('[data-preset="pixel"]').click(); $('#reset').click();
     check(readSong().bars === 4 && readSong().melody.length === 16, 'the Game preset loads its authored size and Start over keeps that size', results);
     $('#tab-drums').click(); $('[data-page="0"]')?.click();
@@ -694,7 +820,7 @@ export function runMapAndVolumeChecks() {
     const volume = $('.volume-section'), row = volume.getBoundingClientRect(), transport = $('.transport').getBoundingClientRect(), ruler = $('.beat-ruler').getBoundingClientRect();
     check(row.top>=ruler.bottom && row.bottom<=transport.top+.1 && volume.contains($('#volume')) && !$('.transport').contains($('#volume')), 'the standalone volume row sits between the loop map and playback controls',results);
     check(!volume.textContent.trim() && volume.querySelector('svg') && $('#volume').getAttribute('aria-label')==='Volume', 'volume has a speaker, no visible text and an accessible name',results);
-    check($('#volume').getBoundingClientRect().width>=row.width*.65 && $('#volume').getBoundingClientRect().height>=60, 'volume uses a wide, large slider',results);
+    check($('#volume').getBoundingClientRect().width>=row.width*.65 && $('#volume').getBoundingClientRect().height>=(innerWidth>=1400?55.9:60), 'volume uses a wide, large slider',results);
     const prior = $('#volume').value;
     $('#volume').value=23;$('#volume').dispatchEvent(new Event('input',{bubbles:true}));
     check($('#volume').value==='23','the moved volume slider still accepts input',results);
@@ -768,7 +894,7 @@ export async function runBrushChecks() {
     $('[data-synth-choice="bell"]').focus();await tap();cell.focus();await tap();
     check(readSong().noteSounds[0][3]==='bell'&&readSong().noteSounds[0][0]==='bass','Xbox selects a brush and paints a box without replacing its chord neighbour',results);
     const painted=readSong();$('[data-loop-bars="4"]').click();
-    check(readSong().noteSounds[4][3]==='bell','growing a loop copies painted instruments with the notes',results);
+    check(same(readSong().noteSounds.slice(4),painted.hidden.noteSounds)&&same(readSong().melody.slice(4),painted.hidden.melody),'growing a loop restores hidden painted instruments and notes without copying recent edits',results);
     $('[data-loop-bars="1"]').click();
     check(same(readSong().noteSounds,painted.noteSounds),'shrinking preserves instruments in retained bars',results);
     const settings={brightness:80,length:65,wobble:0}, notes=[0,3,5], instruments=['bass',null,null,'arcade',null,'bell'];
@@ -931,7 +1057,8 @@ export async function runCreditsVoiceChecks() {
     button.focus();
     check(!tip.hidden && button.getAttribute('aria-expanded') === 'true' && button.getAttribute('aria-describedby') === tip.id, 'keyboard focus exposes the described voice settings', results);
     const metadata = await (await fetch('./assets/tutorial-voice/generation.json')).json();
-    check(tip.textContent.includes(metadata.voice) && tip.textContent.includes(metadata.model) && tip.textContent.includes(metadata.instructions), 'voice tooltip matches the actual generation voice model and full prompt', results);
+    const publicInstructions = metadata.instructions.replace('Pronounce Zach as Zak. ', '');
+    check(tip.textContent.includes(metadata.voice) && tip.textContent.includes(metadata.model) && tip.textContent.includes(publicInstructions) && !tip.textContent.includes('Pronounce Zach'), 'voice tooltip shows the generation settings with the name pronunciation omitted', results);
     const rect = tip.getBoundingClientRect();
     check(rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight && tip.scrollWidth <= tip.clientWidth, 'voice settings stay readable inside the viewport', results);
     const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }); button.dispatchEvent(escape); await wait(60);

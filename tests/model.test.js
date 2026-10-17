@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSong, restoreSong, editSong, SongHistory, STEPS, NOTES, PRESETS } from '../model.js';
+import { createSong, restoreSong, editSong, SongHistory, clearSong, STEPS, NOTES, PRESETS } from '../model.js';
 
 test('each starter is a complete editable loop, with independently owned arrays', () => {
   for (const id of Object.keys(PRESETS)) {
@@ -72,7 +72,7 @@ test('old three-drum saves migrate without changing the music or synth settings'
     sound: { brightness: 27, length: 61, wobble: 49 }
   };
   const migrated = restoreSong(JSON.stringify(old));
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.equal(migrated.bars, 4);
   assert.deepEqual(migrated.drums.slice(0, 3), old.drums);
   assert.deepEqual(migrated.drums[3], Array(16).fill(false));
@@ -105,7 +105,7 @@ test('version-two saves retain selected instruments and migrate rests and single
     drumSounds: ['tom', 'clap', 'openhat', 'cowbell'],
     melody: [0, 1, 2, 3, 4, 5, null, null, 3, null, 2, null, 0, null, null, null] };
   const migrated = restoreSong(JSON.stringify(legacy));
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.equal(migrated.synth, 'bell');
   assert.equal(migrated.tempo, 300);
   assert.deepEqual(migrated.drums, legacy.drums);
@@ -188,32 +188,60 @@ test('a slider gesture that passes its starting value still uses a single undo e
   assert.equal(history.canUndo, false);
 });
 
-test('loop sizes repeat music into 4, 8 or 16 independent beat boxes', () => {
-  const original = editSong(createSong('liquid'), { type: 'bars', value: 1 });
-  assert.equal(original.bars, 1);
-  assert.equal(original.melody.length, 4);
-  const medium = editSong(original, { type: 'bars', value: 2 });
-  assert.equal(medium.bars, 2);
-  assert.equal(medium.melody.length, 8);
-  assert.deepEqual(medium.melody.slice(4), original.melody);
-  assert.ok(medium.drums.every((row, i) => row.length === 8 && JSON.stringify(row.slice(4)) === JSON.stringify(original.drums[i])));
-  const changed = editSong(editSong(medium, { type: 'drum', row: 0, step: 7 }), { type: 'note', step: 4, note: 5 });
-  assert.notDeepEqual(changed.melody[4], changed.melody[0]);
-  assert.deepEqual(changed.melody[0], original.melody[0]);
-  const large = editSong(changed, { type: 'bars', value: 4 });
-  assert.equal(large.melody.length, 16);
-  assert.deepEqual(large.melody.slice(8), changed.melody);
-  assert.deepEqual(large.drums.map(row => row.slice(8)), changed.drums);
-  const history = new SongHistory(large);
-  const small = editSong(large, { type: 'bars', value: 1 });
-  history.commit(small);
-  assert.deepEqual(small.melody, original.melody);
+test('resizing remembers every hidden drum, chord and painted instrument', () => {
+  const original = createSong('liquid');
+  const small = editSong(original, { type: 'bars', value: 1 });
+  const medium = editSong(small, { type: 'bars', value: 2 });
+  assert.deepEqual(medium.melody, original.melody.slice(0, 8));
+  assert.deepEqual(medium.drums, original.drums.map(row => row.slice(0, 8)));
+  let changed = editSong(medium, { type: 'drum', row: 3, step: 7 });
+  changed = editSong(changed, { type: 'note', step: 7, note: 2, instrument: 'arcade' });
+  const hiddenAgain = editSong(changed, { type: 'bars', value: 1 });
+  const saved = restoreSong(JSON.stringify(hiddenAgain));
+  const editedFirstBar = editSong(saved, { type: 'note', step: 0, note: 5, instrument: 'bell' });
+  const large = editSong(editedFirstBar, { type: 'bars', value: 4 });
+  assert.deepEqual(large.melody.slice(4, 8), changed.melody.slice(4));
+  assert.deepEqual(large.noteSounds[7], changed.noteSounds[7]);
+  assert.deepEqual(large.drums.map(row => row.slice(4, 8)), changed.drums.map(row => row.slice(4)));
+  assert.deepEqual(large.melody.slice(8), original.melody.slice(8));
+  assert.deepEqual(large.noteSounds.slice(8), original.noteSounds.slice(8));
+  assert.deepEqual(large.drums.map(row => row.slice(8)), original.drums.map(row => row.slice(8)));
+  assert.equal(large.noteSounds[0][5], 'bell');
+  const history = new SongHistory(large); history.commit(editSong(large, { type: 'bars', value: 1 }));
   assert.deepEqual(history.undo(), large);
-  large.melody[8].push(5);
-  assert.deepEqual(changed.melody[0], original.melody[0]);
-  for (const bars of [0, 3, 5, 1.5, '2', null]) assert.deepEqual(editSong(original, { type: 'bars', value: bars }), original);
-  assert.deepEqual(editSong(original, { type: 'note', step: 4, note: 0 }), original);
-  assert.deepEqual(editSong(small, { type: 'drum', row: 0, step: 4 }), small);
+  large.noteSounds[8][0] = 'pluck';
+  assert.deepEqual(original.noteSounds, createSong('liquid').noteSounds);
+  for (const bars of [0, 3, 5, 1.5, '2', null]) assert.deepEqual(editSong(small, { type: 'bars', value: bars }), small);
+  assert.deepEqual(editSong(small, { type: 'note', step: 4, note: 0 }), small);
+});
+
+test('Small preset hidden bars repeat once at creation; Medium hidden bars start blank', () => {
+  for (const [id, preset] of Object.entries(PRESETS)) {
+    const initial = createSong(id), large = editSong(initial, { type: 'bars', value: 4 });
+    assert.deepEqual(large.melody.slice(0, initial.melody.length), initial.melody);
+    if (preset.bars === 1) {
+      for (let step = 4; step < 16; step++) {
+        assert.deepEqual(large.melody[step], initial.melody[step % 4]);
+        assert.deepEqual(large.noteSounds[step], initial.noteSounds[step % 4]);
+        assert.deepEqual(large.drums.map(row => row[step]), initial.drums.map(row => row[step % 4]));
+      }
+    } else if (preset.bars === 2) {
+      assert.ok(large.melody.slice(8).every(notes => !notes.length));
+      assert.ok(large.noteSounds.slice(8).every(row => row.every(value => value === null)));
+      assert.ok(large.drums.every(row => row.slice(8).every(hit => !hit)));
+    }
+  }
+});
+
+test('Clear removes hidden bars too, so growing cannot bring old notes back', () => {
+  for (const id of ['breaks', 'club', 'liquid']) {
+    const small = editSong(createSong(id), { type: 'bars', value: 1 });
+    const empty = clearSong(small), large = editSong(empty, { type: 'bars', value: 4 });
+    assert.ok(large.drums.every(row => row.every(hit => !hit)));
+    assert.ok(large.melody.every(notes => !notes.length));
+    assert.ok(large.noteSounds.every(row => row.every(value => value === null)));
+    assert.deepEqual(restoreSong(JSON.stringify(empty)), empty);
+  }
 });
 
 test('all loop sizes round-trip; old 16-step chord saves retain every note in four bars', () => {
@@ -227,7 +255,7 @@ test('all loop sizes round-trip; old 16-step chord saves retain every note in fo
   const legacy = editSong(createSong('liquid'), {type:'bars',value:4}); delete legacy.bars; legacy.version = 3;
   const migrated = restoreSong(JSON.stringify(legacy));
   assert.equal(migrated.bars, 4);
-  assert.equal(migrated.version, 5);
+  assert.equal(migrated.version, 6);
   assert.deepEqual(migrated.melody, legacy.melody);
   assert.deepEqual(migrated.drums, legacy.drums);
 });
@@ -253,7 +281,7 @@ test('instrument brushes paint, replace and erase one pitch without changing oth
   assert.equal(erased.noteSounds[0][3], null);
   assert.deepEqual(editSong(replaced, { type:'note',step:0,note:3,instrument:'missing' }),replaced);
   const large = editSong(replaced, { type:'bars',value:4 });
-  assert.deepEqual(large.noteSounds[4],replaced.noteSounds[0]);
+  assert.deepEqual(large.noteSounds[4],original.noteSounds[0]);
   large.noteSounds[4][0]='pluck';
   assert.equal(large.noteSounds[0][0],'bass');
 });
@@ -270,7 +298,7 @@ test('painted instruments save strictly and older songs retain the instrument of
   assert.equal(restoreSong(JSON.stringify(unknown)),null);
   const legacy={...createSong('pixel'),version:4};delete legacy.noteSounds;
   const migrated=restoreSong(JSON.stringify(legacy));
-  assert.equal(migrated.version,5);
+  assert.equal(migrated.version,6);
   assert.deepEqual(migrated.melody,legacy.melody);
   for(let step=0;step<legacy.melody.length;step++) for(let pitch=0;pitch<6;pitch++) {
     assert.equal(migrated.noteSounds[step][pitch],legacy.melody[step].includes(pitch)?'arcade':null);
@@ -306,4 +334,28 @@ test('Clear wipes every bar and painted sound while preserving settings; Undo re
   for (const key of ['bars','tempo','synth','drumSounds','sound']) assert.deepEqual(empty[key],original[key]);
   assert.deepEqual(restoreSong(JSON.stringify(empty)),empty);
   history.commit(empty);assert.deepEqual(history.undo(),original);
+});
+
+
+test('version-five saves migrate their visible music and seed the remaining hidden bars', () => {
+  for (const id of ['breaks', 'club', 'liquid']) {
+    const current = createSong(id), legacy = structuredClone(current); legacy.version = 5; delete legacy.hidden;
+    const restored = restoreSong(JSON.stringify(legacy));
+    assert.equal(restored.version, 6);
+    for (const key of ['drums', 'melody', 'noteSounds', 'sound', 'drumSounds']) assert.deepEqual(restored[key], legacy[key]);
+    assert.deepEqual(editSong(restored, { type: 'bars', value: 4 }), editSong(current, { type: 'bars', value: 4 }));
+  }
+});
+
+test('hidden-bar saves reject malformed lengths, pitches and instruments', () => {
+  const original = createSong('club');
+  for (const change of [
+    song => { delete song.hidden; },
+    song => { song.hidden.melody = []; },
+    song => { song.hidden.drums[0][0] = 'yes'; },
+    song => { song.hidden.melody[0] = [0, 0]; },
+    song => { song.hidden.noteSounds[0][0] = 'missing'; },
+    song => { song.hidden.melody[0] = [6]; },
+    song => { song.hidden.noteSounds[0] = []; }
+  ]) { const invalid = structuredClone(original); change(invalid); assert.equal(restoreSong(JSON.stringify(invalid)), null); }
 });

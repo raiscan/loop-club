@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=26';
+import { NOTES, TEMPO_MIN, TEMPO_MAX, STEPS, LOOP_BARS } from './model.js?v=27';
 
 const noiseBuffers = new WeakMap();
 
@@ -222,7 +222,7 @@ export class AudioEngine {
     if (this.context.state !== 'running') throw new Error('Tap Play to turn on sound.');
   }
 
-  async start({ steps = this.getSong().melody.length, cycles = Infinity } = {}) {
+  async start({ steps = this.getSong().melody.length, cycles = Infinity, onCycle = null } = {}) {
     if (this.playing || this.pending) return;
     const generation = ++this.generation;
     this.pending = true; this.onState('starting');
@@ -231,6 +231,7 @@ export class AudioEngine {
       if (generation !== this.generation || globalThis.document?.hidden) return;
       this.pending = false; this.playing = true;
       this.loopSteps = steps === 4 || LOOP_BARS.includes(steps / STEPS) ? steps : STEPS;
+      this.onCycle = onCycle;
       this.stepsLeft = Number.isInteger(cycles) && cycles > 0 ? this.loopSteps * Math.min(cycles, 16) : Infinity;
       this.bus.gain.cancelScheduledValues(this.context.currentTime);
       this.bus.gain.setValueAtTime(1, this.context.currentTime);
@@ -260,6 +261,9 @@ export class AudioEngine {
       song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
       if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth, song.noteSounds?.[step]));
       this.queueVisual({ kind: 'step', step, time });
+      if (step === this.loopSteps - 1 && this.stepsLeft > 0 && this.onCycle) {
+        this.queueVisual({ kind: 'cycle', time: time + 60 / song.tempo });
+      }
       if (this.stepsLeft === 0) {
         const endTime = time + 60 / song.tempo;
         // End audio on its original clock. Let delayed visuals finish afterwards.
@@ -275,7 +279,9 @@ export class AudioEngine {
     const timer = setTimeout(() => {
       this.visuals.delete(timer); this.visualEvents.delete(event);
       if (!this.playing || generation !== this.generation) return;
-      if (event.kind === 'end') this.stop(); else this.onStep(event.step);
+      if (event.kind === 'end') this.stop();
+      else if (event.kind === 'cycle') this.onCycle?.();
+      else this.onStep(event.step);
     }, visualWait(event.time, this.context.currentTime, this.visualDelayMs));
     event.timer = timer; this.visuals.add(timer); this.visualEvents.add(event);
   }
@@ -292,7 +298,7 @@ export class AudioEngine {
     for (const event of pending) {
       if (visualWait(event.time, this.context.currentTime, next) === 0) {
         if (event.kind === 'end') { this.stop(); return; }
-        latest = event;
+        if (event.kind === 'cycle') this.onCycle?.(); else latest = event;
       } else this.queueVisual(event);
     }
     // Reducing lag can expire several queued beats: show only the latest one.

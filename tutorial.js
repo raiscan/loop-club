@@ -1,5 +1,5 @@
-import { NOTES, DRUM_COLORS } from './model.js?v=26';
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=26';
+import { NOTES, DRUM_COLORS, clearSong } from './model.js?v=27';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=27';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -356,11 +356,8 @@ export const TUTORIAL_NARRATIONS = [...TUTORIAL_STEPS, ...['zach', 'marcie'].fla
   ...Object.entries(TUTORIAL_REWARDS).map(([kind, reward]) => ({ audio: `tour2-reward-${kind}`, spoken: reward.spoken }))];
 
 export function blankTutorialSong(song) {
-  const lesson = structuredClone(song);
+  const lesson = clearSong(song);
   lesson.tempo = 120;
-  lesson.drums = lesson.drums.map(row => row.map(() => false));
-  lesson.melody = lesson.melody.map(() => []);
-  lesson.noteSounds = lesson.noteSounds.map(row => row.map(() => null));
   return lesson;
 }
 
@@ -430,7 +427,7 @@ export class ZachTutorial {
     document.querySelector('#tutorial-start').addEventListener('click', () => this.start());
     document.querySelector('#tutorial-exit').addEventListener('click', () => this.stop());
     document.querySelector('#tutorial-done').addEventListener('click', () => this.stop(true, true));
-    document.querySelector('#tutorial-next').addEventListener('click', () => { if (this.reviewing && this.heard) this.advance(); });
+    document.querySelector('#tutorial-next').addEventListener('click', () => this.advance());
     document.querySelector('#tutorial-repeat').addEventListener('click', () => this.speak(true));
     const voice = document.querySelector('#tutorial-voice');
     voice.hidden = !speech.available;
@@ -477,7 +474,7 @@ export class ZachTutorial {
     window.addEventListener('resize', () => requestAnimationFrame(() => this.refresh()));
   }
   get step() { return this.steps[this.index]; }
-  get preferredControl() { return this.reviewing ? document.querySelector(this.heard ? '#tutorial-next' : '#tutorial-repeat') : this.target; }
+  get preferredControl() { return this.reviewing ? document.querySelector('#tutorial-next') : this.target; }
   start() {
     this.stop(false); this.speech.preload?.(); this.onStart(); this.active = true; this.index = 0;
     this.card.hidden = false; document.body.classList.add('tutorial-open');
@@ -509,7 +506,8 @@ export class ZachTutorial {
   }
   review() {
     if (this.reviewing) { this.explore(); return; }
-    this.reviewing = true; this.heard = true;
+    this.reviewing = true; this.heard = false;
+    this.speech.stop();
     this.card.dataset.tutorialPhase = 'try';
     document.body.classList.add('tutorial-listening');
     const reward = TUTORIAL_REWARDS[this.step.reward];
@@ -520,17 +518,22 @@ export class ZachTutorial {
     const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = false;
     this.refresh(); this.draw(); this.focus(next);
     this.playPreview(this.step.reward);
-    this.sayReward();
   }
   explore() {
-    // Music can restart or update as often as wanted. Speech belongs to the step,
-    // not to individual taps, so no tap-instruction-tap feedback loop is possible.
-    this.playPreview(this.step.reward); this.draw(); this.position();
+    // Give each new experiment room to sound. A response is spoken only once;
+    // playing again can interrupt it, but never starts the instruction again.
+    this.speech.stop();
+    this.playPreview(this.step.reward, true); this.draw(); this.position();
   }
   previewEnded() {
     if (!this.active || !this.reviewing) return;
     if (this.step.reward === 'whole') this.advance();
     else this.position();
+  }
+  previewLooped() {
+    if (!this.active || !this.reviewing || this.heard) return;
+    this.heard = true;
+    this.sayReward();
   }
   sayReward() {
     const reward = TUTORIAL_REWARDS[this.step.reward];
@@ -551,15 +554,16 @@ export class ZachTutorial {
   }
   advance() {
     if (!this.active || this.step.done) return;
-    this.stopPreview(); this.reviewing = false;
+    this.speech.stop(); this.stopPreview(); this.reviewing = false;
     document.body.classList.remove('tutorial-listening');
     this.cue(); this.index++; this.show();
   }
-  speak(once = false) { if (this.reviewing) { this.playPreview(this.step.reward, true); return; } this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
+  speak(once = false) { if (this.reviewing) { this.speech.stop(); this.playPreview(this.step.reward, true); return; } this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
   show() {
     this.clearTarget(); clearTimeout(this.inputTimer);
     this.card.dataset.tutorialLesson = this.step.id; this.card.dataset.tutorialStep = this.index; this.card.dataset.tutorialPhase = 'do';
-    document.querySelector('#tutorial-next').hidden = true;
+    const next = document.querySelector('#tutorial-next');
+    next.hidden = Boolean(this.step.done); next.disabled = false;
     document.querySelector('#tutorial-repeat').textContent = 'Say it ↻';
     document.querySelector('#tutorial-repeat').hidden = !this.speech.available;
     document.querySelector('#tutorial-title').textContent = this.step.title;

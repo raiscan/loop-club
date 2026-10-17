@@ -800,3 +800,50 @@ Final development: 45 Node tests and 564 full browser checks passed with the
 app tab active. Browser focus emulation/viewport overrides were temporary QA
 settings and are reset during teardown. Syntax, build and diff checks pass.
 Physical Windows, Android and Xbox hardware were not tested.
+
+## Song slots, hidden bars and open tutorial release — 17 October 2026
+
+Sites synchronized main at `940c012` with no upstream changes. Baseline:
+45 Node tests and 564 full browser checks passed, with no failures. The batch
+passes 54 Node tests and 674 browser checks at 800×1280. An old brush test still
+expected growing to repeat recent edits; it now verifies the requested hidden
+bar preservation. A browser rerun without the documented initial Play click
+could not start calibration audio; enabling audio restored the prerequisite.
+Neither failure remains in the completed runs.
+
+Me 1–3 persist independent complete songs on this browser. Current/Last keeps
+the most recently edited example separate from Me slots. Selection and edits
+participate in Undo; tutorial practice stays isolated until Keep it. Five new
+Node checks and sixteen focused browser assertions cover slot independence,
+hidden painted notes, malformed slots, switching, Undo and tutorial save/exit.
+An actual reload retained the chosen Me slot and its edited beat. Existing
+single-song saves migrate in place to schema six and changed songs become Last.
+
+Resizing now shows or hides a retained sixteen-beat backing pattern. Small
+presets seed repeated hidden bars once; Medium presets seed blank hidden bars.
+Clear removes hidden music too. Save validation covers hidden array lengths,
+pitches, instruments and slot identifiers. The original-site reference is
+unchanged.
+
+Next is available before every tutorial action and during narration/playback.
+Sixty-nine focused checks cover skipping lessons and cancelling demos. Twelve
+listening checks verify a complete unvoiced loop before the response, live
+narrator volume changes, mute, and further taps taking priority without repeating
+speech. The narrator uses the music's 0.65 base gain. The audio clock schedules
+the response at a completed loop boundary and cancels stale callbacks on exit.
+
+All five Looks passed eighty layout/reading checks each at 1920×940 and 360×800.
+With a Large song, the machine and sidebar remain within 1920×940 in all tabs;
+the sidebar needs no internal scrolling and its song buttons retain 48px heights.
+The larger preset pictures remain. Every visible control retains a 44px target.
+The full page fits at 1920×1080; smaller screens keep songs below the machine.
+The always-visible Next button exposed helper overlaps on short landscape and
+narrow portrait screens. A single compact action row fixes them; all twenty-seven
+instruction/review phases then cleared the target at both 800×360 and 360×800.
+
+The Credits voice tooltip omits the name-pronunciation sentence; generation
+metadata and recordings are unchanged. Runtime asset queries advance to `v=27`.
+JavaScript syntax, build and diff checks passed. The T3 preview host had previously
+timed out twice; release browser checks used the foreground Chrome fallback.
+No physical Win11, Android tablet, Xbox or Bluetooth speaker was available, so
+hardware connection and perceived loudness on those speakers are not claimed.

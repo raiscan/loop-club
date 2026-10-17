@@ -281,9 +281,13 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .tutorial-card h2 { font-size: 30px; }
   .tutorial-card p { font-size: 24px; margin-bottom: 14px; }
   .tutorial-card button { font-size: 20px; padding: 8px 11px; }
+  .tutorial-actions { gap: 6px; }
+  .tutorial-actions button { font-size: 18px; min-height: 44px; padding: 6px; }
 }
 @media (max-height: 500px) {
   .tutorial-card { width: min(320px, calc(100% - 24px)); right: 12px; padding: 6px 14px 10px; }
+  .tutorial-actions { gap: 6px; }
+  .tutorial-actions button { font-size: 18px; min-height: 44px; padding: 6px; }
   .tutorial-card h2 { font-size: 28px; margin: 2px 0 5px; }
   .tutorial-card p { font-size: 23px; margin-bottom: 8px; }
   .tutorial-picture { margin-bottom: 6px; }
@@ -649,8 +653,8 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
   .music-sidebar h2 { font-size: 23px; margin: 22px 4px 12px; }
   .music-sidebar .groove-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
   .music-sidebar .groove-card, .music-sidebar .groove-card[aria-pressed=true] { min-width: 0; min-height: 86px; padding: 7px; gap: 6px; flex-direction: column; align-items: flex-start; }
-  .music-sidebar .groove-art { width: 32px; height: 32px; }
-  .music-sidebar .groove-art .icon { width: 24px; height: 24px; }
+  .music-sidebar .groove-art { width: 44px; height: 44px; }
+  .music-sidebar .groove-art .icon { width: 32px; height: 32px; }
   .music-sidebar .groove-card strong { font-size: 20px; }
   .music-sidebar .chosen { top: 7px; right: 7px; }
   .machine { grid-column: 2; grid-row: 2; min-width: 0; }
@@ -682,6 +686,12 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .groove-label { display: grid; gap: 6px; min-width: 0; }
 .groove-label .loop-size-dots { justify-content: start; }
 
+.song-slots { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; border-top: 2px solid var(--border); padding-top: 12px; }
+.song-slot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 44px; min-height: 56px; padding: 10px 14px; border: 2px solid var(--border); border-radius: 14px; background: var(--panel); color: var(--ink); box-shadow: 0 3px 0 var(--shadow); }
+.song-slot strong { font-size: 22px; }
+.song-slot[aria-pressed=true] { background: var(--action); color: var(--action-ink); border-color: var(--ink); }
+.song-slot:hover:enabled { filter: brightness(1.05); }
+
 .app-footer { flex-wrap: wrap; gap: 12px 20px; }
 .footer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
 .credits-dialog { width: min(540px, calc(100vw - 32px)); padding: 24px; background: var(--surface); border: 3px solid var(--border); }
@@ -699,6 +709,66 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .drum-lane .drum-pad { min-width: 0; min-height: 72px; }
 .drum-cycle { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 2px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 30px; line-height: 1; box-shadow: 0 3px 0 var(--shadow); }
 .drum-cycle:hover { background: var(--hover); }
+
+/* A whole instrument fits on a desktop without shrinking its touch targets. */
+@media (min-width: 1400px) {
+  .masthead { padding-block: 10px; }
+  .intro { padding-block: 8px; }
+  .intro .look-mascot { font-size: 44px; }
+  .intro > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 22px; }
+  .intro h1 { font-size: 36px; }
+  .intro-copy { margin: 0; font-size: 20px; }
+  .music-sidebar { top: 10px; }
+  .music-sidebar .tabs { gap: 6px; }
+  .music-sidebar .tab { min-height: 52px; padding-block: 7px; }
+  .music-sidebar h2 { margin: 12px 4px 8px; }
+  .music-sidebar .loop-size { margin-top: 12px; gap: 8px; }
+  .music-sidebar .loop-size-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .music-sidebar .loop-size-choices button { flex-direction: column; justify-content: center; padding: 6px 2px; font-size: 18px; }
+  .music-sidebar .groove-card, .music-sidebar .groove-card[aria-pressed=true] { gap: 4px; padding: 4px; }
+  .music-sidebar .groove-picker { gap: 6px; }
+  .music-sidebar .groove-label { gap: 4px; }
+  .music-sidebar .chosen { position: absolute; }
+  .music-sidebar .groove-label .loop-size-dots { min-height: 18px; gap: 2px; }
+  .music-sidebar .groove-label .loop-size-dots i { height: 3px; }
+  .music-sidebar .song-slots { gap: 6px; padding-top: 8px; }
+  .music-sidebar .song-slot { min-height: 48px; padding: 6px; gap: 6px; }
+  .music-sidebar .song-slot strong { font-size: 18px; }
+  .music-sidebar .song-slot .loop-size-dots { grid-template-columns: repeat(4, 6px); min-height: 18px; gap: 2px; }
+  .music-sidebar .song-slot .loop-size-dots i { width: 6px; height: 3px; }
+  .music-sidebar .tab { min-height: 50px; }
+  .music-sidebar h2 { margin-top: 8px; }
+  .machine { position: relative; }
+  .machine-top { min-height: 56px; padding: 8px 160px 8px 22px; }
+  .workspace-bar { height: 0; padding: 0; }
+  .workspace-bar > #undo { position: absolute; top: 4px; right: 18px; min-height: 44px; padding-block: 7px; }
+  .workspace { padding: 12px 22px 0; }
+  .pattern-controls { margin-bottom: 12px; }
+  .pattern-controls > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 18px; }
+  .pattern-controls h2 { font-size: 26px; margin-bottom: 0; }
+  .pattern-controls p { margin: 0; }
+  #drum-grid { grid-template-columns: 142px repeat(var(--visible-steps), minmax(0, 1fr)); }
+  .drum-lane { grid-template-columns: minmax(0, 1fr) 44px; grid-template-rows: 1fr; }
+  .instrument-picker { margin-bottom: 12px; }
+  .instrument-picker button { min-height: 52px; padding-block: 7px; }
+  .grid-tip { margin-top: 8px; }
+  .beat-ruler { display: flex; align-items: center; gap: 14px; padding-block: 12px; }
+  .beat-ruler > span { flex: 0 0 auto; margin: 0; }
+  .beat-ruler > .loop-map { flex: 1; height: 64px; }
+  .loop-map #loop-lights { inset-block: 6px 28px; }
+  .volume-section { padding: 8px 22px; }
+  .volume-section #volume, .volume-section #mute { height: 56px; min-height: 56px; }
+  .transport { padding: 10px 22px; gap: 22px; }
+  .tempo-control { display: grid; grid-template-columns: auto minmax(120px, 1fr); column-gap: 18px; }
+  .tempo-control > span:first-child { grid-row: 1 / 3; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; }
+  .tempo-control .range-labels { grid-column: 2; margin: 0; }
+  .tempo-control input { grid-column: 2; height: 44px; }
+  .sound-sliders { gap: 12px; }
+  .sound-control { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 20px; }
+  .sound-control > span { margin-top: 0; }
+  .sound-control input { grid-column: 1 / -1; height: 48px; }
+  .app-footer { padding-block: 8px; }
+}
 
 .voice-info-button { display: inline-block; min-width: 44px; min-height: 44px; padding: 4px 2px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); font: inherit; text-decoration: underline dotted; text-underline-offset: 4px; cursor: help; }
 .voice-tooltip { position: fixed; z-index: 2; box-sizing: border-box; overflow: auto; overscroll-behavior: contain; padding: 18px; border: 2px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 32px #0006; font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
