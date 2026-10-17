@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=14';
-import { AudioEngine } from './audio.js?v=14';
-import { GamepadReader } from './gamepad.js?v=14';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=14';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=15';
+import { AudioEngine } from './audio.js?v=15';
+import { GamepadReader } from './gamepad.js?v=15';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=15';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -356,6 +356,18 @@ $$('[data-tab]').forEach(button => {
   });
 });
 
+let restoreVolume = Number($('#volume').value);
+function setVolume(value) {
+  if (value > 0) restoreVolume = value;
+  $('#volume').value = value;
+  engine.setVolume(value / 100); tutorial?.speech.updateVolume(); updateRange($('#volume'));
+  const muted = value === 0;
+  $('#mute').setAttribute('aria-pressed', muted);
+  $('#mute').setAttribute('aria-label', muted ? 'Restore volume' : 'Mute');
+  $('#mute use').setAttribute('href', muted ? '#i-muted' : '#i-volume');
+}
+$('#mute').addEventListener('click', () => setVolume(Number($('#volume').value) > 0 ? 0 : restoreVolume));
+
 $$('input[type=range]').forEach(input => {
   if (input.id !== 'volume') {
     input.addEventListener('pointerdown', () => history.begin());
@@ -367,7 +379,7 @@ $$('input[type=range]').forEach(input => {
   }
   input.addEventListener('input', () => {
     const value = Number(input.value);
-    if (input.id === 'volume') { engine.setVolume(value / 100); tutorial?.speech.updateVolume(); updateRange(input); return; }
+    if (input.id === 'volume') { setVolume(value); return; }
     commit(editSong(history.song, input.id === 'tempo' ? { type: 'tempo', value } : { type: 'sound', key: input.dataset.sound, value }));
     if (input.dataset.sound && !engine.playing) {
       clearTimeout(previewTimer);

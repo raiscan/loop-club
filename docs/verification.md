@@ -504,3 +504,29 @@ Development Node suite: 39 passed. Final full browser suite: 406 passed, includi
 267 theme/layout/reading/map/volume assertions pass per viewport at 360×800,
 800×360 and 1280×800, covering all sizes. The focused landscape tutorial passes
 all 110 checks after the map/volume move. Syntax, build and diff checks pass.
+
+## Speaker mute/restore — 17 October 2026
+
+Base main `6c038f3` was clean and current after the Sites source helper fetched
+and checked it. Node baseline: 39 passed. The first browser baseline attempt
+failed `held Xbox A edits exactly once and shows controller focus`; the same
+unchanged base passed all 406 checks on rerun. No production gamepad changes
+were made for this intermittent baseline failure.
+
+The speaker is now a native toggle button with a crossed-speaker muted icon,
+pressed state and accessible Mute/Restore volume labels. It remembers the last
+positive level, sets the volume to zero on mute and restores that exact level.
+Dragging to zero also shows mute; raising the slider unmutes. The existing
+volume path updates both Web Audio and any active narration. Muting keeps the
+loop running and does not edit or save the song. Mouse and keyboard Space
+activation were observed; simulated held Xbox A is checked for one toggle.
+
+A failing DOM assertion confirmed the original speaker was not a button.
+New integration checks verify restore levels, slider zero/unmute behaviour,
+icon/ARIA state, continuing playback, actual master-gain API updates, held A
+and unchanged song storage. Development Node tests: 39 passed; syntax, build
+and diff checks pass.
+Full development browser suite: 415 passed. Focused mute, map/volume and theme
+layout/reading checks: 98 passed at each of 360×800, 800×360 and 1280×800.
+The speaker target measures approximately 56×64 CSS pixels and the slider
+retains its large hit area. No physical Android/Xbox test is claimed.

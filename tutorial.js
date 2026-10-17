@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=14';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=15';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {

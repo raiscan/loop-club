@@ -96,7 +96,8 @@ currently targeted at PC. No tablet/controller pairing is required.
   envelope, and wobble moves its filter in tempo. The drawing illustrates
   those settings; it is not an oscilloscope. Sliders audition a note while stopped.
 - **Speed** changes the tempo from 30–300 BPM; **Volume** controls all audio from a large standalone speaker slider between
-  the loop map and playback controls.
+  the loop map and playback controls. Press the speaker to mute all audio; press
+  again to restore the last nonzero level. Raising the slider also unmutes.
 - The latest groove, tempo and synth settings save automatically in this
   browser's local storage, including drum and synth instrument choices. Older
   saves upgrade automatically, keeping every existing note and step.
@@ -154,14 +155,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=14')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=15')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=14')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=15')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -183,7 +184,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=14`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=15`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 

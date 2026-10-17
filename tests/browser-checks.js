@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=14';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=14';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=14';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=14';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=15';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=15';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=15';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=15';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -813,5 +813,43 @@ export function runMapAndVolumeChecks() {
     check($('#volume').value==='23','the moved volume slider still accepts input',results);
     $('#volume').value=prior;$('#volume').dispatchEvent(new Event('input',{bubbles:true}));
   } finally { $(`[data-loop-bars="${old}"]`).click(); $('[data-page="0"]')?.click(); }
+  return results;
+}
+
+export async function runMuteChecks() {
+  const results = [], button = $('#mute'), slider = $('#volume');
+  check(button?.tagName === 'BUTTON', 'the speaker is an accessible mute button', results);
+  const original = slider.value, saved = localStorage.getItem(SAVE_KEY);
+  const set = value => { slider.value=value;slider.dispatchEvent(new Event('input',{bubbles:true})); };
+  const descriptor=Object.getOwnPropertyDescriptor(navigator,'getGamepads');
+  const gainCalls=[], schedule=AudioParam.prototype.setTargetAtTime;
+  AudioParam.prototype.setTargetAtTime=function(value,...args){gainCalls.push(value);return schedule.call(this,value,...args);};
+  let pad=null;
+  try {
+    set(37);button.click();
+    check(slider.value==='0' && button.getAttribute('aria-pressed')==='true' && button.getAttribute('aria-label')==='Restore volume' && button.querySelector('use').getAttribute('href')==='#i-muted', 'mute sets zero volume and shows a crossed speaker with restore action',results);
+    button.click();
+    check(slider.value==='37' && button.getAttribute('aria-pressed')==='false' && button.getAttribute('aria-label')==='Mute', 'a second press restores the previous volume',results);
+    set(12);set(0);button.click();
+    check(slider.value==='12', 'restoring after dragging to zero remembers the last nonzero level',results);
+    button.click();set(21);
+    check(button.getAttribute('aria-pressed')==='false' && button.querySelector('use').getAttribute('href')==='#i-volume', 'raising the slider unmutes and restores the speaker icon',results);
+    const wasPlaying=$('#play').getAttribute('aria-pressed')==='true';
+    if(!wasPlaying)$('#play').click();await wait(120);button.click();
+    check($('#play').getAttribute('aria-pressed')==='true' && slider.value==='0','muting leaves the loop running',results);
+    button.click();
+    check(gainCalls.includes(0) && gainCalls.some(value=>Math.abs(value-0.21*0.65)<1e-6), 'mute and restore update the actual Web Audio master gain',results);
+    if(!wasPlaying)$('#play').click();
+    Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>pad?[pad]:[]});
+    button.focus();
+    pad={connected:true,mapping:'standard',index:0,id:'Xbox mute fixture',axes:[0,0,0,0],buttons:Array.from({length:17},(_,i)=>({pressed:i===0,value:i===0?1:0}))};
+    await wait(500);
+    check(slider.value==='0' && document.activeElement===button, 'held Xbox A toggles mute only once and keeps speaker focus',results);
+    pad=null;await wait(70);
+    check(localStorage.getItem(SAVE_KEY)===saved,'mute and restore leave the saved music unchanged',results);
+  } finally {
+    pad=null;AudioParam.prototype.setTargetAtTime=schedule;if(descriptor)Object.defineProperty(navigator,'getGamepads',descriptor);else delete navigator.getGamepads;
+    set(original);
+  }
   return results;
 }
