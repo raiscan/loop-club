@@ -2,8 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=8';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=8';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=9';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=9';
+import { TutorialSpeech } from '../tutorial.js?v=9';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=9';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -233,8 +235,37 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks()];
+  const checks = [...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
+}
+
+export async function runRecordedVoiceChecks() {
+  const results = [];
+  for (const [id, recording] of Object.entries(TUTORIAL_RECORDINGS)) {
+    const response = await fetch(recording.src);
+    check(response.ok && response.headers.get('content-type').includes('audio/mpeg'), `${id}: bundled MP3 is served as audio`, results);
+    const context = new OfflineAudioContext(1, 1, 24000);
+    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+    const data = buffer.getChannelData(0);
+    check(buffer.duration > 0.5 && data.every(Number.isFinite) && energy(data) > 0.005, `${id}: browser decodes finite, audible speech samples`, results);
+  }
+  const ducks = [];
+  const speech = new TutorialSpeech({ synth: null, Utterance: null, volume: () => 0, duck: value => ducks.push(value) });
+  try {
+    check(speech.available, 'recorded narration is available with device speech APIs absent', results);
+    speech.say(TUTORIAL_RECORDINGS.drum.text, false, 'drum');
+    for (let i = 0; i < 40 && ducks.at(-1) !== true; i++) await wait(50);
+    const first = speech.clip;
+    check(first && !first.paused && ducks.at(-1), 'HTML audio plays a recording without an installed voice', results);
+    const time = first.currentTime; await wait(120);
+    check(first.currentTime > time, 'recording playback advances in real media time', results);
+    const staleEnd = first.onended;
+    speech.say(TUTORIAL_RECORDINGS.play.text, false, 'play');
+    check(first.paused && !first.getAttribute('src'), 'a new prompt stops and releases the prior clip', results);
+    staleEnd(); speech.stop();
+    check(speech.clip === null && ducks.at(-1) === false, 'exit cancels recorded audio and restores music level', results);
+  } finally { speech.stop(); }
+  return results;
 }
 
 export async function runTutorialControllerChecks() {

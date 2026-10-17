@@ -224,3 +224,44 @@ Observed checks:
 - Physical Android/Xbox hardware was not available. The original site archive
   remains untouched. Runtime assets use v=8 and the static bundle now has eight
   assets, including tutorial.js.
+
+
+## Bundled British narration — 2026-10-17
+
+The main tutorial voice is now eleven static MP3 recordings, generated once
+through OpenRouter using Gemini 3.1 Flash TTS Preview / Sulafat and warm female
+British English delivery instructions. Every browser receives identical audio
+bytes. Device speech remains a fallback for a failed or blocked clip; normal
+playback needs no installed Windows voice or API key. The voice bank totals
+428,836 bytes. Runtime release queries advance to v=9; individual audio URLs
+also include their content hashes.
+
+- Updated main baseline: 26 Node tests passed without failures.
+- Development: 30 Node tests passed, including missing device speech, recorded
+  playback, changing volume, mute/one-shot repeat, interruption, stale callbacks,
+  failed clip fallback, transcript matching and all eleven file hashes.
+- Chrome: 234 browser checks passed. All eleven MP3s return audio/mpeg and decode
+  to finite, audible samples. Actual HTML media playback advances with device
+  speech APIs explicitly absent; changing a prompt releases the prior clip,
+  and exit restores the music level. Existing tutorial/Xbox/sequence checks pass.
+- A detached-audio playback interruption was reproduced in Chrome. Keeping the
+  hidden active media element in the document until completion/cancellation
+  resolved it; the full suite then passed.
+- T3 preview snapshot/click automation timed out, so the installed Chrome
+  connector was used. This is a Linux Chrome check, not a physical Win11 test.
+- Automated audio review via Gemini 2.5 Flash transcribed all eleven recordings.
+  The words match the scripts after punctuation/case normalization. No noise,
+  extra speech or truncation was reported; the review described the voice as
+  clear, female British English with a friendly, encouraging tone. This is an
+  automated assessment, not a human listening test.
+- Generation initially returned HTTP 400 for MP3 output; the model requires
+  PCM. The generator now requests 24kHz PCM and encodes normalized mono MP3s
+  locally with ffmpeg. Unchanged clips are skipped without another API call.
+
+The authorized shared OpenRouter key was copied to ~/.config/openrouter/api-key
+(mode 0600, directory 0700), checked successfully against the key API, and
+documented by location in global Codex and Claude guidance. The original
+project .env was preserved. No key is stored in this repo, in generation
+metadata, in browser code or in the static bundle. The Site package includes
+only nine runtime app assets and eleven MP3s; model-generation tools, provenance,
+tests and source history are excluded.

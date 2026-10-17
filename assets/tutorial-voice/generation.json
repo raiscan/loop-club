@@ -1,0 +1,73 @@
+{
+  "model": "google/gemini-3.1-flash-tts-preview",
+  "voice": "Sulafat",
+  "instructions": "You are a warm, friendly female guide with a clear standard British English accent. Speak gently and naturally to a five-year-old, with a smile in your voice. Use a relaxed, easy-to-follow pace and short pauses between sentences. Be encouraging without a baby voice. Pronounce Zach as Zak. Read only the supplied words, exactly as written. No extra introduction, music or sound effects.",
+  "clips": {
+    "hello": {
+      "text": "Hi Zach! Let’s make some music. Tap Play. The light goes round and round.",
+      "seconds": 6.68,
+      "sha256": "0be426614419108fdbcd78da8edb4650a43bb8bbb7cabdc181bfb33787dde689",
+      "generation_id": "gen-tts-1792239140-Vbryxre7lhtHngKC5UT9"
+    },
+    "stop": {
+      "text": "Hear that beat? The light moves as it plays. Tap Stop.",
+      "seconds": 5.28,
+      "sha256": "9fce056566a9f6ecd53bedb37585c41e72bef2a4b628755bf5c70afedf171c26",
+      "generation_id": "gen-tts-1792239184-vsFGmfPfOp20NEv6Prpb"
+    },
+    "drum": {
+      "text": "Tap this drum. Give it a go!",
+      "seconds": 2.72,
+      "sha256": "953ce03aaea1037f50f8e0820a30ced3c3d5f28849eb3969d6ca7354715f24d7",
+      "generation_id": "gen-tts-1792239189-u16pOJ95jAjrVMbgOU4Y"
+    },
+    "beat": {
+      "text": "Tap this box. A lit box makes a beat. A dark box is a rest.",
+      "seconds": 5.64,
+      "sha256": "cbc14de5cb9d5c21e088e2c86a2c2b4c1fd6b123d7342cd27b1f0bcc3640b51f",
+      "generation_id": "gen-tts-1792239191-1uJh6Xc3NmwrrjyqeG8W"
+    },
+    "tunes": {
+      "text": "Let’s make a tune. Tap Tunes.",
+      "seconds": 3.2,
+      "sha256": "61c6573e53cb8b69460fcc48caef58f195e141d889eb71740e31684cf69d0095",
+      "generation_id": "gen-tts-1792239197-r4II4Zpq3PMUm0t9eCyW"
+    },
+    "note": {
+      "text": "Tap this box. Notes at the top sound high. Notes at the base sound low.",
+      "seconds": 6.68,
+      "sha256": "5396b14951140a02ca68224e988521c2b1d1ce41e10ffdd4561985b2b7a08a66",
+      "generation_id": "gen-tts-1792239200-z5Pc7vClTVCZ5vT46u5O"
+    },
+    "chord": {
+      "text": "Add one more note in the same stack. They play at once. That is a chord!",
+      "seconds": 6.08,
+      "sha256": "6d46b9fa78140dc27663c0b4edaf331b3c22025fbc8252ce7f5503f33784d1c5",
+      "generation_id": "gen-tts-1792239205-puG7x1yN9FClwZY70Bn6"
+    },
+    "sounds": {
+      "text": "Try a new sound. Tap Sounds.",
+      "seconds": 3.88,
+      "sha256": "fa21cbd760bed4b6f56e27b710735b101ee1ed92b0f2fee5da1d92902aac63e1",
+      "generation_id": "gen-tts-1792239209-AeJJBzHxokti5wHvnJmT"
+    },
+    "slide": {
+      "text": "Slide this. The shape and the sound change. Try soft, then bright.",
+      "seconds": 6.2,
+      "sha256": "027a5001f655ef8bc20550f4b02a8afc45ba0faafb2b915b53ffd80d549bec0c",
+      "generation_id": "gen-tts-1792239212-9VNjBB2M5rlTMsqgwjxV"
+    },
+    "play": {
+      "text": "Your tune! Tap Play.",
+      "seconds": 2.76,
+      "sha256": "e46518f0a7b03342205a3fc866211d1f07029a959d9a43874ea184fc16414757",
+      "generation_id": "gen-tts-1792239216-RRnpzuqubfXD6md5h7eI"
+    },
+    "done": {
+      "text": "You made music! Have fun, Zach.",
+      "seconds": 3.52,
+      "sha256": "92448c87dfb64a22ae7b8b3bf66b027cd072879a57df8e9540f60b39213f1867",
+      "generation_id": "gen-tts-1792239218-49LP6QeCdqQkwM3PQnLk"
+    }
+  }
+}

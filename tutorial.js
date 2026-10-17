@@ -1,4 +1,6 @@
-// Voice names vary by device; prefer a known female British voice, then British English.
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=9';
+
+// Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
   const british = voice => /^en[-_]GB$/i.test(voice.lang);
   const female = voice => /female|Sonia|Libby|Hazel|Susan|Serena|Martha|\bKate\b/i.test(voice.name);
@@ -8,20 +10,68 @@ export function chooseTutorialVoice(voices) {
 
 export class TutorialSpeech {
   constructor({ synth = globalThis.speechSynthesis, Utterance = globalThis.SpeechSynthesisUtterance,
+    Audio = globalThis.Audio, recordings = TUTORIAL_RECORDINGS,
     volume = () => 0.55, duck = () => {} } = {}) {
     this.synth = synth; this.Utterance = Utterance; this.volume = volume; this.duck = duck;
     this.enabled = true; this.generation = 0;
-    this.available = Boolean(synth && Utterance);
+    this.Audio = Audio; this.recordings = recordings; this.clip = null;
+    this.available = Boolean(Audio || (synth && Utterance));
+  }
+  releaseClip() {
+    const clip = this.clip; this.clip = null;
+    if (!clip) return;
+    clip.onplaying = clip.onended = clip.onerror = null;
+    clip.pause(); clip.removeAttribute('src'); clip.load(); clip.remove?.();
+  }
+  updateVolume() {
+    if (this.clip) this.clip.volume = this.volume();
   }
   stop() {
     ++this.generation; clearTimeout(this.timeout);
+    this.releaseClip();
     try { this.synth?.cancel(); } catch { /* Device speech may be unavailable. */ }
     this.duck(false);
   }
-  say(text, once = false) {
+  say(text, once = false, recordingId = null) {
     this.stop();
     if ((!this.enabled && !once) || !this.available) return;
     const generation = this.generation;
+    const recording = this.recordings[recordingId];
+    if (this.Audio && recording?.text === text) this.playRecording(recording, text, generation);
+    else this.sayDevice(text, generation);
+  }
+  playRecording(recording, text, generation) {
+    let clip;
+    const current = () => generation === this.generation && this.clip === clip;
+    const fallback = () => {
+      if (!current()) return;
+      clearTimeout(this.timeout); this.releaseClip(); this.duck(false);
+      this.sayDevice(text, generation);
+    };
+    try {
+      clip = new this.Audio(new URL(recording.src, import.meta.url).href);
+      this.clip = clip; clip.preload = 'auto'; this.updateVolume();
+      clip.onplaying = () => {
+        if (!current()) return;
+        clearTimeout(this.timeout); this.duck(true);
+        this.timeout = setTimeout(() => { if (current()) this.stop(); }, 30000);
+      };
+      clip.onended = () => {
+        if (!current()) return;
+        clearTimeout(this.timeout); this.releaseClip(); this.duck(false);
+      };
+      clip.onerror = fallback;
+      clip.hidden = true;
+      clip.setAttribute?.('data-tutorial-narration', 'true');
+      globalThis.document?.body?.append(clip);
+      this.timeout = setTimeout(fallback, 3500);
+      Promise.resolve(clip.play()).catch(fallback);
+    } catch {
+      if (clip) fallback(); else this.sayDevice(text, generation);
+    }
+  }
+  sayDevice(text, generation) {
+    if (!this.synth || !this.Utterance || generation !== this.generation) return;
     try {
       const words = new this.Utterance(text);
       const chosen = chooseTutorialVoice(this.synth.getVoices());
@@ -39,17 +89,17 @@ export class TutorialSpeech {
 }
 
 export const TUTORIAL_STEPS = [
-  { title: 'Hi Zach!', copy: 'Tap Play.', spoken: 'Hi Zach! Let’s make some music. Tap Play. The light goes round and round.', target: '#play', action: 'playing', picture: 'loop' },
-  { title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? The light moves as it plays. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
-  { title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat' },
-  { title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="1"]', section: 'drums', picture: 'beat' },
-  { title: 'Let’s make a tune.', copy: 'Tap Tunes.', target: '#tab-melody', section: 'drums', picture: 'notes' },
-  { title: 'Add a note.', copy: 'Tap this box.', spoken: 'Tap this box. Notes at the top sound high. Notes at the base sound low.', section: 'melody', note: true, picture: 'notes' },
-  { title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord' },
-  { title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
-  { title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave' },
-  { title: 'Your tune!', copy: 'Tap Play.', target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
-  { title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
+  { audio: 'hello', title: 'Hi Zach!', copy: 'Tap Play.', spoken: 'Hi Zach! Let’s make some music. Tap Play. The light goes round and round.', target: '#play', action: 'playing', picture: 'loop' },
+  { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? The light moves as it plays. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
+  { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat' },
+  { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="1"]', section: 'drums', picture: 'beat' },
+  { audio: 'tunes', title: 'Let’s make a tune.', copy: 'Tap Tunes.', target: '#tab-melody', section: 'drums', picture: 'notes' },
+  { audio: 'note', title: 'Add a note.', copy: 'Tap this box.', spoken: 'Tap this box. Notes at the top sound high. Notes at the base sound low.', section: 'melody', note: true, picture: 'notes' },
+  { audio: 'chord', title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord' },
+  { audio: 'sounds', title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
+  { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave' },
+  { audio: 'play', title: 'Your tune!', copy: 'Tap Play.', target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
+  { audio: 'done', title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
 ];
 
 export function tutorialPicture(kind, song, playhead = -1) {
@@ -143,7 +193,7 @@ export class ZachTutorial {
     if (!this.active || this.step.done) return;
     this.cue(); this.index++; this.show();
   }
-  speak(once = false) { this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once); }
+  speak(once = false) { this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
   show() {
     this.clearTarget(); clearTimeout(this.inputTimer);
     this.card.dataset.tutorialStep = this.index;

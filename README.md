@@ -38,11 +38,13 @@ currently targeted at PC. No tablet/controller pairing is required.
   includes a diagram of the beat, loop, notes, chord stack or sound shape.
   Diagrams reflect the actual song and playhead. Press the highlighted control
   to move on; the slider lesson waits until the movement settles.
-- A soft chime marks each action. Spoken prompts prefer a known British female
-  device voice, then British English, then another available voice. Voice quality
-  and availability depend on the device. **Say it** reads one prompt, even with automatic speech off; **Voice on/off**
-  toggles automatic narration; the app's Volume setting controls voice and chimes. Music
-  drops while a prompt is spoken. No API key or paid voice service is used.
+- A soft chime marks each action. Eleven bundled MP3 prompts use one friendly
+  British female AI voice, generated once through OpenRouter. Windows 11,
+  Android and other devices play the same files without installing a voice.
+  Device speech is a fallback if a clip fails to load or play. **Say it** reads
+  one prompt, even with automatic speech off; **Voice on/off** toggles narration.
+  Volume controls the recordings and chimes; music drops while the guide speaks.
+  Visitors need no API key and make no runtime calls to OpenRouter.
 - **Bye**, Escape or Xbox B closes the tutorial. It also closes when the page
   loses focus or becomes hidden. Tutorial edits use normal saving and Undo;
   opening the tour never replaces the current groove.
@@ -119,14 +121,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=8')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=9')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=8')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=9')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -140,14 +142,15 @@ See [the verification record](docs/verification.md) for this prototype's results
 
 - `model.js`: starter patterns, validated saved songs, edits and undo.
 - `audio.js`: Web Audio voices, compressor/master output and look-ahead clock.
-- `tutorial.js`: guided tasks, live diagrams and device speech.
+- `tutorial.js`: guided tasks, live diagrams, recorded prompts and speech fallback.
+- `tutorial-voice.js`, `assets/tutorial-voice/`: clip mapping, generated audio and provenance.
 - `gamepad.js`: standard controller button edges, repeat and stick dead zone.
 - `app.js`, `index.html`, `style.css`, `icon.svg`: interface and input wiring.
 - `tests/`: Node checks and browser integration checks.
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=8`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=9`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 
@@ -167,7 +170,7 @@ tracked in `.openai/hosting.json`; reuse that project ID for future updates.
 node scripts/build-site.mjs
 ```
 
-This prepares only the eight runtime assets in ignored `dist/`. The original
+This prepares nine app assets and eleven MP3 clips in ignored `dist/`. The original
 reference site, tests, source history and local state are not part of the
 served bundle. The script preserves unexpected files in `dist/` by stopping
 instead of deleting them. Use the Sites skill's source/package helper from
@@ -175,3 +178,25 @@ the integrated main checkout to push and publish that exact source state.
 Prepare commits with the required co-author trailer before the helper runs.
 The Site is public and does not require sign-in. Saves remain local
 to each browser and origin; hosting does not copy a localhost save to the Site.
+
+
+## Rebuild tutorial narration
+
+`scripts/generate-tutorial-voice.mjs` is a local-only generation tool. It uses
+Node 22+, ffmpeg and ffprobe, reading the authorized OpenRouter key from
+`~/.config/openrouter/api-key`. Keep that file outside the repository with mode
+0600 and its directory at 0700. No key is copied into project environment files.
+
+```sh
+node scripts/generate-tutorial-voice.mjs
+```
+
+The current bank uses Gemini 3.1 Flash TTS Preview, voice Sulafat, with warm
+female British English delivery instructions. `generation.json` records the
+transcripts, voice settings, durations, hashes and generation IDs. Generation
+skips unchanged, intact clips and preserves existing files when they differ.
+Archive a changed clip before regenerating it. The build rejects missing or
+outdated clips so prompts cannot silently drift from the narration. Only the
+finished MP3s and runtime mapping are served; the generator and provenance are
+not in the hosted bundle. Generation incurs one-time API use; playback is local
+to the browser using same-origin static files.

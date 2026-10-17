@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=8';
-import { AudioEngine } from './audio.js?v=8';
-import { GamepadReader } from './gamepad.js?v=8';
-import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=8';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=9';
+import { AudioEngine } from './audio.js?v=9';
+import { GamepadReader } from './gamepad.js?v=9';
+import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=9';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -286,7 +286,7 @@ $$('input[type=range]').forEach(input => {
   }
   input.addEventListener('input', () => {
     const value = Number(input.value);
-    if (input.id === 'volume') { engine.setVolume(value / 100); updateRange(input); return; }
+    if (input.id === 'volume') { engine.setVolume(value / 100); tutorial?.speech.updateVolume(); updateRange(input); return; }
     commit(editSong(history.song, input.id === 'tempo' ? { type: 'tempo', value } : { type: 'sound', key: input.dataset.sound, value }));
     if (input.dataset.sound && !engine.playing) {
       clearTimeout(previewTimer);
