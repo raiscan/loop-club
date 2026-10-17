@@ -1,4 +1,4 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=10';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=11';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -93,16 +93,41 @@ export class TutorialSpeech {
 export const TUTORIAL_STEPS = [
   { audio: 'hello', title: 'Hi Zach!', copy: 'Tap “Let\'s play”.', spoken: "Hi Zach! Let’s make some music. Tap the Let's play button.", target: '#play', action: 'playing', picture: 'loop' },
   { audio: 'stop', title: 'Hear that?', copy: 'Tap Stop.', spoken: 'Hear that beat? Watch the light move along. When it goes back to the start, the tune plays again. Tap Stop.', target: '#play', action: 'stopped', picture: 'loop' },
-  { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat' },
-  { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="1"]', section: 'drums', picture: 'beat' },
+  { audio: 'drum', title: 'Tap this drum.', copy: 'Give it a go!', target: '[data-drum-pad="0"]', section: 'drums', picture: 'beat', reward: 'drum' },
+  { audio: 'beat', title: 'Make a beat.', copy: 'Tap this box.', spoken: 'Tap this box. A lit box makes a beat. A dark box is a rest.', target: '[data-drum="0"][data-step="0"]', section: 'drums', picture: 'beat', reward: 'beat' },
   { audio: 'tunes', title: 'Let’s make a tune.', copy: 'Tap Tunes.', target: '#tab-melody', section: 'drums', picture: 'notes' },
-  { audio: 'note', title: 'Add a note.', copy: 'Tap this box.', spoken: 'Tap this box. Notes at the top sound high. Notes at the base sound low.', section: 'melody', note: true, picture: 'notes' },
-  { audio: 'chord', title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord' },
+  { audio: 'note', title: 'Add a note.', copy: 'Tap this box.', spoken: 'Tap this box. Notes at the top sound high. Notes at the base sound low.', section: 'melody', note: true, picture: 'notes', reward: 'note' },
+  { audio: 'chord', title: 'One more note!', copy: 'A stack is a chord.', spoken: 'Add one more note in the same stack. They play at once. That is a chord!', section: 'melody', note: true, picture: 'chord', reward: 'chord' },
   { audio: 'sounds', title: 'Try a new sound.', copy: 'Tap Sounds.', target: '#tab-sound', section: 'melody', picture: 'wave' },
-  { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave' },
+  { audio: 'slide', title: 'Slide this.', copy: 'Hear it change.', spoken: 'Slide this. The shape and the sound change. Try soft, then bright.', target: '#brightness', section: 'sound', action: 'input', picture: 'wave', reward: 'slide' },
   { audio: 'play', title: 'Your tune!', copy: 'Tap “Let\'s play”.', spoken: "Now hear your tune. Tap the Let's play button.", target: '#play', section: 'sound', action: 'playing', picture: 'loop' },
   { audio: 'done', title: 'You made music!', copy: 'Have fun, Zach.', done: true, picture: 'loop' }
 ];
+
+export function blankTutorialSong(song) {
+  const lesson = structuredClone(song);
+  lesson.tempo = 120;
+  lesson.drums = lesson.drums.map(row => row.map(() => false));
+  lesson.melody = lesson.melody.map(() => []);
+  return lesson;
+}
+
+export function tutorialPlaybackSong(song, kind) {
+  const solo = structuredClone(song);
+  if (kind === 'drum' || kind === 'beat') {
+    solo.drums = solo.drums.map((row, index) => index === 0 ? row : row.map(() => false));
+    solo.melody = solo.melody.map(() => []);
+    if (kind === 'drum') solo.drums[0][0] = true;
+  } else solo.drums = solo.drums.map(row => row.map(() => false));
+  return solo;
+}
+
+export function finishTutorialSong(song) {
+  const result = structuredClone(song);
+  result.drums = result.drums.map(row => row.map((_, step) => row[step % 4]));
+  result.melody = result.melody.map((_, step) => [...song.melody[step % 4]]);
+  return result;
+}
 
 export function spotlightPath(rect, width, height) {
   const screen = `M0 0H${width}V${height}H0Z`;
@@ -123,7 +148,7 @@ export function tutorialPicture(kind, song, playhead = -1) {
   } else if (kind === 'notes' || kind === 'chord') {
     label = kind === 'chord' ? 'One stack. Play at once.' : 'High ↑   Low ↓';
     art += '<text x="5" y="15">High</text><text x="5" y="51">Low</text><path d="M60 11v36m-4-30 4-6 4 6" fill="none" stroke="#637747" stroke-width="2"/>';
-    for (let col = 0; col < 4; col++) for (let note = 0; note < 6; note++) art += box(90 + col * 48, 2 + (5 - note) * 8.5, song.melody[col].includes(note), false, 38, 7);
+    for (let col = 0; col < 4; col++) for (let note = 0; note < 6; note++) art += box(90 + col * 48, 2 + (5 - note) * 8.5, song.melody[col].includes(note), playhead === col, 38, 7);
     if (kind === 'chord') art += '<rect x="85" y="0" width="48" height="55" rx="7" fill="none" stroke="#b98713" stroke-width="3"/>';
   } else {
     label = 'Soft ↔ Bright';
@@ -139,15 +164,17 @@ export function tutorialPicture(kind, song, playhead = -1) {
 }
 
 export class ZachTutorial {
-  constructor({ prepare, focus, cue, speech, onStart, getSong, getStep }) {
+  constructor({ prepare, focus, cue, speech, onStart, onStop, playPreview, stopPreview, getSong, getStep }) {
     this.prepare = prepare; this.focus = focus; this.cue = cue; this.speech = speech; this.onStart = onStart;
     this.getSong = getSong; this.getStep = getStep;
+    this.onStop = onStop; this.playPreview = playPreview; this.stopPreview = stopPreview;
     this.card = document.querySelector('#tutorial-card'); this.ring = document.querySelector('#tutorial-ring');
     this.shade = document.querySelector('#tutorial-shade');
     this.active = false; this.index = 0;
     document.querySelector('#tutorial-start').addEventListener('click', () => this.start());
     document.querySelector('#tutorial-exit').addEventListener('click', () => this.stop());
-    document.querySelector('#tutorial-done').addEventListener('click', () => this.stop());
+    document.querySelector('#tutorial-done').addEventListener('click', () => this.stop(true, true));
+    document.querySelector('#tutorial-next').addEventListener('click', () => { if (this.reviewing && this.heard) this.advance(); });
     document.querySelector('#tutorial-repeat').addEventListener('click', () => this.speak(true));
     const voice = document.querySelector('#tutorial-voice');
     voice.hidden = !speech.available;
@@ -156,27 +183,28 @@ export class ZachTutorial {
       speech.enabled = !speech.enabled;
       voice.textContent = speech.enabled ? 'Voice on' : 'Voice off';
       voice.setAttribute('aria-pressed', String(speech.enabled));
-      if (speech.enabled) this.speak(); else speech.stop();
+      if (speech.enabled && !this.reviewing) this.speak(); else speech.stop();
     });
     // Capture the hit before the instrument updates a button's child content.
     document.addEventListener('click', event => {
       if (!this.active || this.card.contains(event.target)) return;
+      if (this.reviewing) { event.preventDefault(); event.stopImmediatePropagation(); return; }
       const index = this.index;
       const hit = this.target?.contains(event.target);
-      if (hit && !this.step.action) queueMicrotask(() => { if (this.active && this.index === index) this.advance(); });
+      if (hit && !this.step.action) queueMicrotask(() => { if (this.active && this.index === index) this.completeAction(); });
       else requestAnimationFrame(() => this.refresh());
     }, true);
     document.addEventListener('input', event => {
-      if (!this.active || this.step.action !== 'input' || event.target !== this.target) return;
+      if (!this.active || this.reviewing || this.step.action !== 'input' || event.target !== this.target) return;
       clearTimeout(this.inputTimer);
       const index = this.index;
-      this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.advance(); }, 450);
+      this.inputTimer = setTimeout(() => { if (this.active && this.index === index) this.completeAction(); }, 650);
     }, true);
     document.addEventListener('keydown', event => {
       if (this.active && event.key === 'Escape') { event.preventDefault(); this.stop(); }
       if (this.active && event.key === 'Tab') {
         event.preventDefault();
-        const controls = [this.target, ...this.card.querySelectorAll('button')].filter(node => node && !node.hidden && !node.disabled);
+        const controls = [this.reviewing ? null : this.target, ...this.card.querySelectorAll('button')].filter(node => node && !node.hidden && !node.disabled);
         const index = controls.indexOf(document.activeElement);
         this.focus(controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]);
       }
@@ -185,6 +213,7 @@ export class ZachTutorial {
     window.addEventListener('resize', () => requestAnimationFrame(() => this.refresh()));
   }
   get step() { return TUTORIAL_STEPS[this.index]; }
+  get preferredControl() { return this.reviewing ? document.querySelector(this.heard ? '#tutorial-next' : '#tutorial-repeat') : this.target; }
   start() {
     this.stop(false); this.onStart(); this.active = true; this.index = 0;
     this.card.hidden = false; document.body.classList.add('tutorial-open');
@@ -200,29 +229,60 @@ export class ZachTutorial {
     this.target = null; this.ring.hidden = true;
     this.setShade(null);
   }
-  stop(returnFocus = true) {
-    this.active = false; clearTimeout(this.inputTimer);
+  stop(returnFocus = true, keepSong = false) {
+    const wasActive = this.active;
+    this.active = false; this.reviewing = false; this.stopPreview(); clearTimeout(this.inputTimer);
     this.speech.stop(); this.clearTarget(); this.card.hidden = true;
     this.shade.hidden = true;
-    document.body.classList.remove('tutorial-open');
+    document.body.classList.remove('tutorial-open', 'tutorial-listening');
+    if (wasActive) this.onStop(keepSong);
     document.querySelector('#tutorial-start').setAttribute('aria-expanded', 'false');
     if (returnFocus) this.focus(document.querySelector('#tutorial-start'));
   }
-  playback(state) { if (this.active && this.step.action === state) this.advance(); }
+  playback(state) { if (this.active && !this.reviewing && this.step.action === state) this.completeAction(); }
+  completeAction() {
+    if (this.step.reward) this.review(); else this.advance();
+  }
+  review() {
+    this.stopPreview(); this.speech.stop(); this.reviewing = true; this.heard = false;
+    this.card.dataset.tutorialPhase = 'hear';
+    document.body.classList.add('tutorial-listening');
+    const titles = { drum: 'Your drum!', beat: 'Your beat!', note: 'Your note!', chord: 'Your chord!', slide: 'Your sound!' };
+    document.querySelector('#tutorial-title').textContent = titles[this.step.reward];
+    document.querySelector('#tutorial-copy').textContent = 'Hear it!';
+    document.querySelector('#tutorial-repeat').textContent = 'Hear again ↻';
+    document.querySelector('#tutorial-repeat').hidden = false;
+    const next = document.querySelector('#tutorial-next'); next.hidden = false; next.disabled = true;
+    this.refresh(); this.draw(); this.focus(document.querySelector('#tutorial-repeat'));
+    this.playPreview(this.step.reward);
+  }
+  previewEnded() {
+    if (!this.active || !this.reviewing) return;
+    this.heard = true;
+    document.querySelector('#tutorial-copy').textContent = 'That was you!';
+    document.querySelector('#tutorial-next').disabled = false;
+    this.focus(document.querySelector('#tutorial-next')); this.position();
+  }
   advance() {
     if (!this.active || this.step.done) return;
+    this.stopPreview(); this.reviewing = false;
+    document.body.classList.remove('tutorial-listening');
     this.cue(); this.index++; this.show();
   }
-  speak(once = false) { this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
+  speak(once = false) { if (this.reviewing) { this.review(); return; } this.speech.say(this.step.spoken || `${this.step.title} ${this.step.copy}`, once, this.step.audio); }
   show() {
     this.clearTarget(); clearTimeout(this.inputTimer);
-    this.card.dataset.tutorialStep = this.index;
+    this.card.dataset.tutorialStep = this.index; this.card.dataset.tutorialPhase = 'do';
+    document.querySelector('#tutorial-next').hidden = true;
+    document.querySelector('#tutorial-repeat').textContent = 'Say it ↻';
+    document.querySelector('#tutorial-repeat').hidden = !this.speech.available;
     document.querySelector('#tutorial-title').textContent = this.step.title;
     document.querySelector('#tutorial-copy').textContent = this.step.copy;
     document.querySelector('#tutorial-count').textContent = this.step.done ? '★' : `${this.index + 1} / ${TUTORIAL_STEPS.length - 1}`;
     document.querySelector('#tutorial-done').hidden = !this.step.done;
     this.selector = this.prepare(this.step, true);
     this.refresh(true); this.draw(); this.speak();
+    if (this.step.audio === 'slide') this.playPreview('slide', true);
   }
   draw() {
     if (this.active) document.querySelector('#tutorial-picture').innerHTML = tutorialPicture(this.step.picture, this.getSong(), this.getStep());
@@ -247,24 +307,40 @@ export class ZachTutorial {
   }
   position() {
     if (!this.active || !this.target?.isConnected) { this.ring.hidden = true; this.setShade(null); return; }
-    let rect = this.target.getBoundingClientRect();
+    let rect = this.highlightRect();
+    if (rect.height <= innerHeight - 24) {
+      const delta = rect.top < 12 ? rect.top - 12 : rect.bottom > innerHeight - 12 ? rect.bottom - innerHeight + 12 : 0;
+      if (Math.abs(delta) > 2) { window.scrollBy({ top: delta, behavior: 'instant' }); rect = this.highlightRect(); }
+    }
     this.card.classList.toggle('tutorial-left', innerWidth >= 700 && innerHeight < 500 && rect.left + rect.width / 2 > innerWidth / 2);
     const card = this.card.getBoundingClientRect();
     const overlapsBottom = rect.bottom + 12 > innerHeight - card.height - 24;
     this.card.classList.toggle('tutorial-top', overlapsBottom);
     const edge = this.card.getBoundingClientRect();
     // Leave the highlighted control clear of the prompt, even in short windows.
-    if (rect.left < edge.right && rect.right > edge.left && rect.bottom > edge.top && rect.top < edge.bottom) {
+    if (rect.left - 12 < edge.right && rect.right + 12 > edge.left && rect.bottom + 12 > edge.top && rect.top - 12 < edge.bottom) {
       const desired = Math.max(12, Math.min(innerHeight - rect.height - 12, overlapsBottom ? edge.bottom + 26 : edge.top - rect.height - 26));
       const delta = rect.top - desired;
       if (Math.abs(delta) > 2) {
         window.scrollBy({ top: delta, behavior: 'instant' });
-        rect = this.target.getBoundingClientRect();
+        rect = this.highlightRect();
       }
     }
     this.ring.hidden = rect.width === 0;
     Object.assign(this.ring.style, { left: `${rect.left - 7}px`, top: `${rect.top - 7}px`, width: `${rect.width + 14}px`, height: `${rect.height + 14}px` });
     this.setShade(rect);
+  }
+  highlightRect() {
+    const kind = this.step.reward;
+    const nodes = this.reviewing && kind === 'beat'
+      ? [...document.querySelectorAll('[data-drum="0"][data-step]')].filter(node => Number(node.dataset.step) < 4)
+      : this.reviewing && ['note', 'chord'].includes(kind)
+        ? [...document.querySelectorAll('#melody-grid button[data-step]')].filter(node => Number(node.dataset.step) < 4)
+        : [this.target];
+    const rects = nodes.filter(Boolean).map(node => node.getBoundingClientRect());
+    const left = Math.min(...rects.map(rect => rect.left)), top = Math.min(...rects.map(rect => rect.top));
+    const right = Math.max(...rects.map(rect => rect.right)), bottom = Math.max(...rects.map(rect => rect.bottom));
+    return { left, top, right, bottom, width: right - left, height: bottom - top };
   }
   setShade(rect) {
     this.shade.querySelector('svg').setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);

@@ -1,15 +1,15 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=10';
+import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=11';
 
 const noiseBuffers = new WeakMap();
 
-export function scheduledSteps(clock, now, tempo) {
+export function scheduledSteps(clock, now, tempo, steps = 16) {
   const bpm = Number.isFinite(tempo) ? Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, tempo)) : 120;
   if (clock.nextTime < now - 0.1) clock.nextTime = now + 0.025;
   const events = [];
   while (clock.nextTime < now + 0.09 && events.length < 4) {
     events.push({ step: clock.step, time: clock.nextTime });
     clock.nextTime += 60 / bpm / 4;
-    clock.step = (clock.step + 1) % 16;
+    clock.step = (clock.step + 1) % (steps === 4 ? 4 : 16);
   }
   return events;
 }
@@ -206,7 +206,7 @@ export class AudioEngine {
     if (this.context.state !== 'running') throw new Error('Tap Play to turn on sound.');
   }
 
-  async start() {
+  async start({ steps = 16, cycles = Infinity } = {}) {
     if (this.playing || this.pending) return;
     const generation = ++this.generation;
     this.pending = true; this.onState('starting');
@@ -214,6 +214,8 @@ export class AudioEngine {
       await this.ready();
       if (generation !== this.generation || globalThis.document?.hidden) return;
       this.pending = false; this.playing = true;
+      this.loopSteps = steps === 4 ? 4 : 16;
+      this.stepsLeft = Number.isInteger(cycles) && cycles > 0 ? this.loopSteps * Math.min(cycles, 16) : Infinity;
       this.bus.gain.cancelScheduledValues(this.context.currentTime);
       this.bus.gain.setValueAtTime(1, this.context.currentTime);
       this.clock = { step: 0, nextTime: this.context.currentTime + 0.035 };
@@ -234,9 +236,11 @@ export class AudioEngine {
   }
 
   tick() {
-    if (!this.playing) return;
+    if (!this.playing || this.stepsLeft <= 0) return;
     const song = this.getSong();
-    for (const { step, time } of scheduledSteps(this.clock, this.context.currentTime, song.tempo)) {
+    for (const { step, time } of scheduledSteps(this.clock, this.context.currentTime, song.tempo, this.loopSteps)) {
+      if (this.stepsLeft <= 0) break;
+      this.stepsLeft--;
       song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
       if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth));
       const timer = setTimeout(() => {
@@ -244,6 +248,11 @@ export class AudioEngine {
         if (this.playing) this.onStep(step);
       }, Math.max(0, (time - this.context.currentTime) * 1000));
       this.visuals.add(timer);
+      if (this.stepsLeft === 0) {
+        const end = setTimeout(() => { this.visuals.delete(end); this.stop(); },
+          Math.max(0, (time + 60 / song.tempo / 4 - this.context.currentTime) * 1000));
+        this.visuals.add(end);
+      }
     }
   }
 

@@ -33,14 +33,18 @@ currently targeted at PC. No tablet/controller pairing is required.
 
 ## Play
 
-- The main screen uses Arial, short labels and large pictures. Visible words
+- The main screen uses a bright cream-and-pastel music-toy theme, colourful
+  drum pads, chunky yellow play buttons, Arial, short labels and large pictures. Visible words
   and numbers stay at least 18px, with larger action labels. Song cards use
   one-word names; genre names and synth terms are in grown-up help.
 - **Help Zach** opens the hands-on tutorial. Ten short tasks use large Arial /
   sans-serif text and a gold ring around the next real control. Each lesson
   includes a diagram of the beat, loop, notes, chord stack or sound shape.
   Diagrams reflect the actual song and playhead. The screen dims around the highlighted control and helper;
-  press the bright control to move on; the slider lesson waits until the movement settles.
+  tap the bright control to try it. Each musical action then plays back on its
+  own with a selective moving highlight. **Hear again** repeats it; **Next**
+  becomes available after listening. The sound lesson loops the new notes
+  while the slider changes them.
 - A soft chime marks each action. Eleven bundled MP3 prompts use one friendly
   soft Scottish female AI voice, generated once through OpenRouter. Windows 11,
   Android and other devices play the same files without installing a voice.
@@ -49,8 +53,10 @@ currently targeted at PC. No tablet/controller pairing is required.
   Volume controls the recordings and chimes; music drops while the guide speaks.
   Visitors need no API key and make no runtime calls to OpenRouter.
 - **Bye**, Escape or Xbox B closes the tutorial. It also closes when the page
-  loses focus or becomes hidden. Tutorial edits use normal saving and Undo;
-  opening the tour never replaces the current groove.
+  loses focus or becomes hidden. Drum and tune practice start with blank
+  tracks at 120 BPM. Practice uses a separate song and leaves the saved song
+  alone. **Keep it** saves the finished four-step phrase across the whole loop;
+  one Undo brings the original song back. Leaving practice restores it.
 
 - Nine starting grooves: **Jungle jump**, **Robot dance**, **Moon bounce**,
   **Liquid lift**, **Roller skate**, **Acid ants**, **Disco dots**, **Pixel party**
@@ -124,14 +130,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=10')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=11')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=10')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=11')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
@@ -153,7 +159,7 @@ See [the verification record](docs/verification.md) for this prototype's results
 - `reference/original-site/`: unchanged provenance snapshot of the retired
   UncleHerbert site. It is not loaded by Loop Club.
 
-Asset URLs carry a release query (`v=10`) so a refreshed page loads matching
+Asset URLs carry a release query (`v=11`) so a refreshed page loads matching
 interface and audio modules after an update. Bump it together in the HTML
 and browser module imports when publishing changes.
 

@@ -36,3 +36,10 @@ test('scheduling is bounded even when a caller supplies an invalid tempo', () =>
     assert.ok(events.every(event => Number.isFinite(event.time)));
   }
 });
+
+test('short lesson playback wraps its four audible steps without traversing silent steps', () => {
+  const clock = { nextTime: 0.04, step: 3 };
+  assert.equal(scheduledSteps(clock, 0, 120, 4)[0].step, 3);
+  assert.equal(scheduledSteps(clock, 0.1, 120, 4)[0].step, 0);
+  assert.equal(clock.step, 1);
+});

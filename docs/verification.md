@@ -310,3 +310,53 @@ Final development verification:
   44px and the page has no horizontal overflow.
 - Build: nine runtime assets and eleven voice MP3s only. `git diff --check`
   passed; the original site reference is unchanged.
+
+
+## Play, hear and see tutorial; bright child-facing theme — 2026-10-17
+
+Updated base main was 7e8e34b. Its full Node suite passed 31 tests with no
+failures; syntax checks passed. Sites source synchronization confirmed that
+base before work began.
+
+The musical lessons now use an isolated in-memory practice song. Before
+drum practice, all drum and tune tracks become blank at 120 BPM. Each drum,
+beat, note, chord and sound action enters a listening phase: its own part
+plays for four short cycles, with the relevant four-step phrase selectively
+highlighted and the playhead moving in time. Hear again replays it. Next
+becomes available after playback, and Xbox focus moves to it. During the
+sound task, the learned notes loop while the slider changes their timbre.
+
+Bye/Escape/Xbox B/blur restore the original song without overwriting storage.
+Keep it repeats the learned phrase across the full 16-step loop and records
+one edit in the original song's Undo history. Keyboard/controller shortcuts
+cannot reintroduce preset notes or bypass a practice task.
+
+The instrument now uses cream and pastel surfaces, coloured drum pads,
+chunky yellow actions, bright tabs and a dark outlined playhead. Speed has
+tortoise/hare cues. The large Arial labels and device-independent Scottish
+recordings remain. No new voice generation or OpenRouter calls were needed.
+
+A short landscape overlap was reproduced: the full four-step phrase extended
+under the helper. A narrower landscape helper gives it a separate column.
+The tune highlight also initially included the step-number row and scrolled
+partly above the viewport; the region now includes only note buttons and
+explicitly scrolls the full highlighted group into view. Collision checks also
+include the highlight border, preventing a small overlap at the sound slider.
+
+Development verification:
+
+- `node --test`: 35 passed, 0 failed. Four new checks cover empty isolated
+  tracks, solo playback with intact chords, keeping the phrase, and four-step
+  clock wrapping. The 31 baseline checks remain passing.
+- `runBrowserChecks()` at 800×1280: 305 passed. New cases exercise actual
+  finite Web Audio rewards, cancellation, all listening phases, replay, live
+  sound changes, storage isolation, Keep it/Undo, and Xbox Next/guard behavior.
+- At 1280×800, 800×360 and 360×800: 104 focused tutorial, eight layout
+  and seven reading checks passed at each size. The full tablet suite also
+  passed its tutorial checks; layout and reading checks passed there.
+- All runtime/browser-check modules pass syntax checks. The build still
+  packages nine app assets and eleven unchanged MP3s. Original-site reference
+  files are unchanged and `git diff --check` passes.
+
+These are browser/simulated-gamepad checks, not physical Win11/Android/Xbox
+hardware listening or connection tests.

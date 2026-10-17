@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=10';
-import { AudioEngine } from './audio.js?v=10';
-import { GamepadReader } from './gamepad.js?v=10';
-import { ZachTutorial, TutorialSpeech } from './tutorial.js?v=10';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=11';
+import { AudioEngine } from './audio.js?v=11';
+import { GamepadReader } from './gamepad.js?v=11';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong } from './tutorial.js?v=11';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -15,13 +15,13 @@ try {
   saved = restoreSong(raw);
   invalidSave = raw !== null && saved === null;
 } catch { /* Saving remains optional; the instrument can still play. */ }
-const history = new SongHistory(saved || createSong());
+let history = new SongHistory(saved || createSong());
 let section = 'drums', page = 0, visibleSteps = stepCount();
 let currentStep = -1, controllerMode = false, connectedPad = null;
 let messageTimer, previewTimer, groupTimer;
 const reader = new GamepadReader();
-let tutorial = null;
-const engine = new AudioEngine(() => history.song, showStep, showPlayback, message);
+let tutorial = null, originalHistory = null, lessonPreview = null;
+const engine = new AudioEngine(() => lessonPreview ? tutorialPlaybackSong(history.song, lessonPreview) : history.song, showStep, showPlayback, message);
 
 function message(text) {
   clearTimeout(messageTimer);
@@ -31,6 +31,7 @@ function message(text) {
 }
 
 function saveSong() {
+  if (tutorial?.active) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(history.song));
     $('#save-status span').textContent = 'Saved';
@@ -233,6 +234,13 @@ function showStep(step) {
   currentStep = step;
   $$('[data-step]').forEach(element => element.classList.toggle('current', Number(element.dataset.step) === step));
   tutorial?.draw();
+  if (lessonPreview === 'drum' && step === 0) flash($('[data-drum-pad="0"]'));
+}
+
+function stopLessonPreview() { if (!lessonPreview) return; lessonPreview = null; engine.stop(); }
+function playLessonPreview(kind, continuous = false) {
+  lessonPreview = null; engine.stop(); lessonPreview = kind;
+  engine.start({ steps: 4, cycles: continuous ? Infinity : 4 });
 }
 
 function showPlayback(state) {
@@ -241,6 +249,7 @@ function showPlayback(state) {
   $('#play').innerHTML = `${icon(active || starting ? 'stop' : 'play')}<span>${starting ? 'Starting…' : active ? 'Stop' : "Let's play"}</span>`;
   $('#play-state').classList.toggle('playing', active);
   $('#play-state span').textContent = starting ? 'Wait…' : active ? 'Playing!' : 'Ready?';
+  if (state === 'stopped' && lessonPreview) { lessonPreview = null; tutorial?.previewEnded(); }
   tutorial?.playback(state);
 }
 
@@ -272,6 +281,7 @@ $$('[data-tab]').forEach(button => {
   button.addEventListener('keydown', event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
+    if (tutorial?.active) return;
     const index = sections.indexOf(section);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (index + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
     setSection(sections[next], true);
@@ -330,20 +340,20 @@ document.addEventListener('keydown', event => {
   controllerMode = false;
   $$('.controller-focus').forEach(node => node.classList.remove('controller-focus'));
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !dialog.open) {
-    event.preventDefault(); undo();
+    event.preventDefault(); if (!tutorial?.active) undo();
   }
 });
 
 function controls() {
   return [...(dialog.open ? dialog : document).querySelectorAll('button, input[type=range]')]
     .filter(element => !element.disabled && element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden')
-    .filter(element => !tutorial?.active || element === tutorial.target || tutorial.card.contains(element));
+    .filter(element => !tutorial?.active || (!tutorial.reviewing && element === tutorial.target) || tutorial.card.contains(element));
 }
 
 function moveFocus(direction) {
   const available = controls();
   let current = document.activeElement;
-  if (!available.includes(current)) { focusControl(available.includes($('#play')) ? $('#play') : available[0]); return; }
+  if (!available.includes(current)) { focusControl(tutorial?.active ? tutorial.preferredControl : available.includes($('#play')) ? $('#play') : available[0]); return; }
   const horizontal = direction === 'left' || direction === 'right';
   const sign = direction === 'left' || direction === 'up' ? -1 : 1;
   if (horizontal && current.matches('input[type=range]')) {
@@ -386,10 +396,11 @@ function moveFocus(direction) {
 
 function controllerAction(action) {
   controllerMode = true;
+  if (tutorial?.active && (action === 'undo' || (action === 'play' && !['playing', 'stopped'].includes(tutorial.step.action)))) return;
   if (tutorial?.active && action === 'back') { tutorial.stop(); return; }
-  if (tutorial?.active && ['next-section', 'previous-section'].includes(action)) { tutorial.refresh(true); return; }
+  if (tutorial?.active && ['next-section', 'previous-section'].includes(action)) { tutorial.refresh(!tutorial.reviewing); return; }
   const available = controls();
-  if (!available.includes(document.activeElement)) focusControl(tutorial?.active ? tutorial.target || available[0] : dialog.open ? $('#close-help') : $('#play'));
+  if (!available.includes(document.activeElement)) focusControl(tutorial?.active ? (tutorial.preferredControl || available[0]) : dialog.open ? $('#close-help') : $('#play'));
   else focusControl(document.activeElement);
   if (['up', 'down', 'left', 'right'].includes(action)) moveFocus(action);
   else if (action === 'activate') document.activeElement.click();
@@ -484,12 +495,24 @@ tutorial = new ZachTutorial({
   getStep: () => currentStep,
   focus: focusControl,
   cue: () => engine.feedback(),
+  playPreview: playLessonPreview, stopPreview: stopLessonPreview,
+  onStop(keepSong) {
+    engine.stop();
+    const made = history.song;
+    history = originalHistory || history; originalHistory = null;
+    if (keepSong) { history.commit(made); saveSong(); }
+    buildGrids(); setSection(section);
+  },
   speech: new TutorialSpeech({ volume: () => engine.volume, duck: value => engine.setDucked(value) }),
   onStart() {
     if (dialog.open) dialog.close();
-    clearTimeout(previewTimer); engine.stop(); history.end(); setSection('drums'); changePage(0);
+    clearTimeout(previewTimer); engine.stop(); history.end();
+    originalHistory = history; history = new SongHistory(history.song);
+    setSection('drums'); changePage(0);
   },
   prepare(step, initial) {
+    if (initial && step.audio === 'drum') { history.commit(blankTutorialSong(history.song)); buildGrids(); }
+    if (initial && step.audio === 'play') { history.commit(finishTutorialSong(history.song)); buildGrids(); }
     if (step.section && section !== step.section) setSection(step.section);
     if (step.section && step.section !== 'sound' && page !== 0) changePage(0);
     if (step.note && initial) {

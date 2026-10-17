@@ -264,7 +264,7 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
 .tutorial-picture svg { display: block; width: 100%; height: 60px; overflow: visible; }
 .tutorial-picture text { font: 20px Arial, Helvetica, sans-serif; fill: #405033; }
 .tutorial-picture figcaption { font-size: 20px; font-weight: 700; text-align: center; margin-top: 4px; }
-.tutorial-actions #tutorial-done { background: var(--lime); border-color: #94ad58; margin-left: auto; }
+.tutorial-actions #tutorial-next, .tutorial-actions #tutorial-done { background: var(--lime); border-color: #94ad58; margin-left: auto; }
 #tutorial-ring { position: fixed; z-index: 35; pointer-events: none; border: 5px solid #f4cf54; outline: 3px solid #233029; border-radius: 15px; box-shadow: 0 0 0 6px #fffdf3, 0 4px 22px #0006; }
 #tutorial-shade { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
 #tutorial-shade svg { width: 100%; height: 100%; display: block; }
@@ -283,7 +283,7 @@ dialog .play-button { min-height: 54px; font-size: 16px; width: 100%; margin-top
   .tutorial-card button { font-size: 20px; padding: 8px 11px; }
 }
 @media (max-height: 500px) {
-  .tutorial-card { width: min(380px, calc(100% - 24px)); padding: 6px 14px 10px; }
+  .tutorial-card { width: min(320px, calc(100% - 24px)); right: 12px; padding: 6px 14px 10px; }
   .tutorial-card h2 { font-size: 28px; margin: 2px 0 5px; }
   .tutorial-card p { font-size: 23px; margin-bottom: 8px; }
   .tutorial-picture { margin-bottom: 6px; }
@@ -369,4 +369,87 @@ input[type=range]::-moz-range-thumb { width: 25px; height: 25px; }
   .transport-actions { gap: 10px; }
   .transport-actions .play-button { font-size: 22px; padding: 12px; }
   .transport-actions .reset-button { font-size: 20px; padding: 12px; }
+}
+
+/* A bright music toy: colour identifies each instrument; ink marks playback. */
+:root {
+  --paper: #fff8e9; --ink: #26344a; --muted: #536473; --line: #e6dfce;
+  --machine: #fffdf8; --step: #f0f3f8; --focus: #26344a;
+}
+.brand-dot { color: #e27d32; }
+.brand-mark { background: #354569; box-shadow: 0 4px 0 #d7d8df; }
+.masthead { border-bottom: 2px solid #e8dfc9; }
+.intro-copy { color: #536473; }
+h1 > span { color: #d47a25; }
+.help-button { background: white; border: 2px solid #bac6d1; }
+.groove-card { border: 3px solid #e0dfdf; box-shadow: 0 4px 0 #ddd9cc; }
+.groove-card:nth-child(3n + 1) { background: #fff0c9; }
+.groove-card:nth-child(3n + 2) { background: #f0e8ff; }
+.groove-card:nth-child(3n) { background: #e1f6f2; }
+.groove-card[aria-pressed=true] { border: 3px solid var(--ink); box-shadow: 0 5px 0 #9ba6b5; }
+.groove-card:hover { filter: brightness(1.025); }
+.groove-art { border: 2px solid #26344a12; }
+.groove-art .icon { stroke-width: 2.2; }
+.machine { background: var(--machine); color: var(--ink); border: 3px solid #a7b7cd; border-radius: 28px; box-shadow: 0 8px 0 #c9d5e2; }
+.machine-top { background: #eef1fd; border-bottom: 2px solid #d7deed; }
+.machine-name, .play-state, .play-state.playing { color: #42516b; }
+.play-state i { background: #9aa7be; }
+.play-state.playing i { background: #278362; box-shadow: 0 0 0 4px #c7f0d4; }
+.tabs { background: #f0edf7; padding: 7px; gap: 7px; border-radius: 18px; }
+.tab { border: 2px solid transparent; color: var(--ink); min-height: 66px; }
+.tab[data-tab=drums] { background: #ffe1d4; }
+.tab[data-tab=melody] { background: #e9dfff; }
+.tab[data-tab=sound] { background: #cdf0eb; }
+.tab[aria-selected=true] { border-color: var(--ink); box-shadow: 0 4px 0 #8c9ab0; }
+.tab:hover:not([aria-selected=true]) { color: var(--ink); background: #fff2b5; }
+.machine :focus-visible, .machine .controller-focus { outline-color: #26344a !important; }
+.machine-button { color: var(--ink); background: white; border: 2px solid #bcc9d5; box-shadow: 0 3px 0 #d7dfe6; border-radius: 15px; }
+.machine-button:hover:enabled { background: #fff1b9; border-color: #7e94ab; }
+.pattern-controls p, .grid-tip, .grid-tip span, .instrument-caption { color: #4b6073; }
+.page-picker button { background: #eef1fa; border: 2px solid #c8d2e3; color: #455b76; }
+.page-picker button[aria-pressed=true] { background: #ffdf73; color: var(--ink); border-color: #7e6c3e; }
+.step-number, .step-number.beat-start { color: #4b6073; }
+.step-number.current { color: var(--ink); background: #ffdf73; border-radius: 8px; }
+.drum-pad, .note-key { background: var(--row-color); color: var(--ink); border: 2px solid #26344a25; box-shadow: 0 3px 0 #b6c4cc; border-radius: 12px; }
+.drum-pad:active, .drum-pad.sounding, .note-key:active, .note-key.sounding { background: var(--row-color); color: var(--ink); filter: brightness(1.08); box-shadow: inset 0 0 0 3px #26344a; }
+.key-dot { background: #26344a55; }
+.step, .step.beat-start { background: color-mix(in srgb, var(--row-color) 13%, white); border: 2px solid #cbd4de; border-top: 4px solid color-mix(in srgb, var(--row-color) 60%, #99a7bb); box-shadow: 0 3px 0 #cbd4de; border-radius: 12px; }
+.step[aria-pressed=true] { background: var(--row-color); border-color: #26344a40; border-top-color: #26344a40; box-shadow: 0 3px 0 #a8b7c4; }
+.step.current, .melody-grid .step.current { box-shadow: inset 0 0 0 3px #26344a, 0 0 0 2px white; }
+.instrument-picker button { background: color-mix(in srgb, var(--instrument-color, #c5bbec) 35%, white); color: var(--ink); border: 2px solid #b8c6d5; border-radius: 15px; box-shadow: 0 3px 0 #d1dbe2; }
+.instrument-picker button:hover { background: #fff1bd; }
+.instrument-picker small { color: #52677d; }
+.instrument-picker button[aria-pressed=true] { background: #e0d0ff; color: var(--ink); border-color: #786294; box-shadow: 0 3px 0 #b8a1d7; }
+.switch-icon { color: #42516b; font-size: 28px; opacity: 1; }
+.beat-ruler, .beat-ruler > span { color: #4b6073; }
+.loop-light { background: #e0e5ed; }
+.loop-light:nth-child(4n+1) { background: #b3bfd0; }
+.loop-light.current { background: #dd8435; box-shadow: 0 0 0 3px #ffe4ac; }
+.transport { background: #fff1ca; border-top: 3px solid #e9d7a6; }
+.tempo-control small, .volume-control > span, .range-labels, .sound-control > span { color: #536473; }
+.tempo-control input { --track-color: #c87520; }
+.volume-control input { --track-color: #7267c6; }
+input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--track-color) 0 var(--fill), #cbd5df var(--fill) 100%); height: 8px; }
+input[type=range]::-webkit-slider-thumb { border-color: white; margin-top: -12px; box-shadow: 0 0 0 3px var(--track-color); }
+input[type=range]::-moz-range-track { background: #cbd5df; height: 8px; }
+input[type=range]::-moz-range-thumb { border-color: white; box-shadow: 0 0 0 3px var(--track-color); }
+.play-button, .transport-actions .play-button { background: #ffdf67; color: var(--ink); border: 3px solid #8e732d; box-shadow: 0 5px 0 #c9ab50; border-radius: 17px; }
+.play-button:hover { background: #ffe98f; }
+.play-button[aria-pressed=true] { background: #ffb19b; box-shadow: 0 5px 0 #c98575; border-color: #a25f50; }
+.sound-view { background: #e7f6f4; border: 2px solid #a4d2cd; border-radius: 19px; }
+.scope-label { color: #326e69; }
+.scope-line { stroke: #b9d9d5; }
+#wave-path { stroke: #25796f; stroke-width: 4; }
+.hear-button { color: #255f5a; background: white; border: 2px solid #6caaa3; }
+.sound-control input { --track-color: #25796f; }
+.discovery, .app-footer button { color: #536473; }
+.tutorial-start { background: #ffdf67; box-shadow: 0 4px 0 #d2b455; }
+.tutorial-card { background: #fffdf1; color: var(--ink); border-color: var(--ink); }
+.tutorial-actions #tutorial-next, .tutorial-actions #tutorial-done { background: #ffdf67; border-color: #ad903b; }
+@media (max-width: 620px) {
+  .tabs { gap: 4px; padding: 4px; }
+  .tab { padding: 9px 3px; }
+  .machine { border-width: 2px; }
+  .groove-card { padding: 10px 8px; }
+  .groove-card[aria-pressed=true] { padding: 9.5px 7.5px; }
 }

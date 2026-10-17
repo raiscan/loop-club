@@ -127,3 +127,44 @@ test('tutorial pictures show the actual beat, chord notes and sound settings', (
   assert.equal(TUTORIAL_STEPS.filter(step => step.note).length, 2);
   assert.ok(TUTORIAL_STEPS.at(-1).done);
 });
+
+test('lesson tracks start empty without changing the saved song', async () => {
+  const { blankTutorialSong } = await import('../tutorial.js');
+  const original = createSong('liquid'), before = structuredClone(original);
+  const lesson = blankTutorialSong(original);
+  assert.ok(lesson.drums.every(row => row.every(hit => hit === false)));
+  assert.ok(lesson.melody.every(notes => notes.length === 0));
+  assert.equal(lesson.tempo, 120);
+  lesson.drums[0][0] = true; lesson.melody[0].push(0, 2);
+  assert.deepEqual(original, before);
+});
+
+test('musical lesson playback isolates the edited instrument and preserves chord notes', async () => {
+  const { tutorialPlaybackSong } = await import('../tutorial.js');
+  const original = createSong('liquid'), before = structuredClone(original);
+  const beat = tutorialPlaybackSong(original, 'beat');
+  assert.deepEqual(beat.drums[0], original.drums[0]);
+  assert.ok(beat.drums.slice(1).every(row => row.every(hit => !hit)));
+  assert.ok(beat.melody.every(notes => notes.length === 0));
+  for (const kind of ['note', 'chord', 'slide']) {
+    const solo = tutorialPlaybackSong(original, kind);
+    assert.ok(solo.drums.every(row => row.every(hit => !hit)));
+    assert.deepEqual(solo.melody, original.melody);
+    assert.deepEqual(solo.sound, original.sound);
+  }
+  assert.deepEqual(original, before);
+});
+
+test('keeping a tutorial song repeats the learned phrase across the full loop', async () => {
+  const { finishTutorialSong, blankTutorialSong } = await import('../tutorial.js');
+  const lesson = blankTutorialSong(createSong());
+  lesson.drums[0][0] = true; lesson.melody[0] = [0, 1];
+  const result = finishTutorialSong(lesson);
+  for (const step of [0, 4, 8, 12]) {
+    assert.equal(result.drums[0][step], true);
+    assert.deepEqual(result.melody[step], [0, 1]);
+  }
+  result.melody[4].push(3);
+  assert.deepEqual(lesson.melody[0], [0, 1]);
+  assert.deepEqual(result.melody[8], [0, 1]);
+});

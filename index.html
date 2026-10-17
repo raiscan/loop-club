@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f3eb">
+  <meta name="theme-color" content="#fff8e9">
   <meta name="description" content="A little music machine. Make beats, draw tunes and explore synth sounds with touch, mouse or an Xbox controller on PC.">
   <title>Loop Club — your little music machine</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <link rel="stylesheet" href="style.css?v=10">
-  <script type="module" src="app.js?v=10"></script>
+  <link rel="stylesheet" href="style.css?v=11">
+  <script type="module" src="app.js?v=11"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -62,7 +62,7 @@
           </div>
           <div class="beat-ruler" aria-hidden="true"><span>Again ↻</span><div id="loop-lights"></div><svg class="icon"><use href="#i-reset"/></svg></div>
         </div>
-        <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span>Slow</span><span>Fast</span></span><input id="tempo" type="range" min="30" max="300" value="164" data-nav="transport"></label><label class="volume-control" for="volume"><span><svg class="icon"><use href="#i-volume"/></svg>Loud</span><input id="volume" type="range" min="0" max="100" value="55" data-nav="transport"></label><div class="transport-actions"><button id="play" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button></div></div>
+        <div class="transport"><label class="tempo-control" for="tempo"><span>Speed <small id="tempo-value">164 BPM</small></span><span class="range-labels"><span><span aria-hidden="true">🐢 </span>Slow</span><span>Fast<span aria-hidden="true"> 🐇</span></span></span><input id="tempo" type="range" min="30" max="300" value="164" data-nav="transport"></label><label class="volume-control" for="volume"><span><svg class="icon"><use href="#i-volume"/></svg>Loud</span><input id="volume" type="range" min="0" max="100" value="55" data-nav="transport"></label><div class="transport-actions"><button id="play" class="play-button" aria-pressed="false" data-nav="transport"><svg class="icon"><use href="#i-play"/></svg><span>Let's play</span></button><button id="reset" class="machine-button reset-button" data-nav="transport"><svg class="icon"><use href="#i-reset"/></svg><span>Start over</span></button></div></div>
       </section>
       <footer class="app-footer"><span class="discovery"><span aria-hidden="true">✳</span> Make it yours!</span><button id="controller-help"><svg class="icon"><use href="#i-pad"/></svg><span id="controller-status">Xbox help</span></button></footer>
       <p id="message" class="message" role="status" aria-live="polite" hidden></p>
@@ -74,7 +74,7 @@
     <div class="tutorial-topline"><span id="tutorial-count" aria-label="Step"></span><button id="tutorial-exit" aria-label="Leave the tutorial">Bye ×</button></div>
     <div aria-live="polite" aria-atomic="true"><h2 id="tutorial-title"></h2><p id="tutorial-copy"></p></div>
     <figure id="tutorial-picture" class="tutorial-picture"></figure>
-    <div class="tutorial-actions"><button id="tutorial-repeat">Say it ↻</button><button id="tutorial-voice" aria-pressed="true">Voice on</button><button id="tutorial-done" hidden>Done ✓</button></div>
+    <div class="tutorial-actions"><button id="tutorial-repeat">Say it ↻</button><button id="tutorial-voice" aria-pressed="true">Voice on</button><button id="tutorial-next" hidden disabled>Next →</button><button id="tutorial-done" hidden>Keep it ✓</button></div>
   </section>
   <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-heading"><span class="eyebrow">FOR GROWN-UPS</span><button id="close-help" aria-label="Close help">×</button></div><h2 id="help-title">Play and learn together.</h2><p>Choose a starting groove and press <strong>Let’s play</strong>. Tap the squares to change the beat. Tap a numbered drum sound to switch instruments. In <strong>Tunes</strong>, put notes higher or lower, stack them in one column for chords, and choose a Bass, Pluck, Game or Bell sound. In <strong>Sounds</strong>, shape your synth.</p><p><strong>Touch or mouse</strong><br>Tap or click a square. Drag a slider. Use Undo whenever you like.</p><p>Song cards use short names for Zach. <span id="song-details"></span> Tone changes the filter; Length changes how long each note rings. Speed is in beats per minute (BPM). The Loud slider sets the volume.</p><div class="controller-guide"><h3>Xbox controller · PC</h3><p>Connect it to your PC, then press any button. If sound is blocked, click or tap Play once.</p><dl><dt>D-pad / left stick</dt><dd>Move the highlight; adjust sliders</dd><dt><b class="xbox-a">A</b></dt><dd>Play a pad or change a step</dd><dt><b class="xbox-b">B</b></dt><dd>Back to the section tab / close help</dd><dt><b class="xbox-x">X</b></dt><dd>Undo</dd><dt>LB / RB</dt><dd>Switch Drums, Tunes and Sounds</dd><dt>Menu ☰</dt><dd>Play / stop the loop</dd></dl></div><p class="help-note">Your latest groove is saved in this browser. Undo lasts until you reload. Starting over or choosing another groove can be undone. Closing or leaving the page stops playback.</p><button id="help-done" class="play-button">Let’s make music <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
 </body>
