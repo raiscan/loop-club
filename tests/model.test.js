@@ -10,7 +10,8 @@ test('each starter is a complete editable loop, with independently owned arrays'
     assert.ok(first.drums.slice(0, 3).every(row => row.some(Boolean)));
     assert.ok(first.drums[3].every(value => !value));
     assert.equal(first.melody.length, STEPS);
-    assert.ok(first.melody.some(note => Number.isInteger(note)));
+    assert.ok(first.melody.every(notes => Array.isArray(notes)));
+    assert.ok(first.melody.some(notes => notes.length > 0));
     first.drums[0][0] = !first.drums[0][0];
     assert.notDeepEqual(first.drums, createSong(id).drums);
   }
@@ -22,8 +23,8 @@ test('editing a drum or pitch changes one step and does not mutate the prior son
   assert.equal(edited.drums[1][3], !before.drums[1][3]);
   assert.deepEqual(edited.drums[0], before.drums[0]);
   const note = editSong(edited, { type: 'note', step: 3, note: NOTES.length - 1 });
-  assert.equal(note.melody[3], NOTES.length - 1);
-  assert.equal(editSong(note, { type: 'note', step: 3, note: NOTES.length - 1 }).melody[3], null);
+  assert.deepEqual(note.melody[3], [0, NOTES.length - 1]);
+  assert.deepEqual(editSong(note, { type: 'note', step: 3, note: NOTES.length - 1 }).melody[3], [0]);
 });
 
 test('tempo and synth settings remain in range; invalid edits leave the song unchanged', () => {
@@ -65,14 +66,56 @@ test('old three-drum saves migrate without changing the music or synth settings'
     sound: { brightness: 27, length: 61, wobble: 49 }
   };
   const migrated = restoreSong(JSON.stringify(old));
-  assert.equal(migrated.version, 2);
+  assert.equal(migrated.version, 3);
   assert.deepEqual(migrated.drums.slice(0, 3), old.drums);
   assert.deepEqual(migrated.drums[3], Array(16).fill(false));
   assert.deepEqual(migrated.drumSounds, ['kick', 'snare', 'hat', 'clap']);
   assert.equal(migrated.synth, 'bass');
   assert.equal(migrated.tempo, 137);
-  assert.deepEqual(migrated.melody, old.melody);
+  assert.deepEqual(migrated.melody, old.melody.map(note => note === null ? [] : [note]));
   assert.deepEqual(migrated.sound, old.sound);
+});
+
+test('chord notes toggle independently and undo preserves the other notes', () => {
+  const original = createSong();
+  const history = new SongHistory(original);
+  history.commit(editSong(history.song, { type: 'note', step: 0, note: 3 }));
+  history.commit(editSong(history.song, { type: 'note', step: 0, note: 1 }));
+  assert.deepEqual(history.song.melody[0], [0, 1, 3]);
+  assert.deepEqual(original.melody[0], [0]);
+  history.commit(editSong(history.song, { type: 'note', step: 0, note: 1 }));
+  assert.deepEqual(history.song.melody[0], [0, 3]);
+  assert.deepEqual(history.undo().melody[0], [0, 1, 3]);
+  const saved = restoreSong(JSON.stringify(history.song));
+  assert.deepEqual(saved.melody[0], [0, 1, 3]);
+  saved.melody[0].push(5);
+  assert.deepEqual(history.song.melody[0], [0, 1, 3]);
+});
+
+test('version-two saves retain selected instruments and migrate rests and single notes', () => {
+  const legacy = { ...createSong('club'), version: 2, synth: 'bell', tempo: 300,
+    drumSounds: ['tom', 'clap', 'openhat', 'cowbell'],
+    melody: [0, 1, 2, 3, 4, 5, null, null, 3, null, 2, null, 0, null, null, null] };
+  const migrated = restoreSong(JSON.stringify(legacy));
+  assert.equal(migrated.version, 3);
+  assert.equal(migrated.synth, 'bell');
+  assert.equal(migrated.tempo, 300);
+  assert.deepEqual(migrated.drums, legacy.drums);
+  assert.deepEqual(migrated.drumSounds, legacy.drumSounds);
+  assert.deepEqual(migrated.sound, legacy.sound);
+  assert.deepEqual(migrated.melody, [[0], [1], [2], [3], [4], [5], [], [], [3], [], [2], [], [0], [], [], []]);
+});
+
+test('chord saves validate each pitch, reject duplicates, and allow all six notes or a rest', () => {
+  const song = createSong();
+  for (const notes of [[], [0, 1, 2, 3, 4, 5]]) {
+    song.melody[0] = notes;
+    assert.deepEqual(restoreSong(JSON.stringify(song)).melody[0], notes);
+  }
+  for (const invalid of [[0, 0], [6], [-1], ['0'], null, 3, [0, 1, 2, 3, 4, 5, 6]]) {
+    song.melody[0] = invalid;
+    assert.equal(restoreSong(JSON.stringify(song)), null);
+  }
 });
 
 test('instrument choices preserve patterns, save and undo as complete edits', () => {

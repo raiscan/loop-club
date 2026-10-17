@@ -1,6 +1,6 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS } from './model.js?v=4';
-import { AudioEngine } from './audio.js?v=4';
-import { GamepadReader } from './gamepad.js?v=4';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS } from './model.js?v=6';
+import { AudioEngine } from './audio.js?v=6';
+import { GamepadReader } from './gamepad.js?v=6';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -129,7 +129,7 @@ function buildGrids() {
       button.setAttribute('aria-label', `${note.name}, step ${step + 1}`);
       button.addEventListener('click', () => {
         commit(editSong(history.song, { type: 'note', step, note: pitch }));
-        if (!engine.playing && history.song.melody[step] === pitch) engine.audition('note', pitch);
+        if (!engine.playing) engine.audition('chord', history.song.melody[step]);
       });
       melodyGrid.append(button);
     }
@@ -169,7 +169,7 @@ function setSection(next, focusTab = false) {
   $('#synth-picker').hidden = section === 'drums';
   const titles = {
     drums: ['Tap a square. Make a beat.', 'Try the big drums, too.'],
-    melody: ['Draw a little tune.', 'Every coloured key belongs in your groove.'],
+    melody: ['Draw a tune. Stack a chord.', 'Put notes in the same column to play them together.'],
     sound: ['What does your synth sound like?', 'Three little changes. Lots of new sounds.']
   };
   $('#workspace-title').textContent = titles[section][0];
@@ -197,7 +197,7 @@ function updateSong() {
     button.setAttribute('aria-label', `Change drum ${row + 1} sound, ${drum.name}`);
   });
   $$('[data-synth-choice]').forEach(button => button.setAttribute('aria-pressed', button.dataset.synthChoice === song.synth));
-  $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step] === Number(button.dataset.note)));
+  $$('[data-note]').forEach(button => button.setAttribute('aria-pressed', song.melody[button.dataset.step].includes(Number(button.dataset.note))));
   $('#tempo').value = song.tempo; $('#tempo-value').textContent = `${song.tempo} BPM`;
   $$('[data-sound]').forEach(input => { input.value = song.sound[input.dataset.sound]; });
   $$('input[type=range]').forEach(updateRange);

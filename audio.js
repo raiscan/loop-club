@@ -1,4 +1,4 @@
-import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=4';
+import { NOTES, TEMPO_MIN, TEMPO_MAX } from './model.js?v=6';
 
 const noiseBuffers = new WeakMap();
 
@@ -140,11 +140,28 @@ export function synthVoice(context, destination, note, time, sound, tempo, instr
   return voice([oscillator, sub], [filter, gain, subGain], time, duration);
 }
 
+export function synthChord(context, destination, notes, time, sound, tempo, instrument = 'bass') {
+  if (!notes.length) return null;
+  const mix = context.createGain();
+  mix.gain.value = 1 / Math.sqrt(notes.length);
+  mix.connect(destination);
+  const voices = notes.map(note => synthVoice(context, mix, note, time, sound, tempo, instrument));
+  let remaining = voices.length;
+  const chord = { stop(at) { voices.forEach(handle => handle.stop(at)); }, onended: null };
+  voices.forEach(handle => {
+    handle.onended = () => {
+      if (--remaining === 0) { mix.disconnect(); chord.onended?.(); }
+    };
+  });
+  return chord;
+}
+
 export class AudioEngine {
   constructor(getSong, onStep, onState, onError) {
     this.getSong = getSong; this.onStep = onStep; this.onState = onState; this.onError = onError;
     this.context = null; this.playing = false; this.pending = false;
     this.generation = 0; this.timer = null; this.visuals = new Set(); this.voices = new Set();
+    this.previewChord = null;
     this.volume = 0.55;
   }
 
@@ -201,7 +218,10 @@ export class AudioEngine {
 
   track(handle) {
     this.voices.add(handle);
-    handle.onended = () => this.voices.delete(handle);
+    handle.onended = () => {
+      this.voices.delete(handle);
+      if (this.previewChord === handle) this.previewChord = null;
+    };
   }
 
   tick() {
@@ -209,7 +229,7 @@ export class AudioEngine {
     const song = this.getSong();
     for (const { step, time } of scheduledSteps(this.clock, this.context.currentTime, song.tempo)) {
       song.drums.forEach((row, index) => { if (row[step]) this.track(drumVoice(this.context, this.bus, song.drumSounds[index], time)); });
-      if (song.melody[step] !== null) this.track(synthVoice(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth));
+      if (song.melody[step].length) this.track(synthChord(this.context, this.bus, song.melody[step], time, song.sound, song.tempo, song.synth));
       const timer = setTimeout(() => {
         this.visuals.delete(timer);
         if (this.playing) this.onStep(step);
@@ -229,6 +249,7 @@ export class AudioEngine {
       this.bus.gain.setTargetAtTime(0, now, 0.008);
       for (const handle of this.voices) handle.stop(now + 0.025);
       this.voices.clear();
+      this.previewChord = null;
     }
     this.onStep(-1); this.onState('stopped');
   }
@@ -245,9 +266,12 @@ export class AudioEngine {
       if (generation !== this.generation || globalThis.document?.hidden) return;
       const now = this.context.currentTime + 0.005;
       const song = this.getSong();
-      this.track(kind === 'drum'
+      if (kind === 'chord') this.previewChord?.stop(now);
+      const handle = kind === 'drum'
         ? drumVoice(this.context, this.compressor, song.drumSounds[value], now)
-        : synthVoice(this.context, this.compressor, value, now, song.sound, song.tempo, song.synth));
+        : synthChord(this.context, this.compressor, kind === 'chord' ? value : [value], now, song.sound, song.tempo, song.synth);
+      if (handle) this.track(handle);
+      if (kind === 'chord') this.previewChord = handle;
     } catch (error) { this.onError(error.message); }
   }
 }

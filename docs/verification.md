@@ -132,3 +132,35 @@ The browser accepted and saved both limits; actual moving-playhead intervals
 averaged 500ms at 30 BPM and 48ms at 300 BPM, versus expected sixteenth-note
 intervals of 500ms and 50ms. The precise audio-clock intervals are covered by
 the Node timing test, and save validation rejects values outside 30–300.
+
+## Chords in Tunes — 17 October 2026
+
+Tunes now toggles each pitch independently, allowing up to the six available
+notes on a step. Chords start all their voices at the same audio time with
+square-root gain balancing. A stopped edit previews the resulting chord and
+replaces the preceding chord audition; removing its last note stops that
+preview. Stop handles all notes in every active chord.
+
+Schema version three stores each melody step as a list of unique pitches.
+Both previous schemas migrate their single notes/rests into one-note/empty
+lists, keeping drum patterns, instrument choices, tempo and synth settings.
+The storage key stays unchanged. Asset queries advance to `v=6`.
+
+Baseline main `0e88a57` passed 19 Node tests. Development verification:
+
+- `node --test`: 22 passed, 0 failed. Prior checks remain passing with the
+  monophonic-edit expectations intentionally updated to independent toggles.
+  Added multi-note undo, both migrations and chord-save validation checks.
+- Syntax checks for all application modules and browser checks passed;
+  `git diff --check` passed. Original-site references remain unchanged.
+- `runBrowserChecks()` at 800px: 102 passed. Includes all four synths producing
+  the expected simultaneous three-note signal, empty-chord silence, stop and
+  preview replacement, six-note chord renders at 30/300 BPM, mouse and Xbox
+  stacking/removal/undo, and the earlier integration checks.
+- Responsive checks passed at 360px and 800px, seven checks per viewport.
+- A real legacy-save reload preserved its musical state; after adding a
+  three-note chord, another reload restored all three active squares, the
+  Bell instrument and the 300 BPM tempo.
+
+Physical Android/Xbox testing remains outstanding. No remote is configured;
+local integration can proceed, while push and post-push cleanup remain pending.

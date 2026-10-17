@@ -2,8 +2,8 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice } from '../audio.js?v=4';
-import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=4';
+import { AudioEngine, drumVoice, synthVoice, synthChord } from '../audio.js?v=6';
+import { createSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=6';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -65,7 +65,7 @@ export async function runAudioChecks() {
       for (let step = 0; step < 16; step++) {
         const time = 0.04 + step * 60 / song.tempo / 4;
         song.drums.forEach((row, index) => { if (row[step]) drumVoice(ctx, compressor, song.drumSounds[index], time); });
-        if (song.melody[step] !== null) synthVoice(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth);
+        if (song.melody[step].length) synthChord(ctx, compressor, song.melody[step], time, song.sound, song.tempo, song.synth);
       }
     }, seconds);
     check(data.every(Number.isFinite) && energy(data) > 0.01 && data.every(value => Math.abs(value) < 1), `${preset}: full bar renders without silence, non-finite samples or clipping`, results);
@@ -125,9 +125,9 @@ export async function runInteractionChecks() {
     check(same(readSong(), edited), 'start over can be undone', results);
     $('#tab-melody').click();
     const note = $('[data-note="5"][data-step="0"]'); note.click();
-    check(readSong().melody[0] === 5 && document.querySelectorAll('#melody-grid [data-step="0"][aria-pressed=true]').length === 1, 'melody editing replaces the pitch at a step', results);
+    check(same(readSong().melody[0], [0, 5]) && document.querySelectorAll('#melody-grid [data-step="0"][aria-pressed=true]').length === 2, 'melody editing adds a note beside the existing pitch', results);
     note.click();
-    check(readSong().melody[0] === null, 'tapping an active melody note removes it', results);
+    check(same(readSong().melody[0], [0]), 'tapping an active melody note removes only that note', results);
     $('#tab-sound').click();
     const oldSound = readSong().sound;
     const slider = $('#brightness');
@@ -187,6 +187,15 @@ export async function runInteractionChecks() {
     }
     await press(5);
     check($('#tab-melody').getAttribute('aria-selected') === 'true', 'RB switches to Tunes', results);
+    const beforeChord = readSong().melody[0];
+    for (const note of [1, 3]) { $(`[data-note="${note}"][data-step="0"]`).focus(); await press(0); }
+    check(same(readSong().melody[0], [0, 1, 3]) && document.querySelectorAll('#melody-grid [data-step="0"][aria-pressed=true]').length === 3, 'Xbox A stacks notes into a chord without replacing existing notes', results);
+    $('[data-note="1"][data-step="0"]').focus(); await press(0);
+    check(same(readSong().melody[0], [0, 3]), 'Xbox A removes one chord note and leaves the others', results);
+    await press(2);
+    check(same(readSong().melody[0], [0, 1, 3]), 'Xbox X restores the removed chord note', results);
+    await press(2); await press(2);
+    check(same(readSong().melody[0], beforeChord), 'Xbox undo returns the column to its original notes', results);
     const beforeSynth = readSong().synth;
     $('[data-synth-choice="bell"]').focus(); await press(0);
     check(readSong().synth === 'bell', 'Xbox A selects a synth voice in Tunes', results);
@@ -222,8 +231,50 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runAudioChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks()];
+  const checks = [...await runAudioChecks(), ...await runChordChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks()];
   return { passed: checks.length, checks };
+}
+
+export async function runChordChecks() {
+  const results = [], notes = [0, 1, 3];
+  const settings = { brightness: 70, length: 60, wobble: 30 };
+  const rest = await render((ctx, out) => synthChord(ctx, out, [], 0.04, settings, 164));
+  check(energy(rest) === 0, 'an empty chord renders silence', results);
+  for (const instrument of Object.keys(SYNTH_SOUNDS)) {
+    const singles = [];
+    for (const note of notes) singles.push(await render((ctx, out) => synthVoice(ctx, out, note, 0.04, settings, 164, instrument)));
+    const chord = await render((ctx, out) => synthChord(ctx, out, notes, 0.04, settings, 164, instrument));
+    let maxError = 0;
+    for (let i = 0; i < chord.length; i++) {
+      const expected = (singles[0][i] + singles[1][i] + singles[2][i]) / Math.sqrt(3);
+      maxError = Math.max(maxError, Math.abs(chord[i] - expected));
+    }
+    check(maxError < 0.0001 && energy(chord) > 0.001, `${instrument}: chord contains all three simultaneous notes with balanced gain`, results);
+  }
+  const stopped = await render((ctx, out) => {
+    const chord = synthChord(ctx, out, notes, 0.04, settings, 164, 'bell');
+    chord.stop(0.1);
+  });
+  check(energy(stopped, 8820) === 0, 'stopping a chord silences every note', results);
+  const engine = new AudioEngine(() => createSong(), () => {}, () => {}, error => { throw new Error(error); });
+  try {
+    await engine.audition('chord', [0, 1, 3]);
+    await engine.audition('chord', [0, 3]);
+    await wait(60);
+    check(engine.voices.size === 1, 'editing a stopped chord replaces its previous audition', results);
+    await engine.audition('chord', []);
+    await wait(60);
+    check(engine.voices.size === 0, 'removing the last chord note stops its audition', results);
+  } finally { engine.stop(); if (engine.context) await engine.context.close(); }
+  for (const tempo of [30, 300]) {
+    const data = await render((ctx, out) => {
+      const gain = ctx.createGain(); gain.gain.value = 0.55 * 0.65; gain.connect(out);
+      const compressor = ctx.createDynamicsCompressor(); compressor.threshold.value = -12; compressor.ratio.value = 6; compressor.knee.value = 12; compressor.connect(gain);
+      for (let step = 0; step < 4; step++) synthChord(ctx, compressor, [0, 1, 2, 3, 4, 5], 0.04 + step * 60 / tempo / 4, { ...settings, length: 100 }, tempo, 'bell');
+    }, 3);
+    check(data.every(Number.isFinite) && data.every(value => Math.abs(value) < 1) && energy(data) > 0.001, `six-note chords render without clipping at ${tempo} BPM`, results);
+  }
+  return results;
 }
 
 export async function runInstrumentChecks() {
