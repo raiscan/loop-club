@@ -531,7 +531,11 @@ html[data-theme=race] .machine-top { border-bottom: 6px solid transparent; borde
 .tutorial-card button { background: var(--panel); color: var(--ink); border-color: var(--border); }
 .tutorial-topline > span { color: var(--subtle); }
 .tutorial-picture text { fill: var(--ink); }
-.tutorial-picture svg > path { stroke: var(--wave); }
+.tutorial-pill { fill: color-mix(in srgb, var(--row-color) 13%, var(--control)); stroke: var(--border); stroke-width: 1; }
+.tutorial-pill.on { fill: var(--row-color); stroke: #26344a40; }
+.tutorial-pill.current, .tutorial-chord { stroke: var(--playhead); stroke-width: 3; }
+.tutorial-arrow, .tutorial-wave { stroke: var(--wave); }
+.tutorial-axis { stroke: var(--border); }
 .help-button, dialog { color: var(--ink); }
 dialog p, dialog dd, .save-status { color: var(--muted); }
 .controller-guide { background: var(--panel); }

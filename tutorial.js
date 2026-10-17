@@ -1,4 +1,5 @@
-import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=16';
+import { NOTES, DRUM_COLORS } from './model.js?v=17';
+import { TUTORIAL_RECORDINGS } from './tutorial-voice.js?v=17';
 
 // Device speech is a fallback when a bundled recording cannot play.
 export function chooseTutorialVoice(voices) {
@@ -167,17 +168,17 @@ export function spotlightPath(rect, width, height) {
 
 export function tutorialPicture(kind, song, playhead = -1) {
   let art = '', label;
-  const box = (x, y, on, current = false, width = 32, height = 32) => `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="${on ? '#91b943' : '#e0e3d7'}" stroke="${current ? '#27302e' : '#b7c0aa'}" stroke-width="${current ? 3 : 1}"/>`;
+  const box = (x, y, on, current = false, width = 32, height = 32, colour = DRUM_COLORS[0]) => `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" class="tutorial-pill${on ? ' on' : ''}${current ? ' current' : ''}" style="--row-color:${colour}"/>`;
   if (kind === 'loop' || kind === 'beat') {
     label = kind === 'loop' ? 'It plays again.' : 'Lit = beat. Dark = rest.';
     const count = song.melody.length, spacing = 304 / count;
     for (let i = 0; i < count; i++) art += box(6 + i * spacing, 4, song.drums[0][i], playhead === i, spacing - 5, 28);
-    art += kind === 'loop' ? '<path d="M299 37v8H12v-8m0 8 6-5m-6 5 6 5" fill="none" stroke="#637747" stroke-width="2"/>' : '';
+    art += kind === 'loop' ? '<path d="M299 37v8H12v-8m0 8 6-5m-6 5 6 5" fill="none" class="tutorial-arrow" stroke-width="2"/>' : '';
   } else if (kind === 'notes' || kind === 'chord') {
     label = kind === 'chord' ? 'One stack. Play at once.' : 'High ↑   Low ↓';
-    art += '<text x="5" y="15">High</text><text x="5" y="51">Low</text><path d="M60 11v36m-4-30 4-6 4 6" fill="none" stroke="#637747" stroke-width="2"/>';
-    for (let col = 0; col < 4; col++) for (let note = 0; note < 6; note++) art += box(90 + col * 48, 2 + (5 - note) * 8.5, song.melody[col].includes(note), playhead === col, 38, 7);
-    if (kind === 'chord') art += '<rect x="85" y="0" width="48" height="55" rx="7" fill="none" stroke="#b98713" stroke-width="3"/>';
+    art += '<text x="5" y="15">High</text><text x="5" y="51">Low</text><path d="M60 11v36m-4-30 4-6 4 6" fill="none" class="tutorial-arrow" stroke-width="2"/>';
+    for (let col = 0; col < 4; col++) for (let note = 0; note < 6; note++) art += box(90 + col * 48, 2 + (5 - note) * 8.5, song.melody[col].includes(note), playhead === col, 38, 7, NOTES[note].color);
+    if (kind === 'chord') art += '<rect x="85" y="0" width="48" height="55" rx="7" fill="none" class="tutorial-chord" stroke-width="3"/>';
   } else {
     label = 'Soft ↔ Bright';
     const brightness = song.sound.brightness / 100;
@@ -186,7 +187,7 @@ export function tutorialPicture(kind, song, playhead = -1) {
       const y = 28 - (Math.sin(phase) + brightness * Math.sin(phase * 3) * 0.32) * 19;
       return `${i ? 'L' : 'M'}${i * 3 + 5} ${y.toFixed(2)}`;
     });
-    art = `<path d="M5 28H305" stroke="#d1d6c6"/><path d="${points.join(' ')}" fill="none" stroke="#617f36" stroke-width="3"/>`;
+    art = `<path d="M5 28H305" class="tutorial-axis"/><path d="${points.join(' ')}" fill="none" class="tutorial-wave" stroke-width="3"/>`;
   }
   return `<svg viewBox="0 0 312 58" aria-hidden="true">${art}</svg><figcaption>${label}</figcaption>`;
 }

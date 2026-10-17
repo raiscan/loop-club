@@ -555,3 +555,25 @@ active brush. All 93 theme/layout/reading and brush assertions passed at each
 of 360×800, 800×360, 800×1280 and 1280×800. The Space-theme screenshot was
 inspected with mixed note icons. No physical Android or Windows/Xbox device
 test is claimed.
+
+## Tutorial theme colours — 17 October 2026
+
+Clean main `15bf4ee` was current after the Sites source helper fetched and
+checked it. Baseline: 41 Node tests and 428 browser checks passed.
+The new focused browser regression failed before the fix because tutorial
+pills had hard-coded colours and no theme-aware playback outline.
+
+Tutorial pills now use the same pitch/drum colours, resting surface blend,
+borders and playback token as the sequencer. Space uses a white playback
+outline. Chord frames, arrows, waveforms and their axes also use theme tokens.
+Forty computed-style checks cover lit/resting pills and current outlines in
+all five themes, plus chord and waveform colours. These checks pass, and the
+Space chord/beat illustration screenshot was inspected. Node tests: 41 passed;
+syntax, build, diff and unchanged-original-site checks passed.
+
+An initial full development run in a second preview tab failed `Xbox A selects
+a loop size` after a native Play click timed out during scrolling. The primary
+preview tab accepted the Play click after explicit instant scrolling and was
+used for the full rerun; no controller implementation was changed.
+Full development rerun: 468 browser checks passed, including all 40 new theme
+assertions. No unresolved test failures remain.

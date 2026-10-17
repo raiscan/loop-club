@@ -2,10 +2,10 @@
 // await (await import('./tests/browser-checks.js')).runBrowserChecks()
 // These integration checks use actual Web Audio and DOM controls. The controller
 // fixture replaces only the hardware boundary; no app code is bypassed.
-import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=16';
-import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=16';
-import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong } from '../tutorial.js?v=16';
-import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=16';
+import { AudioEngine, drumVoice, synthVoice, synthChord, tutorialCue } from '../audio.js?v=17';
+import { createSong, editSong, PRESETS, SAVE_KEY, DRUM_SOUNDS, SYNTH_SOUNDS } from '../model.js?v=17';
+import { TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, tutorialPicture } from '../tutorial.js?v=17';
+import { TUTORIAL_RECORDINGS } from '../tutorial-voice.js?v=17';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const $ = selector => document.querySelector(selector);
@@ -235,7 +235,7 @@ export async function runInteractionChecks() {
 }
 
 export async function runBrowserChecks() {
-  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
+  const checks = [...await runLoopSizeChecks(), ...await runThemeChecks(), ...await runTutorialThemeChecks(), ...runMapAndVolumeChecks(), ...await runMuteChecks(), ...runReadingChecks(), ...runPresetChecks(), ...await runAudioChecks(), ...await runChordChecks(), ...await runBrushChecks(), ...await runInteractionChecks(), ...await runPlayheadChecks(), ...await runInstrumentChecks(), ...await runLessonAudioChecks(), ...await runTutorialChecks(), ...await runTutorialControllerChecks(), ...await runRecordedVoiceChecks()];
   return { passed: checks.length, checks };
 }
 
@@ -905,5 +905,32 @@ export async function runBrushChecks() {
     $('[data-loop-bars="1"]').click();$('[data-preset="club"]').click();$('[data-preset="breaks"]').click();$('#reset').click();$('#tab-drums').click();
     if(stored===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,stored);
   }
+  return results;
+}
+
+export async function runTutorialThemeChecks() {
+  const results = [], original = document.documentElement.dataset.theme;
+  const fixture = document.createElement('figure');
+  fixture.className = 'tutorial-picture'; document.body.append(fixture);
+  const colour = value => { const node = document.createElement('span'); node.style.color = value; document.body.append(node); const result = getComputedStyle(node).color; node.remove(); return result; };
+  try {
+    for (const theme of ['sunny', 'pink', 'space', 'dino', 'race']) {
+      document.documentElement.dataset.theme = theme;
+      const palette = getComputedStyle(document.documentElement);
+      for (const kind of ['beat', 'notes', 'chord']) {
+        fixture.innerHTML = tutorialPicture(kind, createSong('cloud'), 0);
+        const current = fixture.querySelector('.tutorial-pill.current');
+        check(current && getComputedStyle(current).stroke === colour(palette.getPropertyValue('--playhead')), `${theme} ${kind}: tutorial playback outline matches sequencer`, results);
+        const pills = [...fixture.querySelectorAll('.tutorial-pill')];
+        check(pills.length && pills.every(pill => {
+          const row = getComputedStyle(pill).getPropertyValue('--row-color').trim();
+          return getComputedStyle(pill).fill === colour(pill.classList.contains('on') ? row : `color-mix(in srgb, ${row} 13%, ${palette.getPropertyValue('--control')})`);
+        }), `${theme} ${kind}: lit and resting tutorial pills use sequencer row colours and themed surfaces`, results);
+      }
+      check(getComputedStyle(fixture.querySelector('.tutorial-chord')).stroke === colour(palette.getPropertyValue('--playhead')), `${theme}: chord stack outline follows theme`, results);
+      fixture.innerHTML = tutorialPicture('wave', createSong());
+      check(getComputedStyle(fixture.querySelector('.tutorial-wave')).stroke === colour(palette.getPropertyValue('--wave')) && getComputedStyle(fixture.querySelector('.tutorial-axis')).stroke === colour(palette.getPropertyValue('--border')), `${theme}: tutorial wave and axis follow theme`, results);
+    }
+  } finally { fixture.remove(); if (original) document.documentElement.dataset.theme = original; else delete document.documentElement.dataset.theme; }
   return results;
 }

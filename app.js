@@ -1,7 +1,7 @@
-import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=16';
-import { AudioEngine } from './audio.js?v=16';
-import { GamepadReader } from './gamepad.js?v=16';
-import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=16';
+import { createSong, editSong, restoreSong, SongHistory, NOTES, STEPS, SAVE_KEY, DRUM_TRACKS, DRUM_COLORS, DRUM_SOUNDS, SYNTH_SOUNDS, PRESETS } from './model.js?v=17';
+import { AudioEngine } from './audio.js?v=17';
+import { GamepadReader } from './gamepad.js?v=17';
+import { ZachTutorial, TutorialSpeech, blankTutorialSong, tutorialPlaybackSong, finishTutorialSong, tutorialPlayer } from './tutorial.js?v=17';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];

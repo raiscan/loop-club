@@ -162,14 +162,14 @@ They exercise real Web Audio rendering, playback cancellation, editing,
 saving, undo, synthetic touch input and simulated standard Xbox input:
 
 ```js
-await (await import('./tests/browser-checks.js?v=16')).runBrowserChecks()
+await (await import('./tests/browser-checks.js?v=17')).runBrowserChecks()
 ```
 
 Run the following at the desired viewport widths to check every section's
 control bounds and target sizes:
 
 ```js
-(await import('./tests/browser-checks.js?v=16')).runLayoutChecks()
+(await import('./tests/browser-checks.js?v=17')).runLayoutChecks()
 ```
 
 The interaction checks restore the saved song in storage when done; reload
