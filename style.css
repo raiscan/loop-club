@@ -783,3 +783,15 @@ html[data-theme=space] dialog::backdrop { background: #070b1dc9; }
 .voice-tooltip { position: fixed; z-index: 2; box-sizing: border-box; overflow: auto; overscroll-behavior: contain; padding: 18px; border: 2px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 32px #0006; font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
 .voice-tooltip > strong { font-size: 22px; }
 .voice-tooltip p { margin: 14px 0 0; }
+
+/* Give spacious desktop displays the larger controls of a 130% browser view. */
+@media (min-width: 2400px) and (min-height: 1200px) {
+  .app-shell { zoom: 1.3; }
+  .music-sidebar { max-height: calc(100dvh / 1.3 - 20px); }
+  .tutorial-card { width: 624px; padding: 24px 31px 29px; }
+  .tutorial-card h2 { font-size: 47px; }
+  .tutorial-card p { font-size: 36px; }
+  .tutorial-card button { font-size: 27px; min-height: 62px; }
+  .tutorial-picture svg { height: 78px; }
+  .tutorial-picture figcaption { font-size: 26px; }
+}

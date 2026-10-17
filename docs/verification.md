@@ -899,3 +899,16 @@ and native device share-sheet delivery are not claimed.
   `Xbox D-pad tunes speaker sync in ten-millisecond steps`. Broader diagnostic
   runs also encounter simulated-controller and focus failures, so this change
   does not claim a clean full browser suite or physical-controller verification.
+
+## Large desktop scale — 17 October 2026
+
+- At viewports at least 2400×1200 CSS pixels, the music machine scales to 130%.
+  The tutorial card uses larger text and diagrams without scaling its viewport
+  coordinates. Narrower or shorter windows retain their existing size.
+- Chrome layout checks passed at 1920×940, 2399×1440, 2560×1080, 2400×1200,
+  2560×1440 and 3840×2160 (8 checks each). No horizontal overflow; the sidebar
+  fits at every checked size. Scaling switches only at the intended thresholds.
+- At 2560×1440, the tutorial ring surrounds Play with exactly 7px of padding
+  on each side and the shade retains the viewport's 2560×1440 coordinates.
+- Development `node --test`: all 61 tests passed; syntax and whitespace checks
+  passed. The browser-suite limitation recorded above remains.
